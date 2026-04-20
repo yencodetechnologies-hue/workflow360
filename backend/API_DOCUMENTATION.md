@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of the available API endpoints for the Workflow360 backend.
 
-**Base URL:** `http://localhost:5000/api`
+**Base URL:** `http://localhost:5000/workflow360/api`
 
 ---
 
@@ -11,19 +11,19 @@ This document provides a comprehensive overview of the available API endpoints f
 ### 1. Get All Products
 Retrieves a list of all products in the database.
 - **Method:** `GET`
-- **Endpoint:** `/products`
+- **Endpoint:** `/`
 - **Response:** Array of product objects.
 
 ### 2. Get Product by ID
 Retrieves details for a specific product using its MongoDB `_id`.
 - **Method:** `GET`
-- **Endpoint:** `/products/:id`
+- **Endpoint:** `/:id`
 - **Response:** Product object or `404 Not Found`.
 
 ### 3. Create Product
 Adds a new product to the inventory.
 - **Method:** `POST`
-- **Endpoint:** `/products`
+- **Endpoint:** `/`
 - **Payload:**
   ```json
   {
@@ -39,13 +39,13 @@ Adds a new product to the inventory.
 ### 4. Update Product
 Updates an existing product's details.
 - **Method:** `PUT`
-- **Endpoint:** `/products/:id`
+- **Endpoint:** `/:id`
 - **Payload:** Any partial product object.
 
 ### 5. Delete Product
 Removes a product from the database.
 - **Method:** `DELETE`
-- **Endpoint:** `/products/:id`
+- **Endpoint:** `/:id`
 
 ---
 
@@ -54,7 +54,7 @@ Removes a product from the database.
 ### 6. Assign Tag to Product
 Links a physical RFID tag ID to a specific product ID.
 - **Method:** `POST`
-- **Endpoint:** `/products/assign-tag`
+- **Endpoint:** `/assign-tag`
 - **Payload:**
   ```json
   {
@@ -66,7 +66,7 @@ Links a physical RFID tag ID to a specific product ID.
 ### 7. Scan RFID Tag
 Fetches product details by scanning a tag ID. **Note:** This automatically logs the scan event in the history.
 - **Method:** `POST`
-- **Endpoint:** `/products/scan`
+- **Endpoint:** `/scan`
 - **Payload:**
   ```json
   {
@@ -79,7 +79,7 @@ Fetches product details by scanning a tag ID. **Note:** This automatically logs 
 ### 8. Bulk Assign Tags
 Assigns multiple tags to multiple products in one request.
 - **Method:** `POST`
-- **Endpoint:** `/products/bulk-assign`
+- **Endpoint:** `/bulk-assign`
 - **Payload:** Array of assignment objects.
   ```json
   [
@@ -95,7 +95,7 @@ Assigns multiple tags to multiple products in one request.
 ### 9. Get Scan History
 Retrieves all successful RFID scan events, sorted by the most recent first.
 - **Method:** `GET`
-- **Endpoint:** `/products/scan-history`
+- **Endpoint:** `/scan-history`
 - **Response:** Array of scan log objects.
 
 ---
@@ -105,7 +105,7 @@ Retrieves all successful RFID scan events, sorted by the most recent first.
 ### 10. Upload Image
 Uploads a product image directly to Cloudinary.
 - **Method:** `POST`
-- **Endpoint:** `/products/upload`
+- **Endpoint:** `/upload`
 - **Payload:** `multipart/form-data` with field `image`.
 - **Response:**
   ```json

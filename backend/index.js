@@ -7,7 +7,7 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const productRoutes = require('./routes/productRoutes');
+const routes = require('./routes/productRoutes');
 const Product = require('./models/Product');
 const fs = require('fs');
 const path = require('path');
@@ -27,7 +27,7 @@ app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'images')));
 
 // Routes
-app.use('/api/products', productRoutes);
+app.use('/workflow360/api', routes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
