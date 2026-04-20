@@ -27,7 +27,7 @@ app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'images')));
 
 // Routes
-app.use('/workflow360/api', routes);
+app.use('/workflow360/api/products', routes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

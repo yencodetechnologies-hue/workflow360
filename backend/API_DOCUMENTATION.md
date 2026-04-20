@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of the available API endpoints for the Workflow360 backend.
 
-**Base URL:** `http://localhost:5000/workflow360/api`
+**Base URL:** `http://localhost:5001/workflow360/api/products`
 
 ---
 
