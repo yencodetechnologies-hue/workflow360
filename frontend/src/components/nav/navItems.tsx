@@ -6,6 +6,7 @@ import {
   ProductIcon,
   ReportsIcon,
 } from './icons'
+import type { Role } from '../../auth/store'
 
 export type NavItem = {
   label: string
@@ -13,11 +14,26 @@ export type NavItem = {
   icon: React.ReactNode
 }
 
-export const navItems: NavItem[] = [
-  { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
-  { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
-  { label: 'Products', to: '/products', icon: <ProductIcon /> },
-  { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
-  { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
-]
+export function navItemsForRole(role: Role): NavItem[] {
+  if (role === 'DELIVERY') {
+    return [{ label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> }]
+  }
+  if (role === 'GODOWN') {
+    return [
+      { label: 'Queue', to: '/queue', icon: <DeliveryIcon /> },
+      { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
+      { label: 'Products', to: '/products', icon: <ProductIcon /> },
+      { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
+      { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
+    ]
+  }
+  // ADMIN, BILLER
+  return [
+    { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
+    { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
+    { label: 'Products', to: '/products', icon: <ProductIcon /> },
+    { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
+    { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
+  ]
+}
 

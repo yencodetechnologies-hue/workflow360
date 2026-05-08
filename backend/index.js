@@ -8,9 +8,17 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const routes = require('./routes/productRoutes');
+const authRoutes = require('./routes/authRoutes')
+const userRoutes = require('./routes/userRoutes')
+const godownRoutes = require('./routes/godownRoutes')
+const orderRoutes = require('./routes/orderRoutes')
+const deliveryRoutes = require('./routes/deliveryRoutes')
+const reportRoutes = require('./routes/reportRoutes')
 const Product = require('./models/Product');
 const fs = require('fs');
 const path = require('path');
+const User = require('./models/User')
+const bcrypt = require('bcryptjs')
 
 dotenv.config();
 
@@ -28,6 +36,12 @@ app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'images
 
 // Routes
 app.use('/workflow360/api/products', routes);
+app.use('/workflow360/api/auth', authRoutes)
+app.use('/workflow360/api/users', userRoutes)
+app.use('/workflow360/api/godowns', godownRoutes)
+app.use('/workflow360/api/orders', orderRoutes)
+app.use('/workflow360/api/deliveries', deliveryRoutes)
+app.use('/workflow360/api/reports', reportRoutes)
 
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -78,6 +92,24 @@ const seedData = async (force = false) => {
 
 // You can set FORCE_SEED=true in .env to refresh on startup
 seedData(process.env.FORCE_SEED === 'true');
+
+const ensureSeedAdmin = async () => {
+  try {
+    if (process.env.SEED_ADMIN_ON_START !== 'true') return
+    const email = (process.env.SEED_ADMIN_EMAIL || 'admin@godown.local').toLowerCase().trim()
+    const password = process.env.SEED_ADMIN_PASSWORD || 'admin123'
+    const exists = await User.findOne({ email }).lean()
+    if (exists) return
+    const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10)
+    const passwordHash = await bcrypt.hash(password, saltRounds)
+    await User.create({ email, passwordHash, role: 'ADMIN', active: true })
+    console.log(`Seeded admin user: ${email}`)
+  } catch (err) {
+    console.error('Admin seed error:', err.message)
+  }
+}
+
+ensureSeedAdmin()
 
 const PORT = process.env.PORT || 5000;
 

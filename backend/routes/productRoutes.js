@@ -12,22 +12,23 @@ const {
     bulkAssignTags
 } = require('../controllers/productController');
 const { uploadImage } = require('../controllers/uploadController');
+const { requireAuth, requireRole } = require('../middleware/auth')
 
 router.route('/')
     .get(getProducts)
-    .post(createProduct);
+    .post(requireAuth, requireRole(['ADMIN', 'GODOWN']), createProduct);
 
-router.post('/upload', uploadImage);
+router.post('/upload', requireAuth, requireRole(['ADMIN', 'GODOWN']), uploadImage);
 
 // RFID Tag Routes
-router.post('/assign-tag', assignTag);
+router.post('/assign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), assignTag);
 router.post('/scan', scanProduct);
 router.get('/scan-history', getScanHistory);
-router.post('/bulk-assign', bulkAssignTags);
+router.post('/bulk-assign', requireAuth, requireRole(['ADMIN', 'GODOWN']), bulkAssignTags);
 
 router.route('/:id')
     .get(getProductById)
-    .put(updateProduct)
-    .delete(deleteProduct);
+    .put(requireAuth, requireRole(['ADMIN', 'GODOWN']), updateProduct)
+    .delete(requireAuth, requireRole(['ADMIN']), deleteProduct);
 
 module.exports = router;

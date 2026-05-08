@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/nav/AppShell'
+import { ProtectedRoute } from './auth/ProtectedRoute'
 import { DashboardPage } from './pages/Dashboard'
 import { DeliveriesListPage } from './pages/Deliveries/List'
 import { GodownsDetailsPage } from './pages/Godowns/Details'
@@ -10,22 +11,30 @@ import { DeliveryPersonsPage } from './pages/Masters/DeliveryPersons'
 import { VehiclesPage } from './pages/Masters/Vehicles'
 import { ProductsListPage } from './pages/Products/List'
 import { ReportsPage } from './pages/Reports'
+import { QueuePage } from './pages/Queue'
+import { ScanDeliveryPage } from './pages/Scan/ScanDelivery'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      <Route element={<AppShell />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="/godowns" element={<GodownsListPage />} />
-        <Route path="/godowns/:id" element={<GodownsDetailsPage />} />
-        <Route path="/products" element={<ProductsListPage />} />
-        <Route path="/deliveries" element={<DeliveriesListPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/masters/billers" element={<BillersPage />} />
-        <Route path="/masters/delivery-persons" element={<DeliveryPersonsPage />} />
-        <Route path="/masters/vehicles" element={<VehiclesPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppShell />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="/queue" element={<QueuePage />} />
+          <Route path="/godowns" element={<GodownsListPage />} />
+          <Route path="/godowns/:id" element={<GodownsDetailsPage />} />
+          <Route path="/products" element={<ProductsListPage />} />
+          <Route path="/deliveries" element={<DeliveriesListPage />} />
+          <Route path="/scan/dispatch/:id" element={<ScanDeliveryPage action="dispatch" />} />
+          <Route path="/scan/deliver/:id" element={<ScanDeliveryPage action="deliver" />} />
+          <Route path="/scan/return/:id" element={<ScanDeliveryPage action="return" />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/masters/billers" element={<BillersPage />} />
+          <Route path="/masters/delivery-persons" element={<DeliveryPersonsPage />} />
+          <Route path="/masters/vehicles" element={<VehiclesPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,8 +1,13 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/cn'
-import { navItems } from './navItems'
+import { navItemsForRole } from './navItems'
+import { logout, useAuth } from '../../auth/store'
 
 export function Sidebar() {
+  const auth = useAuth()
+  const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
+  const navItems = navItemsForRole(role)
+
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col fade-in">
       <div className="flex h-full flex-col border-r border-white/20 glass shadow-xl">
@@ -75,19 +80,25 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t border-white/10 px-6 py-4">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
+          >
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 shadow-md group-hover:shadow-lg transform group-hover:scale-105 transition-all duration-300 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
+              <span className="text-white font-bold text-sm">
+                {auth.status === 'authenticated' ? auth.user.email.slice(0, 1).toUpperCase() : 'A'}
+              </span>
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-bold text-slate-900 gradient-text">
-                Admin
+                {auth.status === 'authenticated' ? auth.user.role : 'Admin'}
               </div>
               <div className="truncate text-xs text-slate-500 font-medium">
-                admin@godown.local
+                {auth.status === 'authenticated' ? auth.user.email : 'admin@godown.local'}
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
     </aside>

@@ -121,6 +121,10 @@ export function createSeedDb(): Db {
     category: p.category,
     unit: p.unit,
     reorderLevel: p.reorderLevel,
+    sNo: String(p.id),
+    particulars: p.name,
+    specification: '—',
+    rate: '—',
   }))
 
   const productByName = new Map(products.map((p) => [p.name.toLowerCase(), p]))

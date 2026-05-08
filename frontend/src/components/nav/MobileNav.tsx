@@ -1,8 +1,12 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/cn'
-import { navItems } from './navItems'
+import { navItemsForRole } from './navItems'
+import { useAuth } from '../../auth/store'
 
 export function MobileNav() {
+  const auth = useAuth()
+  const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
+  const navItems = navItemsForRole(role)
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur lg:hidden">
       <div className="grid grid-cols-5">

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { login } from '../auth/store'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -9,6 +10,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('admin123')
   const [remember, setRemember] = useState(true)
   const [touched, setTouched] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const errors = useMemo(() => {
     if (!touched) return {}
@@ -87,8 +90,21 @@ export function LoginPage() {
                 onSubmit={(e) => {
                   e.preventDefault()
                   setTouched(true)
+                  setServerError(null)
                   if (hasError) return
-                  navigate('/', { replace: true })
+                  setLoading(true)
+                  login(email, password)
+                    .then((u) => {
+                      const next =
+                        u.role === 'DELIVERY'
+                          ? '/deliveries'
+                          : u.role === 'GODOWN'
+                            ? '/queue'
+                            : '/'
+                      navigate(next, { replace: true })
+                    })
+                    .catch((err: any) => setServerError(err?.message || 'Login failed'))
+                    .finally(() => setLoading(false))
                 }}
               >
                 <Input
@@ -129,12 +145,18 @@ export function LoginPage() {
                 </div>
 
                 <Button className="w-full" type="submit">
-                  Continue
+                  {loading ? 'Signing in…' : 'Continue'}
                 </Button>
 
-                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                  Demo login is prefilled. This template is UI-only with mock data.
-                </div>
+                {serverError ? (
+                  <div className="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700">
+                    {serverError}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                    Sign in with your role account (admin/godown/delivery/biller).
+                  </div>
+                )}
               </form>
             </div>
 

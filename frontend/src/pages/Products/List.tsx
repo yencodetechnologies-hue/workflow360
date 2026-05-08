@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react'
-import { formatNumber } from '../../lib/format'
-import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
@@ -135,6 +133,7 @@ export function ProductsListPage() {
                               setForm({
                                 name: p.name,
                                 sku: p.sku,
+                                category: p.category,
                                 specification: p.specification,
                                 rate: p.rate,
                                 sNo: p.sNo,
