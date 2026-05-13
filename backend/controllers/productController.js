@@ -205,6 +205,33 @@ const bulkAssignTags = async (req, res) => {
     }
 };
 
+// @desc    Unassign RFID tag from product
+// @route   POST /api/products/unassign-tag
+// @access  Public
+const unassignTag = async (req, res) => {
+    try {
+        const { tagId } = req.body;
+
+        const product = await Product.findOneAndUpdate(
+            { tagId },
+            { $unset: { tagId: "" } },
+            { new: true }
+        );
+
+        if (!product) {
+            return res.status(404).json({ status: "not_found", message: "No product found with this tag" });
+        }
+
+        res.json({
+            status: "success",
+            message: "Tag unassigned",
+            product
+        });
+    } catch (error) {
+        res.status(500).json({ status: "error", message: error.message });
+    }
+};
+
 module.exports = {
     getProducts,
     getProductById,
@@ -214,5 +241,6 @@ module.exports = {
     assignTag,
     scanProduct,
     getScanHistory,
-    bulkAssignTags
+    bulkAssignTags,
+    unassignTag
 };

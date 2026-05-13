@@ -1,12 +1,31 @@
+const crypto = require('crypto')
 const Delivery = require('../models/Delivery')
 const DeliveryScanEvent = require('../models/DeliveryScanEvent')
 const AssetTag = require('../models/AssetTag')
 const InventoryLedger = require('../models/InventoryLedger')
+const User = require('../models/User')
 const PDFDocument = require('pdfkit')
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
   return `DLV-${n}`
+}
+
+function makeVerifyToken() {
+  return crypto.randomBytes(24).toString('base64url')
+}
+
+function publicBaseUrl() {
+  const u = process.env.FRONTEND_PUBLIC_URL || 'http://localhost:5173'
+  return String(u).replace(/\/$/, '')
+}
+
+function shareUrls(d) {
+  const base = publicBaseUrl()
+  return {
+    deliveryVerifyUrl: `${base}/p/delivery/${encodeURIComponent(d.deliveryVerifyToken || '')}`,
+    billerReturnUrl: `${base}/p/biller/${encodeURIComponent(d.billerReturnVerifyToken || '')}`,
+  }
 }
 
 function uniqPush(arr, value) {
@@ -25,6 +44,33 @@ function uniqPushMany(arr, values) {
   return Array.from(s)
 }
 
+function mapListRow(d) {
+  return {
+    id: String(d._id),
+    deliveryNo: d.deliveryNo,
+    customerName: d.customerName,
+    siteName: d.siteName,
+    siteAddress: d.siteAddress,
+    deliveryAt: d.deliveryAt,
+    returnExpectedAt: d.returnExpectedAt,
+    fromGodownId: String(d.fromGodownId),
+    billerUserId: d.billerUserId ? String(d.billerUserId) : undefined,
+    vehicleLabel: d.vehicleLabel,
+    status: d.status,
+    lines: d.lines,
+    dispatchedTagIds: d.dispatchedTagIds,
+    deliveredTagIds: d.deliveredTagIds,
+    returnedTagIds: d.returnedTagIds,
+    damagedTagIds: d.damagedTagIds,
+    lostTagIds: d.lostTagIds,
+    challanNo: d.challanNo,
+    deliveryVerifiedAt: d.deliveryVerifiedAt,
+    billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+    damageTotal: d.damageTotal,
+    missingTotal: d.missingTotal,
+  }
+}
+
 async function createDelivery(req, res) {
   try {
     const {
@@ -33,6 +79,7 @@ async function createDelivery(req, res) {
       siteName,
       siteAddress,
       contactPhone,
+      billerUserId,
       fromGodownId,
       deliveryAt,
       returnExpectedAt,
@@ -44,6 +91,10 @@ async function createDelivery(req, res) {
     if (!customerName || !fromGodownId || !deliveryAt) {
       return res.status(400).json({ message: 'customerName, fromGodownId, deliveryAt required' })
     }
+    if (!billerUserId) return res.status(400).json({ message: 'billerUserId required' })
+
+    const biller = await User.findById(billerUserId).lean()
+    if (!biller || biller.role !== 'BILLER') return res.status(400).json({ message: 'Invalid biller user' })
 
     const delivery = await Delivery.create({
       deliveryNo: makeDeliveryNo(),
@@ -52,16 +103,25 @@ async function createDelivery(req, res) {
       siteName,
       siteAddress,
       contactPhone,
+      billerUserId,
       fromGodownId,
       deliveryAt: new Date(deliveryAt),
       returnExpectedAt: returnExpectedAt ? new Date(returnExpectedAt) : undefined,
       assignedDeliveryUserId: assignedDeliveryUserId || undefined,
       vehicleLabel: vehicleLabel || undefined,
       lines: Array.isArray(lines) ? lines : [],
+      deliveryVerifyToken: makeVerifyToken(),
+      billerReturnVerifyToken: makeVerifyToken(),
       createdByUserId: req.user?.id,
     })
 
-    return res.status(201).json({ id: String(delivery._id), deliveryNo: delivery.deliveryNo })
+    const urls = shareUrls(delivery)
+    return res.status(201).json({
+      id: String(delivery._id),
+      deliveryNo: delivery.deliveryNo,
+      deliveryVerifyUrl: urls.deliveryVerifyUrl,
+      billerReturnUrl: urls.billerReturnUrl,
+    })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Create delivery failed' })
   }
@@ -70,34 +130,17 @@ async function createDelivery(req, res) {
 async function listDeliveries(req, res) {
   const limit = Math.min(200, Number(req.query.limit || 50))
   const status = req.query.status
+  const fromGodownId = req.query.fromGodownId
   const q = {}
   if (status) q.status = status
 
-  // DELIVERY role sees only assigned deliveries
   if (req.user.role === 'DELIVERY') q.assignedDeliveryUserId = req.user.id
   if (req.user.role === 'GODOWN' && req.user.godownId) q.fromGodownId = req.user.godownId
+  if (req.user.role === 'BILLER') q.billerUserId = req.user.id
+  if (req.user.role === 'ADMIN' && fromGodownId) q.fromGodownId = fromGodownId
 
   const list = await Delivery.find(q).sort({ deliveryAt: -1 }).limit(limit).lean()
-  return res.json(
-    list.map((d) => ({
-      id: String(d._id),
-      deliveryNo: d.deliveryNo,
-      customerName: d.customerName,
-      siteName: d.siteName,
-      siteAddress: d.siteAddress,
-      deliveryAt: d.deliveryAt,
-      returnExpectedAt: d.returnExpectedAt,
-      fromGodownId: String(d.fromGodownId),
-      status: d.status,
-      lines: d.lines,
-      dispatchedTagIds: d.dispatchedTagIds,
-      deliveredTagIds: d.deliveredTagIds,
-      returnedTagIds: d.returnedTagIds,
-      damagedTagIds: d.damagedTagIds,
-      lostTagIds: d.lostTagIds,
-      challanNo: d.challanNo,
-    })),
-  )
+  return res.json(list.map(mapListRow))
 }
 
 async function getDelivery(req, res) {
@@ -110,6 +153,11 @@ async function getDelivery(req, res) {
   if (req.user.role === 'GODOWN' && req.user.godownId && String(d.fromGodownId) !== String(req.user.godownId)) {
     return res.status(403).json({ message: 'Forbidden' })
   }
+  if (req.user.role === 'BILLER' && String(d.billerUserId || '') !== String(req.user.id)) {
+    return res.status(403).json({ message: 'Forbidden' })
+  }
+
+  const urls = shareUrls(d)
 
   return res.json({
     id: String(d._id),
@@ -118,9 +166,12 @@ async function getDelivery(req, res) {
     siteName: d.siteName,
     siteAddress: d.siteAddress,
     contactPhone: d.contactPhone,
+    billerUserId: d.billerUserId ? String(d.billerUserId) : undefined,
     fromGodownId: String(d.fromGodownId),
     deliveryAt: d.deliveryAt,
     returnExpectedAt: d.returnExpectedAt,
+    assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
+    vehicleLabel: d.vehicleLabel,
     status: d.status,
     lines: d.lines,
     dispatchedTagIds: d.dispatchedTagIds,
@@ -130,7 +181,34 @@ async function getDelivery(req, res) {
     lostTagIds: d.lostTagIds,
     challanNo: d.challanNo,
     challanGeneratedAt: d.challanGeneratedAt,
+    deliveryVerifierName: d.deliveryVerifierName,
+    deliveryVerifiedAt: d.deliveryVerifiedAt,
+    deliveryLineChecks: d.deliveryLineChecks,
+    billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+    billerDamagedLines: d.billerDamagedLines,
+    billerMissingLines: d.billerMissingLines,
+    damageTotal: d.damageTotal,
+    missingTotal: d.missingTotal,
+    deliveryVerifyUrl: urls.deliveryVerifyUrl,
+    billerReturnUrl: urls.billerReturnUrl,
   })
+}
+
+async function regenerateDeliveryTokens(req, res) {
+  try {
+    const delivery = await Delivery.findById(req.params.id)
+    if (!delivery) return res.status(404).json({ message: 'Not found' })
+    delivery.deliveryVerifyToken = makeVerifyToken()
+    delivery.billerReturnVerifyToken = makeVerifyToken()
+    await delivery.save()
+    const urls = shareUrls(delivery)
+    return res.json({
+      deliveryVerifyUrl: urls.deliveryVerifyUrl,
+      billerReturnUrl: urls.billerReturnUrl,
+    })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Failed' })
+  }
 }
 
 async function scan(req, res, action) {
@@ -151,7 +229,6 @@ async function scan(req, res, action) {
   const asset = await AssetTag.findOne({ tagId: normalizedTag })
   if (!asset) return res.status(404).json({ message: 'Unknown tagId' })
 
-  // very light validation: scanned tag product must exist in delivery lines
   const allowedProductIds = new Set(delivery.lines.map((l) => String(l.productId)))
   if (!allowedProductIds.has(String(asset.productId))) {
     return res.status(400).json({ message: 'Tag does not match any product in this delivery' })
@@ -264,18 +341,6 @@ async function enrollTag(req, res) {
   return res.status(201).json({ id: String(tag._id), tagId: tag.tagId })
 }
 
-module.exports = {
-  createDelivery,
-  listDeliveries,
-  getDelivery,
-  dispatchScan,
-  deliverScan,
-  returnScan,
-  closeReturn,
-  enrollTag,
-  challanPdf,
-}
-
 async function challanPdf(req, res) {
   const delivery = await Delivery.findById(req.params.id).populate('lines.productId').lean()
   if (!delivery) return res.status(404).json({ message: 'Not found' })
@@ -329,3 +394,15 @@ async function challanPdf(req, res) {
   doc.end()
 }
 
+module.exports = {
+  createDelivery,
+  listDeliveries,
+  getDelivery,
+  regenerateDeliveryTokens,
+  dispatchScan,
+  deliverScan,
+  returnScan,
+  closeReturn,
+  enrollTag,
+  challanPdf,
+}

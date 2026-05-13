@@ -10,12 +10,13 @@ const userSchema = mongoose.Schema(
       enum: ['ADMIN', 'GODOWN', 'DELIVERY', 'BILLER'],
     },
     godownId: { type: String },
+    siteName: { type: String, trim: true },
+    contactPhone: { type: String, trim: true },
     active: { type: Boolean, default: true },
   },
   { timestamps: true },
 )
 
-userSchema.index({ email: 1 }, { unique: true })
 
 const User = mongoose.model('User', userSchema)
 

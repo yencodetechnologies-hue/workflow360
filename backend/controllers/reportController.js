@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
 const InventoryLedger = require('../models/InventoryLedger')
 
@@ -75,7 +76,18 @@ async function missingReport(req, res) {
 
 async function stockReport(req, res) {
   const match = {}
-  if (req.user.role === 'GODOWN' && req.user.godownId) match.godownId = req.user.godownId
+  if (req.user.role === 'GODOWN' && req.user.godownId) {
+    if (!mongoose.Types.ObjectId.isValid(req.user.godownId)) {
+      return res.status(400).json({ message: 'Invalid user godownId' })
+    }
+    match.godownId = new mongoose.Types.ObjectId(req.user.godownId)
+  } else if (req.user.role === 'ADMIN') {
+    const gid = String(req.query.godownId || '').trim()
+    if (gid) {
+      if (!mongoose.Types.ObjectId.isValid(gid)) return res.status(400).json({ message: 'Invalid godownId' })
+      match.godownId = new mongoose.Types.ObjectId(gid)
+    }
+  }
   const rows = await InventoryLedger.aggregate([
     { $match: match },
     {

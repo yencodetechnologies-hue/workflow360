@@ -19,7 +19,14 @@ async function requireAuth(req, res, next) {
     const user = await User.findById(payload.sub).lean()
     if (!user || !user.active) return res.status(401).json({ message: 'Invalid token' })
 
-    req.user = { id: String(user._id), email: user.email, role: user.role, godownId: user.godownId }
+    req.user = {
+      id: String(user._id),
+      email: user.email,
+      role: user.role,
+      godownId: user.godownId,
+      siteName: user.siteName,
+      contactPhone: user.contactPhone,
+    }
     next()
   } catch (err) {
     return res.status(401).json({ message: 'Invalid token' })

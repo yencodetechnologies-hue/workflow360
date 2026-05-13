@@ -9,7 +9,7 @@ const {
     assignTag,
     scanProduct,
     getScanHistory,
-    bulkAssignTags
+    unassignTag
 } = require('../controllers/productController');
 const { uploadImage } = require('../controllers/uploadController');
 const { requireAuth, requireRole } = require('../middleware/auth')
@@ -22,6 +22,7 @@ router.post('/upload', requireAuth, requireRole(['ADMIN', 'GODOWN']), uploadImag
 
 // RFID Tag Routes
 router.post('/assign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), assignTag);
+router.post('/unassign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), unassignTag);
 router.post('/scan', scanProduct);
 router.get('/scan-history', getScanHistory);
 router.post('/bulk-assign', requireAuth, requireRole(['ADMIN', 'GODOWN']), bulkAssignTags);

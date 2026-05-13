@@ -23,7 +23,14 @@ async function login(req, res) {
     const token = signToken(user)
     return res.json({
       token,
-      user: { id: String(user._id), email: user.email, role: user.role, godownId: user.godownId },
+      user: {
+        id: String(user._id),
+        email: user.email,
+        role: user.role,
+        godownId: user.godownId,
+        siteName: user.siteName,
+        contactPhone: user.contactPhone,
+      },
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Login failed' })

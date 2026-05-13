@@ -8,6 +8,8 @@ export type AuthUser = {
   email: string
   role: Role
   godownId?: string
+  siteName?: string
+  contactPhone?: string
 }
 
 type AuthState =
@@ -23,19 +25,30 @@ function notify() {
   for (const l of listeners) l()
 }
 
+let cachedState: AuthState | null = null
+
 function readState(): AuthState {
+  if (cachedState) return cachedState
   const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return { status: 'anonymous' }
-  try {
-    const parsed = JSON.parse(raw) as AuthState
-    if (parsed && parsed.status === 'authenticated' && parsed.token && parsed.user) return parsed
-    return { status: 'anonymous' }
-  } catch {
-    return { status: 'anonymous' }
+  if (!raw) {
+    cachedState = { status: 'anonymous' }
+  } else {
+    try {
+      const parsed = JSON.parse(raw) as AuthState
+      if (parsed && parsed.status === 'authenticated' && parsed.token && parsed.user) {
+        cachedState = parsed
+      } else {
+        cachedState = { status: 'anonymous' }
+      }
+    } catch {
+      cachedState = { status: 'anonymous' }
+    }
   }
+  return cachedState
 }
 
 function writeState(next: AuthState) {
+  cachedState = next
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   notify()
 }

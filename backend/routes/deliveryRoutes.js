@@ -4,6 +4,7 @@ const {
   createDelivery,
   listDeliveries,
   getDelivery,
+  regenerateDeliveryTokens,
   dispatchScan,
   deliverScan,
   returnScan,
@@ -18,6 +19,8 @@ router.use(requireAuth)
 
 router.get('/', requireRole(['ADMIN', 'GODOWN', 'DELIVERY', 'BILLER']), listDeliveries)
 router.post('/', requireRole(['ADMIN', 'BILLER']), createDelivery)
+
+router.post('/:id/regenerate-tokens', requireRole(['ADMIN']), regenerateDeliveryTokens)
 
 // Tag enrollment (admin/godown)
 router.post('/asset-tags/enroll', requireRole(['ADMIN', 'GODOWN']), enrollTag)

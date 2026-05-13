@@ -3,6 +3,9 @@ import { AppShell } from './components/nav/AppShell'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { DashboardPage } from './pages/Dashboard'
 import { DeliveriesListPage } from './pages/Deliveries/List'
+import { DeliveryDetailPage } from './pages/Deliveries/Detail'
+import { PublicDeliveryVerifyPage } from './pages/Public/DeliveryVerify'
+import { PublicBillerReturnPage } from './pages/Public/BillerReturn'
 import { GodownsDetailsPage } from './pages/Godowns/Details'
 import { GodownsListPage } from './pages/Godowns/List'
 import { LoginPage } from './pages/Login'
@@ -18,6 +21,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/p/delivery/:token" element={<PublicDeliveryVerifyPage />} />
+      <Route path="/p/biller/:token" element={<PublicBillerReturnPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
@@ -27,6 +32,7 @@ export default function App() {
           <Route path="/godowns/:id" element={<GodownsDetailsPage />} />
           <Route path="/products" element={<ProductsListPage />} />
           <Route path="/deliveries" element={<DeliveriesListPage />} />
+          <Route path="/deliveries/:id" element={<DeliveryDetailPage />} />
           <Route path="/scan/dispatch/:id" element={<ScanDeliveryPage action="dispatch" />} />
           <Route path="/scan/deliver/:id" element={<ScanDeliveryPage action="deliver" />} />
           <Route path="/scan/return/:id" element={<ScanDeliveryPage action="return" />} />

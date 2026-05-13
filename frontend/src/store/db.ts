@@ -1,6 +1,7 @@
 import { createSeedDb, type Db, type Id, type Product } from './seed'
+import { getToken } from '../auth/store'
 
-const API_URL = 'http://127.0.0.1:5000/api/products'
+const API_URL = 'http://127.0.0.1:5001/workflow360/api/products'
 
 const STORAGE_KEY = 'godown_manager_demo_db_v1'
 
@@ -50,7 +51,7 @@ export function loadDb(): Db {
             category: p.category,
             unit: p.unit || 'pcs',
             reorderLevel: p.reorderLevel || 0,
-            imagePath: p.image_url || (p.image_path ? `http://127.0.0.1:5000/${p.image_path}` : undefined),
+            imagePath: p.image_url || (p.image_path ? `http://127.0.0.1:5001/${p.image_path}` : undefined),
             sNo: p.s_no,
             particulars: p.particulars || p.name,
             specification: p.specification || '—',
@@ -181,7 +182,10 @@ export const db = {
     // Sync with backend
     fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
       body: JSON.stringify({
         s_no: p.sNo,
         particulars: p.name,
@@ -225,7 +229,10 @@ export const db = {
     if (id.length >= 24) {
       fetch(`${API_URL}/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: JSON.stringify({
           particulars: patch.name,
           category: patch.category,
@@ -259,7 +266,10 @@ export const db = {
 
     // Sync with backend
     if (id.length >= 24) {
-      fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+      fetch(`${API_URL}/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      })
       .catch(err => console.error('Delete product failed:', err))
     }
   },

@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { db, useDb } from '../../store/useStore'
+import { getToken } from '../../auth/store'
 
 export function ProductsListPage() {
   const state = useDb()
@@ -212,7 +213,7 @@ export function ProductsListPage() {
               <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                 {form.imagePath ? (
                   <img 
-                    src={form.imagePath.startsWith('http') ? form.imagePath : `http://127.0.0.1:5000/${form.imagePath}`} 
+                    src={form.imagePath.startsWith('http') ? form.imagePath : `http://127.0.0.1:5001/${form.imagePath}`} 
                     alt="Preview" 
                     className="h-full w-full object-contain" 
                   />
@@ -235,8 +236,9 @@ export function ProductsListPage() {
                     formData.append('image', file)
                     
                     try {
-                      const res = await fetch('http://127.0.0.1:5000/api/products/upload', {
+                      const res = await fetch('http://127.0.0.1:5001/workflow360/api/products/upload', {
                         method: 'POST',
+                        headers: { 'Authorization': `Bearer ${getToken()}` },
                         body: formData,
                       })
                       const data = await res.json()
