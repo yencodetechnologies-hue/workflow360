@@ -62,9 +62,13 @@ class _ProductPickerState extends ConsumerState<ProductPicker> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final p = filtered[index];
+              final hasTag = p.tagId != null && p.tagId!.isNotEmpty;
               return ListTile(
                 title: Text(p.name),
                 subtitle: Text('ID: ${p.productId} | SKU: ${p.sku}'),
+                trailing: hasTag 
+                  ? const Icon(Icons.link, color: Colors.green)
+                  : const Icon(Icons.link_off, color: Colors.grey),
                 onTap: () => Navigator.pop(context, p),
               );
             },

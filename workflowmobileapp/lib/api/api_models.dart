@@ -126,7 +126,7 @@ class BulkAssignRequest {
 
   const BulkAssignRequest({required this.items});
 
-  Map<String, dynamic> toJson() => items.map((e) => e.toJson()).toList();
+  List<Map<String, dynamic>> toJson() => items.map((e) => e.toJson()).toList();
 }
 
 class BulkAssignResult {

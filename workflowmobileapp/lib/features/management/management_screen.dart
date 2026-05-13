@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workflow360_rfid_app/api/api_models.dart';
+import 'package:go_router/go_router.dart';
 import 'package:workflow360_rfid_app/api/providers.dart';
 import 'package:workflow360_rfid_app/features/management/product_picker.dart';
 import 'package:workflow360_rfid_app/features/products/products_controller.dart';
@@ -19,6 +20,22 @@ class _ManagementScreenState extends ConsumerState<ManagementScreen> {
   Future<void> _assignProduct() async {
     final product = await ProductPicker.pick(context);
     if (product == null) return;
+
+    final hasTag = product.tagId != null && product.tagId!.isNotEmpty;
+    if (hasTag && mounted) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Product Already Assigned'),
+          content: Text('This product already has tag: ${product.tagId}.\nDo you want to reassign it?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Reassign')),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -100,32 +117,7 @@ class _ManagementScreenState extends ConsumerState<ManagementScreen> {
   }
 
   Future<void> _fetchProductTag() async {
-    final product = await ProductPicker.pick(context);
-    if (product == null) return;
-
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(product.name),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Product ID: ${product.productId}'),
-              const SizedBox(height: 8),
-              Text('Tag ID: ${product.tagId ?? "Not Assigned"}'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
+    context.push('/tagged-products');
   }
 
   Future<void> _identifyTag() async {
@@ -230,7 +222,7 @@ class _ManagementScreenState extends ConsumerState<ManagementScreen> {
                   color: Colors.green,
                 ),
                 _ManagementButton(
-                  icon: Icons.rfid_fixed,
+                  icon: Icons.track_changes,
                   label: 'Identify Tag',
                   onTap: _identifyTag,
                   color: Colors.orange,

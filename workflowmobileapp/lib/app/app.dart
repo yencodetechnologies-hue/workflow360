@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:workflow360_rfid_app/features/history/history_screen.dart';
 import 'package:workflow360_rfid_app/features/management/management_screen.dart';
+import 'package:workflow360_rfid_app/features/management/tagged_products_screen.dart';
 import 'package:workflow360_rfid_app/features/products/products_screen.dart';
 import 'package:workflow360_rfid_app/features/products/product_detail_screen.dart';
 import 'package:workflow360_rfid_app/features/products/product_detail_args.dart';
@@ -34,6 +35,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/history',
       builder: (context, state) => const HistoryScreen(),
+    ),
+    GoRoute(
+      path: '/tagged-products',
+      builder: (context, state) => const TaggedProductsScreen(),
     ),
   ],
 );

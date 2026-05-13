@@ -32,9 +32,9 @@ class HistoryScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final h = items[index];
                 return ListTile(
-                  title: Text(h.epc),
+                  title: Text(h.tagId),
                   subtitle: Text(
-                    '${h.productName ?? '-'}\n${fmt.format(h.ts.toLocal())}',
+                    '${h.particulars}\n${fmt.format(h.createdAt.toLocal())}',
                   ),
                   isThreeLine: true,
                 );
