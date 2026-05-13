@@ -9,7 +9,8 @@ const {
     assignTag,
     scanProduct,
     getScanHistory,
-    unassignTag
+    unassignTag,
+    bulkAssignTags
 } = require('../controllers/productController');
 const { uploadImage } = require('../controllers/uploadController');
 const { requireAuth, requireRole } = require('../middleware/auth')
