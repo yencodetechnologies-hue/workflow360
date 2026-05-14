@@ -21,11 +21,11 @@ router.route('/')
 
 router.post('/upload', requireAuth, requireRole(['ADMIN', 'GODOWN']), uploadImage);
 
-// RFID Tag Routes
+// RFID Tag Routes (mutations + scan history: ADMIN / GODOWN JWT; scan remains public for kiosk identify)
 router.post('/assign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), assignTag);
 router.post('/unassign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), unassignTag);
 router.post('/scan', scanProduct);
-router.get('/scan-history', getScanHistory);
+router.get('/scan-history', requireAuth, requireRole(['ADMIN', 'GODOWN']), getScanHistory);
 router.post('/bulk-assign', requireAuth, requireRole(['ADMIN', 'GODOWN']), bulkAssignTags);
 
 router.route('/:id')

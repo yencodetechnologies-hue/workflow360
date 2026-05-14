@@ -1,5 +1,17 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const ScannedProduct = require('../models/ScannedProduct');
+
+/** Resolve route `:id` as Mongo `_id` or business `productId` (same as assign-tag). */
+async function findProductByRouteId(id) {
+    if (id == null || id === '') return null;
+    const idStr = String(id).trim();
+    if (mongoose.Types.ObjectId.isValid(idStr) && idStr.length === 24) {
+        const byMongo = await Product.findById(idStr);
+        if (byMongo) return byMongo;
+    }
+    return Product.findOne({ productId: idStr });
+}
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -18,7 +30,7 @@ const getProducts = async (req, res) => {
 // @access  Public
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await findProductByRouteId(req.params.id);
 
         if (product) {
             res.json(product);
@@ -71,7 +83,7 @@ const createProduct = async (req, res) => {
 // @access  Public
 const updateProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await findProductByRouteId(req.params.id);
 
         if (product) {
             product.category = req.body.category || product.category;
@@ -99,7 +111,7 @@ const updateProduct = async (req, res) => {
 // @access  Public
 const deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await findProductByRouteId(req.params.id);
 
         if (product) {
             await product.deleteOne();
@@ -114,10 +126,27 @@ const deleteProduct = async (req, res) => {
 
 // @desc    Assign RFID tag to product
 // @route   POST /api/products/assign-tag
-// @access  Public
+// @access  Private (ADMIN, GODOWN) — JWT via productRoutes
 const assignTag = async (req, res) => {
     try {
         const { productId, tagId } = req.body;
+
+        if (!productId || !tagId) {
+            return res.status(400).json({ status: "error", message: "productId and tagId are required" });
+        }
+
+        // Check if this tag is already on a different product
+        const existingOwner = await Product.findOne({ tagId, productId: { $ne: productId } });
+        if (existingOwner) {
+            return res.status(409).json({
+                status: "conflict",
+                message: `Tag already assigned to "${existingOwner.particulars}" (ID ${existingOwner.productId}). Remove it first or reassign from that product.`,
+                conflictProduct: {
+                    productId: existingOwner.productId,
+                    name: existingOwner.particulars
+                }
+            });
+        }
 
         const product = await Product.findOneAndUpdate(
             { productId },
@@ -171,7 +200,7 @@ const scanProduct = async (req, res) => {
 
 // @desc    Get scan history
 // @route   GET /api/products/scan-history
-// @access  Public
+// @access  Private (ADMIN, GODOWN) — JWT via productRoutes
 const getScanHistory = async (req, res) => {
     try {
         const history = await ScannedProduct.find({}).sort({ createdAt: -1 });
@@ -183,7 +212,7 @@ const getScanHistory = async (req, res) => {
 
 // @desc    Bulk assign RFID tags to products
 // @route   POST /api/products/bulk-assign
-// @access  Public
+// @access  Private (ADMIN, GODOWN) — JWT via productRoutes
 const bulkAssignTags = async (req, res) => {
     try {
         const updates = req.body;
@@ -207,10 +236,14 @@ const bulkAssignTags = async (req, res) => {
 
 // @desc    Unassign RFID tag from product
 // @route   POST /api/products/unassign-tag
-// @access  Public
+// @access  Private (ADMIN, GODOWN) — JWT via productRoutes
 const unassignTag = async (req, res) => {
     try {
         const { tagId } = req.body;
+
+        if (!tagId) {
+            return res.status(400).json({ status: "error", message: "tagId is required" });
+        }
 
         const product = await Product.findOneAndUpdate(
             { tagId },
