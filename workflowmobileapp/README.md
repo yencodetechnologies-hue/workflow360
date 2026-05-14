@@ -3,10 +3,13 @@
 ## API
 - Base URL: `https://workflow360.octosofttechnologies.in/workflow360/api`
 - Products: `GET /products`
-- Assign tag: `POST /assign-tag`
-- Scan: `POST /scan`
-- Bulk assign: `POST /bulk-assign`
-- Scan history: `GET /scan-history`
+- Assign tag: `POST /products/assign-tag`
+- Identify tag (lookup): `POST /products/scan` with body `{ "tagId": "..." }`
+- Unassign tag: `POST /products/unassign-tag`
+- Bulk assign: `POST /products/bulk-assign`
+- Scan history: `GET /products/scan-history`
+
+Full paths, response shapes, and Flutter channel names: [docs/rfid_mobile_integration.md](docs/rfid_mobile_integration.md).
 
 ## Run
 ```bash
@@ -22,15 +25,14 @@ flutter build apk --release
 APK output:
 - `build/app/outputs/flutter-apk/app-release.apk`
 
-## Chainway UHF SDK hookup
-Right now the Android side emits **fake EPCs** so you can test the app flow without the vendor SDK.
-
-To connect the real Chainway SDK, update Android implementation in:
-- `android/app/src/main/kotlin/com/octosoft/workflow360/workflow360_rfid_app/MainActivity.kt`
+## UHF RFID (Newland-style PDA)
+Android integrates **nlscan** intents (e.g. Newland MT95L): see `MainActivity.kt` for `SCANNER_TRIG` / `SCANNER_RESULT` and EPC extraction.
 
 The Flutter side expects:
-- Method channel: `workflow360/rfid/methods` with methods `init`, `startInventory`, `stopInventory`, `setPower`
-- Event channel: `workflow360/rfid/events` emitting maps like `{ "epc": "...", "rssi": -45 }`
+- Method channel: `workflow360/rfid/methods` — `init`, `startInventory`, `stopInventory`, `setPower`
+- Event channel: `workflow360/rfid/events` — maps like `{ "epc": "...", "rssi": -45 }`
+
+For other OEM readers, replace the Kotlin broadcast handling; keep the same channel contract so Dart code stays unchanged.
 
 # workflow360_rfid_app
 

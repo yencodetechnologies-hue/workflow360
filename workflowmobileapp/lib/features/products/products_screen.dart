@@ -66,7 +66,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   onRefresh: () => ref.read(productsProvider.notifier).refresh(),
                   child: ListView.separated(
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final p = filtered[index];
                       return ListTile(

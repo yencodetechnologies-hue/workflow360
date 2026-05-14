@@ -10,6 +10,9 @@ class RfidService {
   static const MethodChannel _method = MethodChannel('workflow360/rfid/methods');
   static const EventChannel _events = EventChannel('workflow360/rfid/events');
 
+  /// Newland handbook: native `SCAN_TIMEOUT` is 1–9s; app uses 9s + small margin for Flutter.
+  static const Duration defaultScanTimeout = Duration(seconds: 10);
+
   StreamSubscription? _sub;
   final _controller = StreamController<RfidTag>.broadcast();
   bool _initialized = false;
@@ -49,24 +52,20 @@ class RfidService {
     await _method.invokeMethod('setPower', {'power': power});
   }
 
-  Future<RfidTag?> scanSingle({Duration timeout = const Duration(seconds: 5)}) async {
+  /// Starts UHF inventory, returns the first decoded tag, or `null` on timeout.
+  /// Always stops inventory in a `finally` block.
+  Future<RfidTag?> scanSingle({Duration? timeout}) async {
+    final t = timeout ?? defaultScanTimeout;
     await init();
-    final completer = Completer<RfidTag?>();
-    StreamSubscription? sub;
-    sub = onTagRead.listen((tag) {
-      if (!completer.isCompleted) completer.complete(tag);
-      sub?.cancel();
-    });
-
-    await startInventory();
-    Future.delayed(timeout, () async {
-      if (!completer.isCompleted) completer.complete(null);
+    try {
+      await startInventory();
+      final tag = await onTagRead.first.timeout(t);
+      return tag;
+    } on TimeoutException {
+      return null;
+    } finally {
       await stopInventory();
-      await sub?.cancel();
-    });
-    final tag = await completer.future;
-    await stopInventory();
-    return tag;
+    }
   }
 
   Future<void> dispose() async {
@@ -74,4 +73,3 @@ class RfidService {
     await _controller.close();
   }
 }
-

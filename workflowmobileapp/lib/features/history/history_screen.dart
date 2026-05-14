@@ -28,13 +28,15 @@ class HistoryScreen extends ConsumerWidget {
             onRefresh: () async => ref.refresh(_historyProvider.future),
             child: ListView.separated(
               itemCount: items.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final h = items[index];
+                final rateStr = h.rate != null && h.rate!.isNotEmpty ? ' · ₹${h.rate}' : '';
                 return ListTile(
-                  title: Text(h.tagId),
+                  title: Text(h.particulars, maxLines: 1, overflow: TextOverflow.ellipsis),
                   subtitle: Text(
-                    '${h.particulars}\n${fmt.format(h.createdAt.toLocal())}',
+                    'EPC ${h.tagId}\nID ${h.productId}$rateStr\n${fmt.format(h.createdAt.toLocal())}',
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
                   ),
                   isThreeLine: true,
                 );

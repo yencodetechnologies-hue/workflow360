@@ -1,7 +1,11 @@
 package com.octosoft.workflow360.workflow360_rfid_app
 
-import android.os.Handler
-import android.os.Looper
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -9,12 +13,42 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterActivity() {
+  private val TAG = "Workflow360_Native"
+
+  // Flutter channel names — must match rfid_service.dart exactly
   private val methodChannelName = "workflow360/rfid/methods"
   private val eventChannelName = "workflow360/rfid/events"
 
-  private val handler = Handler(Looper.getMainLooper())
+  // Newland Intent constants
+  private val actionScannerResult = "nlscan.action.SCANNER_RESULT"
+  private val actionScannerTrig = "nlscan.action.SCANNER_TRIG"
+  private val actionScannerStop = "nlscan.action.STOP_SCAN"
+  private val extraBarcode1 = "SCAN_BARCODE1"
+  private val extraScanState = "SCAN_STATE"
+
   private var eventSink: EventChannel.EventSink? = null
   private val inventoryRunning = AtomicBoolean(false)
+
+  // Receiver for Newland scanner broadcasts
+  private val scanReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+      if (intent?.action == actionScannerResult) {
+        val scanState = intent.getStringExtra(extraScanState)
+        println("DEBUG NATIVE: Received scan broadcast. State: $scanState")
+        Log.d(TAG, "Received scan broadcast. State: $scanState")
+
+        if (scanState == "fail") return
+
+        val barcode = intent.getStringExtra(extraBarcode1)
+        if (barcode != null) {
+          println("DEBUG NATIVE: Tag read: $barcode")
+          Log.d(TAG, "Tag read: $barcode")
+          val payload = mapOf("epc" to barcode, "rssi" to -45)
+          runOnUiThread { eventSink?.success(payload) }
+        }
+      }
+    }
+  }
 
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
@@ -25,24 +59,30 @@ class MainActivity : FlutterActivity() {
     ).setMethodCallHandler { call, result ->
       when (call.method) {
         "init" -> {
-          // Placeholder: real Chainway SDK init will be added when SDK is present.
+          println("DEBUG NATIVE: init called")
           result.success(true)
         }
 
         "startInventory" -> {
+          println("DEBUG NATIVE: startInventory called")
           if (inventoryRunning.compareAndSet(false, true)) {
-            startFakeInventory()
+            val intent = Intent(actionScannerTrig)
+            intent.putExtra("SCAN_TYPE", 2) // Multi-read
+            intent.putExtra("SCAN_TIMEOUT", 9)
+            sendBroadcast(intent)
           }
           result.success(true)
         }
 
         "stopInventory" -> {
+          println("DEBUG NATIVE: stopInventory called")
           inventoryRunning.set(false)
+          sendBroadcast(Intent(actionScannerStop))
           result.success(true)
         }
 
         "setPower" -> {
-          // Placeholder.
+          println("DEBUG NATIVE: setPower called")
           result.success(true)
         }
 
@@ -55,30 +95,34 @@ class MainActivity : FlutterActivity() {
       eventChannelName
     ).setStreamHandler(object : EventChannel.StreamHandler {
       override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+        println("DEBUG NATIVE: EventChannel listen started")
         eventSink = events
+        val filter = IntentFilter(actionScannerResult)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+          registerReceiver(scanReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+          registerReceiver(scanReceiver, filter)
+        }
       }
 
       override fun onCancel(arguments: Any?) {
+        println("DEBUG NATIVE: EventChannel listen cancelled")
         eventSink = null
+        try {
+          unregisterReceiver(scanReceiver)
+        } catch (e: Exception) {
+          Log.e(TAG, "Error unregistering receiver: ${e.message}")
+        }
       }
     })
   }
 
-  private fun startFakeInventory() {
-    // Emits fake EPCs periodically so the Flutter side can be tested now.
-    // When Chainway SDK is added, replace this with real inventory callbacks.
-    val epcs = listOf(
-      "300833B2DDD9014000000000",
-      "300833B2DDD9014000000001",
-      "300833B2DDD9014000000002"
-    )
-    fun tick(i: Int) {
-      if (!inventoryRunning.get()) return
-      val epc = epcs[i % epcs.size]
-      val payload = mapOf("epc" to epc, "rssi" to -45)
-      eventSink?.success(payload)
-      handler.postDelayed({ tick(i + 1) }, 800)
-    }
-    tick(0)
+  override fun onDestroy() {
+    println("DEBUG NATIVE: onDestroy called")
+    try {
+      sendBroadcast(Intent(actionScannerStop))
+      unregisterReceiver(scanReceiver)
+    } catch (e: Exception) {}
+    super.onDestroy()
   }
 }

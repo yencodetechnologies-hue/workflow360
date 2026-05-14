@@ -44,6 +44,10 @@ class Workflow360Api {
     return ScanResult.fromJson(data);
   }
 
+  /// Looks up which product owns this tag (same HTTP call as [scan]).
+  Future<ScanResult> identifyByTagId(String tagId) =>
+      scan(ScanRequest(tagId: tagId));
+
   Future<BulkAssignResult> bulkAssign(BulkAssignRequest req) async {
     final res = await _dio.post('/products/bulk-assign', data: req.toJson());
     final data = _expectMap(res.data);
