@@ -22,10 +22,13 @@ async function requireAuth(req, res, next) {
     req.user = {
       id: String(user._id),
       email: user.email,
+      loginId: user.loginId,
       role: user.role,
       godownId: user.godownId,
       siteName: user.siteName,
+      siteAddress: user.siteAddress,
       contactPhone: user.contactPhone,
+      contactName: user.contactName,
     }
     next()
   } catch (err) {

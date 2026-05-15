@@ -9,6 +9,8 @@ const godownSchema = mongoose.Schema(
     location: { type: String, trim: true },
     city: { type: String, trim: true },
     manager: { type: String, trim: true },
+    /** bcrypt hash for godown app / kiosk login; never returned from queries by default */
+    passwordHash: { type: String, select: false },
     active: { type: Boolean, default: true },
   },
   { timestamps: true },

@@ -34,6 +34,7 @@ export default function App() {
           <Route path="/deliveries" element={<DeliveriesListPage />} />
           <Route path="/deliveries/:id" element={<DeliveryDetailPage />} />
           <Route path="/scan/dispatch/:id" element={<ScanDeliveryPage action="dispatch" />} />
+          <Route path="/scan/pickup/:id" element={<ScanDeliveryPage action="pickup" />} />
           <Route path="/scan/deliver/:id" element={<ScanDeliveryPage action="deliver" />} />
           <Route path="/scan/return/:id" element={<ScanDeliveryPage action="return" />} />
           <Route path="/reports" element={<ReportsPage />} />

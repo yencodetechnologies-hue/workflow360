@@ -21,18 +21,29 @@ type Delivery = {
   deliveryAt: string
   returnExpectedAt?: string
   status: string
+  vehicleLabel?: string
+  vehicleVerifiedAt?: string
+  pickedUpAt?: string
   lines: Array<{ productId: string; qty: number }>
   dispatchedTagIds: string[]
+  pickedUpTagIds: string[]
   deliveredTagIds: string[]
   returnedTagIds: string[]
   lostTagIds: string[]
   damagedTagIds: string[]
+  scanProgress?: {
+    dispatch: { scanned: number; totalRequired: number; complete: boolean }
+    pickup: { scanned: number; totalRequired: number; complete: boolean }
+    deliver: { scanned: number; totalRequired: number; complete: boolean }
+    dispatchComplete?: boolean
+  }
 }
 
-type ScanAction = 'dispatch' | 'deliver' | 'return'
+type ScanAction = 'dispatch' | 'pickup' | 'deliver' | 'return'
 
 function endpoint(action: ScanAction) {
   if (action === 'dispatch') return 'dispatch-scan'
+  if (action === 'pickup') return 'pickup-scan'
   if (action === 'deliver') return 'deliver-scan'
   return 'return-scan'
 }
@@ -52,20 +63,22 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
   const auth = useAuth()
   const [delivery, setDelivery] = useState<Delivery | null>(null)
   const [tagId, setTagId] = useState('')
+  const [vehicleNumber, setVehicleNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   const title = useMemo(() => {
-    if (action === 'dispatch') return 'Dispatch scan'
-    if (action === 'deliver') return 'Delivery confirmation'
+    if (action === 'dispatch') return 'Dispatch scan (Godown)'
+    if (action === 'pickup') return 'Pickup scan (Godown)'
+    if (action === 'deliver') return 'Delivery scan (Biller site)'
     return 'Return scan'
   }, [action])
 
   const allowed = useMemo(() => {
     if (auth.status !== 'authenticated') return false
     if (auth.user.role === 'ADMIN') return true
-    if (action === 'deliver') return auth.user.role === 'DELIVERY'
+    if (action === 'pickup' || action === 'deliver') return auth.user.role === 'DELIVERY'
     return auth.user.role === 'GODOWN'
   }, [auth, action])
 
@@ -78,7 +91,10 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     if (!token || !id) return
     setError(null)
     apiFetch<Delivery>(`/deliveries/${id}`, { token })
-      .then(setDelivery)
+      .then((d) => {
+        setDelivery(d)
+        if (d.vehicleLabel) setVehicleNumber(d.vehicleLabel)
+      })
       .catch((e: any) => setError(e?.message || 'Failed to load delivery'))
   }
 
@@ -106,6 +122,27 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     } catch (e: any) {
       setError(e?.message || 'Scan failed')
       inputRef.current?.focus()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const verifyVehicle = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    const v = vehicleNumber.trim()
+    if (!v) return
+    setLoading(true)
+    setError(null)
+    try {
+      await apiFetch(`/deliveries/${id}/vehicle-verify`, {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ vehicleNumber: v }),
+      })
+      load()
+    } catch (e: any) {
+      setError(e?.message || 'Vehicle verify failed')
     } finally {
       setLoading(false)
     }
@@ -154,6 +191,11 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     )
   }
 
+  const progress = delivery?.scanProgress
+  const dispatchDone = progress?.dispatch?.complete ?? progress?.dispatchComplete
+  const pickupDone = progress?.pickup?.complete
+  const deliverDone = progress?.deliver?.complete
+
   return (
     <div className="fade-in">
       <PageHeader
@@ -175,6 +217,27 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
             {delivery ? <Badge variant={badgeVariant(delivery.status)}>{delivery.status}</Badge> : null}
           </CardHeader>
           <CardContent className="space-y-3">
+            {action === 'dispatch' && delivery && !delivery.vehicleVerifiedAt ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+                <div className="text-sm font-semibold text-amber-900">Vehicle verification (after dispatch complete)</div>
+                <Input
+                  label="Vehicle number"
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value)}
+                  disabled={!dispatchDone || !!delivery.vehicleVerifiedAt}
+                />
+                <Button
+                  onClick={verifyVehicle}
+                  disabled={loading || !dispatchDone || !vehicleNumber.trim() || !!delivery.vehicleVerifiedAt}
+                >
+                  {delivery.vehicleVerifiedAt ? 'Verified' : 'Verify vehicle'}
+                </Button>
+                {!dispatchDone ? (
+                  <p className="text-xs text-amber-800">Complete all dispatch scans before verifying vehicle.</p>
+                ) : null}
+              </div>
+            ) : null}
+
             <Input
               label="Tag ID (RFID / Barcode)"
               value={tagId}
@@ -186,6 +249,10 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
               ref={(el) => {
                 inputRef.current = el
               }}
+              disabled={
+                (action === 'pickup' && !delivery?.vehicleVerifiedAt) ||
+                (action === 'deliver' && (!delivery?.vehicleVerifiedAt || !pickupDone))
+              }
             />
             <div className="flex gap-2">
               <Button onClick={submit} disabled={loading}>
@@ -216,10 +283,33 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
                 <div className="text-slate-700">
                   Site: <span className="font-semibold">{delivery.siteName || delivery.siteAddress || '—'}</span>
                 </div>
-                <div className="pt-2 text-xs text-slate-500">
-                  Dispatch: {delivery.dispatchedTagIds.length} • Delivered: {delivery.deliveredTagIds.length} • Returned:{' '}
-                  {delivery.returnedTagIds.length}
-                </div>
+                {delivery.vehicleLabel ? (
+                  <div className="text-slate-700">
+                    Vehicle: <span className="font-semibold">{delivery.vehicleLabel}</span>
+                    {delivery.vehicleVerifiedAt ? ' ✓' : ''}
+                  </div>
+                ) : null}
+                {progress ? (
+                  <div className="space-y-1 pt-2 text-xs text-slate-600">
+                    <div>
+                      Dispatch: {progress.dispatch.scanned}/{progress.dispatch.totalRequired}
+                      {dispatchDone ? ' ✓' : ''}
+                    </div>
+                    <div>
+                      Pickup: {progress.pickup.scanned}/{progress.pickup.totalRequired}
+                      {pickupDone ? ' ✓' : ''}
+                    </div>
+                    <div>
+                      Deliver: {progress.deliver.scanned}/{progress.deliver.totalRequired}
+                      {deliverDone ? ' ✓' : ''}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pt-2 text-xs text-slate-500">
+                    Dispatch: {delivery.dispatchedTagIds.length} • Pickup: {delivery.pickedUpTagIds.length} • Delivered:{' '}
+                    {delivery.deliveredTagIds.length} • Returned: {delivery.returnedTagIds.length}
+                  </div>
+                )}
                 <div className="pt-3">
                   <Button variant="secondary" size="sm" onClick={openChallan}>
                     Open challan PDF
@@ -235,4 +325,3 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     </div>
   )
 }
-

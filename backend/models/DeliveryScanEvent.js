@@ -7,7 +7,7 @@ const deliveryScanEventSchema = mongoose.Schema(
     action: {
       type: String,
       required: true,
-      enum: ['DISPATCH', 'DELIVER', 'RETURN'],
+      enum: ['DISPATCH', 'PICKUP', 'DELIVER', 'RETURN'],
     },
     byUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     at: { type: Date, default: Date.now },
@@ -20,4 +20,3 @@ deliveryScanEventSchema.index({ deliveryId: 1, at: -1 })
 deliveryScanEventSchema.index({ tagId: 1, at: -1 })
 
 module.exports = mongoose.model('DeliveryScanEvent', deliveryScanEventSchema)
-

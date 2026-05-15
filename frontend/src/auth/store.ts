@@ -5,11 +5,14 @@ export type Role = 'ADMIN' | 'GODOWN' | 'DELIVERY' | 'BILLER'
 
 export type AuthUser = {
   id: string
-  email: string
+  email?: string
+  loginId?: string
   role: Role
   godownId?: string
   siteName?: string
+  siteAddress?: string
   contactPhone?: string
+  contactName?: string
 }
 
 type AuthState =
@@ -64,10 +67,13 @@ export function useAuth() {
   return useSyncExternalStore(subscribeAuth, readState, readState)
 }
 
-export async function login(email: string, password: string) {
+export async function login(identifier: string, password: string, opts?: { useLoginId?: boolean }) {
+  const body = opts?.useLoginId
+    ? { loginId: identifier.trim(), password }
+    : { email: identifier.trim(), password }
   const res = await apiFetch<{ token: string; user: AuthUser }>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   })
   writeState({ status: 'authenticated', token: res.token, user: res.user })
   return res.user

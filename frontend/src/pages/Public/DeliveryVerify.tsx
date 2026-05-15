@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
@@ -23,6 +23,7 @@ type GetRes = {
   vehicleLabel?: string
   lines: Line[]
   deliveryVerifiedAt?: string
+  hasSignature?: boolean
   canSubmit?: boolean
 }
 
@@ -33,6 +34,8 @@ export function PublicDeliveryVerifyPage() {
   const [verifierName, setVerifierName] = useState('')
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [submitting, setSubmitting] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const drawing = useRef(false)
 
   useEffect(() => {
     if (!token) return
@@ -46,6 +49,49 @@ export function PublicDeliveryVerifyPage() {
       })
       .catch((e: any) => setError(e?.message || 'Failed to load'))
   }, [token])
+
+  const startDraw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas || !data?.canSubmit) return
+    drawing.current = true
+    const rect = canvas.getBoundingClientRect()
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.strokeStyle = '#0f172a'
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top)
+  }
+
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top)
+    ctx.stroke()
+  }
+
+  const endDraw = () => {
+    drawing.current = false
+  }
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
+
+  const getSignatureDataUrl = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return undefined
+    return canvas.toDataURL('image/png')
+  }
 
   if (error) {
     return (
@@ -83,6 +129,7 @@ export function PublicDeliveryVerifyPage() {
             {data.deliveryVerifiedAt ? (
               <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
                 Verified on {new Date(data.deliveryVerifiedAt).toLocaleString()}
+                {data.hasSignature ? ' · Signature on file' : ''}
               </div>
             ) : null}
             <div className="text-sm text-slate-600">
@@ -115,6 +162,25 @@ export function PublicDeliveryVerifyPage() {
               onChange={(e) => setVerifierName(e.target.value)}
             />
 
+            <div>
+              <div className="mb-1 text-sm font-medium text-slate-700">Signature</div>
+              <canvas
+                ref={canvasRef}
+                width={560}
+                height={160}
+                className="w-full touch-none rounded-xl border border-slate-300 bg-white"
+                onPointerDown={startDraw}
+                onPointerMove={draw}
+                onPointerUp={endDraw}
+                onPointerLeave={endDraw}
+              />
+              {data.canSubmit ? (
+                <Button variant="secondary" size="sm" className="mt-2" onClick={clearSignature}>
+                  Clear signature
+                </Button>
+              ) : null}
+            </div>
+
             <Button
               disabled={!data.canSubmit || submitting || !verifierName.trim() || !allOk}
               onClick={() => {
@@ -125,6 +191,7 @@ export function PublicDeliveryVerifyPage() {
                   method: 'POST',
                   body: JSON.stringify({
                     verifierName: verifierName.trim(),
+                    signature: getSignatureDataUrl(),
                     lineChecks: data.lines.map((l) => ({
                       productId: l.productId,
                       ok: !!checks[l.productId],
@@ -132,9 +199,7 @@ export function PublicDeliveryVerifyPage() {
                     })),
                   }),
                 })
-                  .then(() => {
-                    return apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`).then(setData)
-                  })
+                  .then(() => apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`).then(setData))
                   .catch((e: any) => setError(e?.message || 'Submit failed'))
                   .finally(() => setSubmitting(false))
               }}

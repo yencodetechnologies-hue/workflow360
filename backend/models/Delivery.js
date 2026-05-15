@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const deliveryLineSchema = mongoose.Schema(
   {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    godownId: { type: mongoose.Schema.Types.ObjectId, ref: 'Godown' },
     qty: { type: Number, required: true, min: 1 },
   },
   { _id: false },
@@ -55,11 +56,17 @@ const deliverySchema = mongoose.Schema(
     },
 
     dispatchedTagIds: { type: [String], default: [] },
+    pickedUpTagIds: { type: [String], default: [] },
     deliveredTagIds: { type: [String], default: [] },
     returnedTagIds: { type: [String], default: [] },
 
     damagedTagIds: { type: [String], default: [] },
     lostTagIds: { type: [String], default: [] },
+
+    vehicleVerifiedAt: { type: Date },
+    vehicleVerifiedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    pickedUpAt: { type: Date },
+    pickedUpByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     challanNo: { type: String },
     challanGeneratedAt: { type: Date },
@@ -70,6 +77,7 @@ const deliverySchema = mongoose.Schema(
     deliveryVerifierName: { type: String, trim: true },
     deliveryVerifiedAt: { type: Date },
     deliveryLineChecks: { type: [deliveryLineCheckSchema], default: [] },
+    deliverySignature: { type: String },
 
     billerReturnSubmittedAt: { type: Date },
     billerDamagedLines: { type: [billerReturnLineSchema], default: [] },
@@ -91,4 +99,3 @@ deliverySchema.index({ deliveryVerifyToken: 1 }, { unique: true, sparse: true })
 deliverySchema.index({ billerReturnVerifyToken: 1 }, { unique: true, sparse: true })
 
 module.exports = mongoose.model('Delivery', deliverySchema)
-

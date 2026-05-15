@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs')
 const Godown = require('../models/Godown')
 const Delivery = require('../models/Delivery')
-const Product = require('../models/Product')
-const GodownProduct = require('../models/GodownProduct')
+
+const saltRounds = () => Number(process.env.BCRYPT_ROUNDS || 10)
 
 function mapGodown(g) {
   return {
@@ -24,27 +25,27 @@ async function listGodowns(req, res) {
 
 async function createGodown(req, res) {
   try {
-    const { name, code, address, mobile, location, city, manager } = req.body || {}
+    const { name, code, address, mobile, location, city, manager, password } = req.body || {}
     if (!name) return res.status(400).json({ message: 'name required' })
     if (!code || !String(code).trim()) return res.status(400).json({ message: 'code required' })
+    const mobileTrim = mobile ? String(mobile).trim() : ''
+    if (!mobileTrim) return res.status(400).json({ message: 'mobile required' })
+    if (!password || String(password).length < 6) {
+      return res.status(400).json({ message: 'password required (min 6 characters)' })
+    }
+
+    const passwordHash = await bcrypt.hash(String(password), saltRounds())
 
     const g = await Godown.create({
       name: String(name).trim(),
       code: String(code).trim().toUpperCase(),
       address: address ? String(address).trim() : '',
-      mobile: mobile ? String(mobile).trim() : '',
+      mobile: mobileTrim,
       location: location ? String(location).trim() : '',
       city: city ? String(city).trim() : '',
       manager: manager ? String(manager).trim() : '',
+      passwordHash,
     })
-
-    const products = await Product.find({}).select('_id').lean()
-    if (products.length) {
-      await GodownProduct.insertMany(
-        products.map((p) => ({ godownId: g._id, productId: p._id, enabled: true })),
-        { ordered: false },
-      )
-    }
 
     return res.status(201).json(mapGodown(g.toObject()))
   } catch (err) {
@@ -69,7 +70,7 @@ async function updateGodown(req, res) {
       }
     }
 
-    const { name, code, address, mobile, location, city, manager } = req.body || {}
+    const { name, code, address, mobile, location, city, manager, password } = req.body || {}
 
     if (name !== undefined) g.name = String(name).trim()
     if (code !== undefined) g.code = String(code).trim() ? String(code).trim().toUpperCase() : undefined
@@ -78,6 +79,13 @@ async function updateGodown(req, res) {
     if (location !== undefined) g.location = location ? String(location).trim() : ''
     if (city !== undefined) g.city = city ? String(city).trim() : ''
     if (manager !== undefined) g.manager = manager ? String(manager).trim() : ''
+
+    if (password !== undefined && String(password).trim()) {
+      if (String(password).length < 6) {
+        return res.status(400).json({ message: 'password must be at least 6 characters' })
+      }
+      g.passwordHash = await bcrypt.hash(String(password), saltRounds())
+    }
 
     if (!g.name) return res.status(400).json({ message: 'name cannot be empty' })
     if (!g.code || !String(g.code).trim()) return res.status(400).json({ message: 'code required' })

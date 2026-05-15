@@ -34,6 +34,7 @@ export function GodownsListPage() {
     address: '',
     mobile: '',
     location: '',
+    password: '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -111,7 +112,13 @@ export function GodownsListPage() {
               Cancel
             </Button>
             <Button
-              disabled={saving || !addForm.name.trim() || !addForm.code.trim()}
+              disabled={
+                saving ||
+                !addForm.name.trim() ||
+                !addForm.code.trim() ||
+                !addForm.mobile.trim() ||
+                addForm.password.length < 6
+              }
               onClick={() => {
                 const token = getToken()
                 if (!token) return
@@ -125,10 +132,18 @@ export function GodownsListPage() {
                     address: addForm.address.trim(),
                     mobile: addForm.mobile.trim(),
                     location: addForm.location.trim(),
+                    password: addForm.password,
                   }),
                 })
                   .then(() => {
-                    setAddForm({ name: '', code: '', address: '', mobile: '', location: '' })
+                    setAddForm({
+                      name: '',
+                      code: '',
+                      address: '',
+                      mobile: '',
+                      location: '',
+                      password: '',
+                    })
                     setAddOpen(false)
                     load()
                   })
@@ -165,6 +180,17 @@ export function GodownsListPage() {
             value={addForm.mobile}
             onChange={(e) => setAddForm((f) => ({ ...f, mobile: e.target.value }))}
             placeholder="Contact mobile"
+            inputMode="tel"
+            autoComplete="tel"
+          />
+          <Input
+            type="password"
+            label="Godown login password"
+            value={addForm.password}
+            onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
+            placeholder="Min. 6 characters"
+            autoComplete="new-password"
+            hint="Stored on the server as a bcrypt hash (plain text is never saved)."
           />
           <Input
             label="Location"

@@ -13,6 +13,7 @@ const inventoryLedgerSchema = mongoose.Schema(
     },
     refType: { type: String, trim: true },
     refId: { type: String, trim: true },
+    note: { type: String, trim: true, maxlength: 500 },
     byUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },

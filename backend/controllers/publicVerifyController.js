@@ -53,6 +53,7 @@ async function getDeliveryVerify(req, res) {
       deliveryVerifierName: delivery.deliveryVerifierName,
       deliveryVerifiedAt: delivery.deliveryVerifiedAt,
       deliveryLineChecks: delivery.deliveryLineChecks,
+      hasSignature: Boolean(delivery.deliverySignature),
       canSubmit,
     })
   } catch (err) {
@@ -63,7 +64,7 @@ async function getDeliveryVerify(req, res) {
 async function postDeliveryVerify(req, res) {
   try {
     const token = decodeURIComponent(String(req.params.token || '').trim())
-    const { verifierName, lineChecks } = req.body || {}
+    const { verifierName, lineChecks, signature } = req.body || {}
     if (!token) return res.status(400).json({ message: 'token required' })
     if (!verifierName || !String(verifierName).trim()) return res.status(400).json({ message: 'verifierName required' })
 
@@ -96,6 +97,9 @@ async function postDeliveryVerify(req, res) {
     delivery.deliveryVerifierName = String(verifierName).trim()
     delivery.deliveryVerifiedAt = new Date()
     delivery.deliveryLineChecks = mapped
+    if (signature && typeof signature === 'string' && signature.startsWith('data:image')) {
+      delivery.deliverySignature = signature.slice(0, 500_000)
+    }
     await delivery.save()
 
     return res.json({ ok: true, deliveryVerifiedAt: delivery.deliveryVerifiedAt })

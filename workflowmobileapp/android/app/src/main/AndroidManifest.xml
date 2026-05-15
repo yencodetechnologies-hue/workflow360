@@ -20,7 +20,7 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
-        android:label="RFID Manager"
+        android:label="Workflow 360"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"

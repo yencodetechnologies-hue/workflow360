@@ -3,15 +3,6 @@ const Godown = require('../models/Godown')
 const Product = require('../models/Product')
 const GodownProduct = require('../models/GodownProduct')
 
-async function ensureCatalogRows(godownId) {
-  const gid = new mongoose.Types.ObjectId(godownId)
-  const count = await GodownProduct.countDocuments({ godownId: gid })
-  if (count > 0) return
-  const products = await Product.find({}).select('_id').lean()
-  if (!products.length) return
-  await GodownProduct.insertMany(products.map((p) => ({ godownId: gid, productId: p._id, enabled: true })))
-}
-
 async function listGodownProducts(req, res) {
   try {
     const { godownId } = req.params
@@ -25,27 +16,26 @@ async function listGodownProducts(req, res) {
       return res.status(403).json({ message: 'Forbidden' })
     }
 
-    await ensureCatalogRows(godownId)
+    const [products, gpRows] = await Promise.all([
+      Product.find({}).select('particulars sku s_no category rate unit').lean(),
+      GodownProduct.find({ godownId }).lean(),
+    ])
 
-    const rows = await GodownProduct.find({ godownId }).lean()
-    const productIds = rows.map((r) => r.productId)
-    const products = await Product.find({ _id: { $in: productIds } }).lean()
-    const byId = new Map(products.map((p) => [String(p._id), p]))
+    const gpByProductId = new Map(gpRows.map((r) => [String(r.productId), r]))
 
-    return res.json(
-      rows.map((r) => {
-        const p = byId.get(String(r.productId))
-        return {
-          productId: String(r.productId),
-          enabled: r.enabled,
-          particulars: p?.particulars,
-          sku: p?.sku || p?.s_no,
-          category: p?.category,
-          rate: p?.rate,
-          unit: p?.unit,
-        }
-      }),
-    )
+    const merged = products.map((p) => ({
+      productId: String(p._id),
+      enabled: gpByProductId.get(String(p._id))?.enabled === true,
+      particulars: p.particulars,
+      sku: p.sku || p.s_no,
+      category: p.category,
+      rate: p.rate,
+      unit: p.unit,
+    }))
+
+    merged.sort((a, b) => (a.particulars || '').localeCompare(b.particulars || ''))
+
+    return res.json(merged)
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Failed to list catalog' })
   }
@@ -66,8 +56,6 @@ async function patchGodownProduct(req, res) {
     if (req.user.role === 'GODOWN' && req.user.godownId && String(req.user.godownId) !== String(godownId)) {
       return res.status(403).json({ message: 'Forbidden' })
     }
-
-    await ensureCatalogRows(godownId)
 
     await GodownProduct.findOneAndUpdate(
       { godownId, productId },

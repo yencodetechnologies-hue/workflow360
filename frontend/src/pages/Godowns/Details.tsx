@@ -34,7 +34,7 @@ type DeliveryRow = {
   deliveryAt: string
 }
 
-type Tab = 'catalog' | 'stock'
+type Tab = 'catalog' | 'stock' | 'update'
 
 export function GodownsDetailsPage() {
   const { id } = useParams()
@@ -48,6 +48,7 @@ export function GodownsDetailsPage() {
     address: '',
     mobile: '',
     location: '',
+    newPassword: '',
   })
   const [editSaving, setEditSaving] = useState(false)
   const [catalog, setCatalog] = useState<CatalogRow[]>([])
@@ -55,6 +56,9 @@ export function GodownsDetailsPage() {
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string, string>>({})
+  const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string, string>>({})
+  const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
 
   const load = () => {
     const token = getToken()
@@ -77,6 +81,7 @@ export function GodownsDetailsPage() {
           address: g.address || '',
           mobile: g.mobile || '',
           location: g.location || '',
+          newPassword: '',
         })
         setCatalog(cat.sort((a, b) => (a.particulars || '').localeCompare(b.particulars || '')))
         const forGodown = stockAll.filter((r) => r.godownId === id)
@@ -99,11 +104,36 @@ export function GodownsDetailsPage() {
       .finally(() => setLoading(false))
   }
 
+  const reloadStock = () => {
+    const token = getToken()
+    if (!token || !id) return Promise.resolve()
+    return apiFetch<Array<{ godownId: string; productId: string; qty: number }>>(
+      `/reports/stock?godownId=${encodeURIComponent(id)}`,
+      { token },
+    )
+      .then((stockAll) => {
+        const forGodown = stockAll.filter((r) => r.godownId === id)
+        setStockRows(forGodown.map((r) => ({ productId: r.productId, qty: r.qty })))
+      })
+      .catch(() => {})
+  }
+
   useEffect(() => {
     load()
   }, [id])
 
   const catalogById = useMemo(() => new Map(catalog.map((c) => [c.productId, c])), [catalog])
+
+  const stockQtyByProductId = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of stockRows) m.set(r.productId, r.qty)
+    return m
+  }, [stockRows])
+
+  const enabledCatalogRows = useMemo(
+    () => catalog.filter((c) => c.enabled).sort((a, b) => (a.particulars || '').localeCompare(b.particulars || '')),
+    [catalog],
+  )
 
   const stockTableRows = useMemo(() => {
     return stockRows.map((s) => {
@@ -122,6 +152,10 @@ export function GodownsDetailsPage() {
     auth.status === 'authenticated' &&
     (auth.user.role === 'ADMIN' || (auth.user.role === 'GODOWN' && auth.user.godownId === id))
 
+  useEffect(() => {
+    if (tab === 'update' && !canEditGodown) setTab('catalog')
+  }, [tab, canEditGodown])
+
   const toggleEnabled = (productId: string, enabled: boolean) => {
     const token = getToken()
     if (!token || !id) return
@@ -134,6 +168,36 @@ export function GodownsDetailsPage() {
         setCatalog((prev) => prev.map((r) => (r.productId === productId ? { ...r, enabled } : r)))
       })
       .catch((e: any) => setError(e?.message || 'Update failed'))
+  }
+
+  const applyStockAdjustment = (productId: string) => {
+    const token = getToken()
+    if (!token || !id || !canEditGodown) return
+    const raw = (adjustDeltaByProduct[productId] ?? '').trim()
+    if (!/^-?\d+$/.test(raw)) {
+      setError('Enter a whole number for quantity change (e.g. 10 or -3).')
+      return
+    }
+    const qtyDelta = Number.parseInt(raw, 10)
+    if (qtyDelta === 0) {
+      setError('Quantity change cannot be zero.')
+      return
+    }
+    const note = (adjustNoteByProduct[productId] ?? '').trim()
+    setError(null)
+    setAdjustApplyingProductId(productId)
+    apiFetch<{ ok: boolean; balanceAfter: number }>(`/godowns/${id}/inventory/adjust`, {
+      token,
+      method: 'POST',
+      body: JSON.stringify({ productId, qtyDelta, note: note || undefined }),
+    })
+      .then(() => {
+        setAdjustDeltaByProduct((prev) => ({ ...prev, [productId]: '' }))
+        setAdjustNoteByProduct((prev) => ({ ...prev, [productId]: '' }))
+        return reloadStock()
+      })
+      .catch((e: any) => setError(e?.message || 'Adjustment failed'))
+      .finally(() => setAdjustApplyingProductId(null))
   }
 
   if (!id) {
@@ -179,7 +243,14 @@ export function GodownsDetailsPage() {
         right={
           <div className="flex flex-wrap items-center gap-3">
             {canEditGodown ? (
-              <Button size="sm" variant="secondary" onClick={() => setEditOpen(true)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setEditForm((f) => ({ ...f, newPassword: '' }))
+                  setEditOpen(true)
+                }}
+              >
                 Edit godown
               </Button>
             ) : null}
@@ -200,7 +271,12 @@ export function GodownsDetailsPage() {
               Cancel
             </Button>
             <Button
-              disabled={editSaving || !editForm.name.trim() || !editForm.code.trim()}
+              disabled={
+                editSaving ||
+                !editForm.name.trim() ||
+                !editForm.code.trim() ||
+                (editForm.newPassword.length > 0 && editForm.newPassword.length < 6)
+              }
               onClick={() => {
                 const token = getToken()
                 if (!token || !id) return
@@ -214,10 +290,14 @@ export function GodownsDetailsPage() {
                     address: editForm.address.trim(),
                     mobile: editForm.mobile.trim(),
                     location: editForm.location.trim(),
+                    ...(editForm.newPassword.trim().length >= 6
+                      ? { password: editForm.newPassword }
+                      : {}),
                   }),
                 })
                   .then((g) => {
                     setGodown(g)
+                    setEditForm((f) => ({ ...f, newPassword: '' }))
                     setEditOpen(false)
                   })
                   .catch((e: any) => setError(e?.message || 'Update failed'))
@@ -237,8 +317,23 @@ export function GodownsDetailsPage() {
             onChange={(e) => setEditForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
           />
           <Input label="Address" value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} />
-          <Input label="Mobile number" value={editForm.mobile} onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))} />
+          <Input
+            label="Mobile number"
+            value={editForm.mobile}
+            onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))}
+            inputMode="tel"
+            autoComplete="tel"
+          />
           <Input label="Location" value={editForm.location} onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))} />
+          <Input
+            type="password"
+            label="New godown password (optional)"
+            value={editForm.newPassword}
+            onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))}
+            placeholder="Leave blank to keep current"
+            autoComplete="new-password"
+            hint="Leave blank to keep the current password."
+          />
         </div>
       </Modal>
 
@@ -291,13 +386,42 @@ export function GodownsDetailsPage() {
         >
           Stock at godown
         </button>
+        {canEditGodown ? (
+          <button
+            type="button"
+            onClick={() => setTab('update')}
+            className={
+              tab === 'update'
+                ? 'rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white'
+                : 'rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200'
+            }
+          >
+            Update stock
+          </button>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex items-center justify-between">
-            <CardTitle>{tab === 'catalog' ? 'Catalog (enable for this godown)' : 'Stock view'}</CardTitle>
-            <Badge variant="slate">{tab === 'catalog' ? 'On/off per SKU' : 'Ledger'}</Badge>
+            <CardTitle>
+              {tab === 'catalog'
+                ? 'Catalog (enable for this godown)'
+                : tab === 'stock'
+                  ? canEditGodown
+                    ? 'Stock at godown (view & adjust)'
+                    : 'Stock at godown'
+                  : 'Update stock'}
+            </CardTitle>
+            <Badge variant="slate">
+              {tab === 'catalog'
+                ? 'On/off per SKU'
+                : tab === 'stock'
+                  ? canEditGodown
+                    ? 'Ledger · adjust here'
+                    : 'Ledger'
+                  : 'Delta → ledger'}
+            </Badge>
           </CardHeader>
           <CardContent>
             {tab === 'catalog' ? (
@@ -329,8 +453,87 @@ export function GodownsDetailsPage() {
                   </tbody>
                 </Table>
               )
-            ) : stockTableRows.length === 0 ? (
-              <EmptyState title="No stock rows" subtitle="Ledger may be empty until transfers or scans post inventory." />
+            ) : tab === 'stock' ? (
+              stockTableRows.length === 0 ? (
+                <EmptyState title="No stock rows" subtitle="Ledger may be empty until transfers or scans post inventory." />
+              ) : (
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Product</Th>
+                      <Th>SKU</Th>
+                      <Th>Category</Th>
+                      <Th className="text-right">Qty</Th>
+                      {canEditGodown ? (
+                        <>
+                          <Th>Change (+/−)</Th>
+                          <Th>Note</Th>
+                          <Th className="text-right"> </Th>
+                        </>
+                      ) : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockTableRows.map((p) => {
+                      const catalogRow = catalogById.get(p.productId)
+                      const canAdjustThis = catalogRow?.enabled === true
+                      const applying = adjustApplyingProductId === p.productId
+                      return (
+                        <tr key={p.productId} className="hover:bg-slate-50">
+                          <Td className="font-semibold text-slate-900">{p.name}</Td>
+                          <Td className="font-mono text-xs text-slate-600">{p.sku}</Td>
+                          <Td>{p.category}</Td>
+                          <Td className="text-right font-semibold">{formatNumber(p.qty)}</Td>
+                          {canEditGodown ? (
+                            <>
+                              <Td className="min-w-[7rem]">
+                                <Input
+                                  className="h-9"
+                                  inputMode="numeric"
+                                  placeholder="e.g. 10"
+                                  disabled={!canAdjustThis}
+                                  title={!canAdjustThis ? 'Turn this product On in the Product catalog tab to post adjustments.' : undefined}
+                                  value={adjustDeltaByProduct[p.productId] ?? ''}
+                                  onChange={(e) =>
+                                    setAdjustDeltaByProduct((prev) => ({ ...prev, [p.productId]: e.target.value }))
+                                  }
+                                />
+                              </Td>
+                              <Td className="min-w-[8rem]">
+                                <Input
+                                  className="h-9"
+                                  placeholder="Optional"
+                                  disabled={!canAdjustThis}
+                                  value={adjustNoteByProduct[p.productId] ?? ''}
+                                  onChange={(e) =>
+                                    setAdjustNoteByProduct((prev) => ({ ...prev, [p.productId]: e.target.value }))
+                                  }
+                                />
+                              </Td>
+                              <Td className="text-right">
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={applying || !canAdjustThis}
+                                  title={!canAdjustThis ? 'Enable product in catalog first' : undefined}
+                                  onClick={() => applyStockAdjustment(p.productId)}
+                                >
+                                  {applying ? '…' : 'Apply'}
+                                </Button>
+                              </Td>
+                            </>
+                          ) : null}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </Table>
+              )
+            ) : enabledCatalogRows.length === 0 ? (
+              <EmptyState
+                title="No enabled products"
+                subtitle="Turn products On in the Product catalog tab, then enter quantity changes here."
+              />
             ) : (
               <Table>
                 <thead>
@@ -338,18 +541,55 @@ export function GodownsDetailsPage() {
                     <Th>Product</Th>
                     <Th>SKU</Th>
                     <Th>Category</Th>
-                    <Th className="text-right">Qty</Th>
+                    <Th className="text-right">Current</Th>
+                    <Th>Change (+/−)</Th>
+                    <Th>Note</Th>
+                    <Th className="text-right"> </Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stockTableRows.map((p) => (
-                    <tr key={p.productId} className="hover:bg-slate-50">
-                      <Td className="font-semibold text-slate-900">{p.name}</Td>
-                      <Td className="font-mono text-xs text-slate-600">{p.sku}</Td>
-                      <Td>{p.category}</Td>
-                      <Td className="text-right font-semibold">{formatNumber(p.qty)}</Td>
-                    </tr>
-                  ))}
+                  {enabledCatalogRows.map((p) => {
+                    const applying = adjustApplyingProductId === p.productId
+                    return (
+                      <tr key={p.productId} className="hover:bg-slate-50">
+                        <Td className="font-semibold text-slate-900">{p.particulars ?? p.productId}</Td>
+                        <Td className="font-mono text-xs text-slate-600">{p.sku}</Td>
+                        <Td>{p.category}</Td>
+                        <Td className="text-right font-semibold">{formatNumber(stockQtyByProductId.get(p.productId) ?? 0)}</Td>
+                        <Td className="min-w-[7rem]">
+                          <Input
+                            className="h-9"
+                            inputMode="numeric"
+                            placeholder="e.g. 10"
+                            value={adjustDeltaByProduct[p.productId] ?? ''}
+                            onChange={(e) =>
+                              setAdjustDeltaByProduct((prev) => ({ ...prev, [p.productId]: e.target.value }))
+                            }
+                          />
+                        </Td>
+                        <Td className="min-w-[8rem]">
+                          <Input
+                            className="h-9"
+                            placeholder="Optional"
+                            value={adjustNoteByProduct[p.productId] ?? ''}
+                            onChange={(e) =>
+                              setAdjustNoteByProduct((prev) => ({ ...prev, [p.productId]: e.target.value }))
+                            }
+                          />
+                        </Td>
+                        <Td className="text-right">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={applying}
+                            onClick={() => applyStockAdjustment(p.productId)}
+                          >
+                            {applying ? '…' : 'Apply'}
+                          </Button>
+                        </Td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </Table>
             )}
