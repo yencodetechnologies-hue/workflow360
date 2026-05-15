@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/darker_gray"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/black"/>
+
+    <LinearLayout
+        android:background="#0C3484"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.nlscan.uhf.demo.view.BottomTabTextView
+            android:id="@+id/tv_inventory"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="@android:color/primary_text_dark"
+            android:textStyle="bold"
+            android:textSize="@dimen/dimen_bottombar_text_size"
+
+            android:drawableTop="@drawable/ic_inventory"
+            android:text="@string/uhf_inventory"/>
+
+        <com.nlscan.uhf.demo.view.BottomTabTextView
+            android:id="@+id/tv_settings"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:textColor="@android:color/primary_text_dark"
+            android:textStyle="bold"
+            android:textSize="@dimen/dimen_bottombar_text_size"
+            android:drawableTop="@drawable/ic_settings"
+            android:text="@string/settings"/>
+
+        <com.nlscan.uhf.demo.view.BottomTabTextView
+            android:id="@+id/tv_tags"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:gravity="center"
+            android:layout_weight="1"
+            android:textColor="@android:color/primary_text_dark"
+            android:textStyle="bold"
+            android:textSize="@dimen/dimen_bottombar_text_size"
+            android:drawableTop="@drawable/ic_tags"
+            android:text="@string/uhf_tag"/>
+
+   </LinearLayout>
+
+</LinearLayout>

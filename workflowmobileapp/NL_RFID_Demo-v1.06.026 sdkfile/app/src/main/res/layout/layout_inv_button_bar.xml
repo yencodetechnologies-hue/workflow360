@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="@dimen/dimens_8dp"
+    android:layout_marginRight="@dimen/dimens_8dp">
+
+    <!-- Start/Stop inventory   -->
+    <LinearLayout
+        android:id="@+id/btn_start_inventory"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:paddingLeft="5dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusableInTouchMode="false"
+        android:background="@drawable/button_background">
+        <ImageView
+            android:id="@+id/im_toggle_inventory"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/inv_start"/>
+        <TextView
+            android:id="@+id/tv_toggle_inventory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:clickable="false"
+            android:textColor="@android:color/primary_text_dark"
+            android:text="@string/uhf_main_start_tag_inventory"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btn_export_data"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginLeft="@dimen/dimens_8dp"
+        android:paddingLeft="5dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusableInTouchMode="false"
+        android:background="@drawable/button_background">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_export"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:textColor="@android:color/primary_text_dark"
+            android:text="@string/export_data"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btn_clean"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginLeft="@dimen/dimens_8dp"
+        android:paddingLeft="5dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusableInTouchMode="false"
+        android:background="@drawable/button_background">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_clean"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:textColor="@android:color/primary_text_dark"
+            android:text="@string/uhf_main_clear_tag_data"/>
+    </LinearLayout>
+
+</LinearLayout>

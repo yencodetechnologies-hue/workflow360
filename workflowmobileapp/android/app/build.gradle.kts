@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +7,19 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Newland URM-500: real bridge when android/app/libs/*.aar or *.jar exists (unless rfid.forceStub=true in gradle.properties).
+val forceRfidStub: Boolean =
+    (providers.gradleProperty("rfid.forceStub").orNull ?: "")
+        .equals("true", ignoreCase = true)
+
+val newlandRfidSdkPresent: Boolean =
+    !forceRfidStub &&
+        File(project.projectDir, "libs").listFiles()?.any { 
+            it.name.endsWith(".aar", ignoreCase = true) || it.name.endsWith(".jar", ignoreCase = true)
+        } == true
+
 android {
-    namespace = "com.octosoft.workflow360.workflow360_rfid_app"
+    namespace = "com.example.rfid_product_manager"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,11 +33,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.octosoft.workflow360.workflow360_rfid_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        applicationId = "com.example.rfid_product_manager"
+        // NLS-MT95L and UHF stack; keep at least 21 for older handhelds.
+        minSdk = maxOf(21, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -37,8 +48,23 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    sourceSets.named("main") {
+        kotlin.srcDir(
+            if (newlandRfidSdkPresent) "src/rfid-sdk/kotlin" else "src/rfid-stub/kotlin",
+        )
+        if (newlandRfidSdkPresent) {
+            jniLibs.srcDirs("libs")
+        }
+    }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    if (newlandRfidSdkPresent) {
+        implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+    }
 }

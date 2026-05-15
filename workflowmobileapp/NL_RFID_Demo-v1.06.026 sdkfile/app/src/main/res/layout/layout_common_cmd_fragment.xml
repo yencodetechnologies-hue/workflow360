@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:id="@+id/scr_swr"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText
+                android:id="@+id/cl_module_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_marginVertical="10dp"
+                android:padding="10dp"
+                android:textSize="15sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:prefixTxt="@string/left_top_module_info">
+
+                <TextView
+                    android:id="@+id/tv_module_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="no info found"></TextView>
+
+            </com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText>
+
+            <!--commonCmd-->
+            <com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText
+                android:id="@+id/ctv_common_cmd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_marginVertical="10dp"
+                android:padding="10dp"
+                android:textSize="15sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cl_module_info"
+                app:prefixTxt="@string/left_top_common_cmd">
+
+                <EditText
+                    android:id="@+id/cmd_input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:hint="QRYPSN|URFAPW*"
+                    android:inputType="textMultiLine"
+                    android:text="URFAPW*"
+                    app:layout_constraintEnd_toStartOf="@id/is_ascii"
+                    app:layout_constraintHorizontal_weight="4"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_chainStyle="spread"></EditText>
+
+
+                <ToggleButton
+                    android:id="@+id/is_ascii"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:checked="true"
+                    android:text="USING ASCII(TAG-SUBTAG-DATA)"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@id/cmd_input"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_chainStyle="spread"></ToggleButton>
+
+                <EditText
+                    android:id="@+id/cmd_output"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:inputType="textMultiLine"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cmd_input"></EditText>
+
+
+                <Button
+                    android:id="@+id/cmd_send"
+
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/send_cmd"
+                    android:textColor="@color/text_color"
+                    app:layout_constraintEnd_toStartOf="@+id/cmd_clear"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/cmd_output"></Button>
+
+
+                <Button
+                    android:id="@+id/cmd_clear"
+
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/clear_cmd"
+                    android:textColor="@color/text_color"
+                    app:layout_constraintEnd_toStartOf="@+id/switch_baud"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@id/cmd_send"
+                    app:layout_constraintTop_toBottomOf="@id/cmd_output"></Button>
+
+                <Button
+                    android:id="@+id/switch_baud"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:text="switch baud"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@+id/cmd_clear"
+                    app:layout_constraintTop_toBottomOf="@+id/cmd_output"></Button>
+
+                <View
+                    android:id="@+id/split_under_send"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:visibility="invisible"
+                    app:layout_constraintTop_toBottomOf="@+id/timeout_inv"></View>
+
+                <EditText
+                    android:id="@+id/timeout_inv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:hint="timeout seconds"
+                    android:inputType="number"
+                    android:text="3"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toStartOf="@id/cmd_send_inv"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/cmd_send"></EditText>
+
+                <Button
+                    android:id="@+id/cmd_send_inv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:text="@string/send_cmd_inv"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@id/timeout_inv"
+                    app:layout_constraintTop_toBottomOf="@+id/cmd_send"></Button>
+
+
+                <Button
+                    android:id="@+id/btn_swr"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:text="send swr"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/split_under_send" />
+
+
+            </com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText>
+
+
+            <TextView
+                android:id="@+id/txt_swr"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ctv_common_cmd"></TextView>
+
+
+            <View
+                android:id="@+id/split_under_txt_swr"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                app:layout_constraintTop_toBottomOf="@+id/txt_swr"></View>
+
+            <!--34mdb mode-->
+            <com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText
+                android:id="@+id/plaid_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_marginVertical="10dp"
+                android:paddingStart="10dp"
+                android:paddingTop="30dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="15dp"
+                android:textSize="15sp"
+                app:layout_constraintTop_toBottomOf="@+id/split_under_txt_swr"
+                app:prefixTxt="@string/plaid_mode">
+
+                <CheckBox
+                    android:id="@+id/cb_plaid_mode"
+                    style="@style/CheckBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/plaid_mode"></CheckBox>
+            </com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText>
+
+
+            <View
+                android:id="@+id/split_under_send_swr"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                app:layout_constraintTop_toBottomOf="@+id/plaid_mode"></View>
+
+            <com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText
+                android:id="@+id/ctv_kongKou"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_marginVertical="10dp"
+                android:paddingStart="5dp"
+                android:paddingTop="30dp"
+                android:paddingEnd="5dp"
+                android:paddingBottom="15dp"
+                android:textSize="15sp"
+                app:layout_constraintTop_toBottomOf="@+id/split_under_send_swr"
+                app:prefixTxt="KongKou">
+
+                <!-- Session -->
+                <LinearLayout
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:id="@+id/content_session_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@color/white"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/dimen_settings_category_title_height"
+                        android:padding="5dp"
+                        android:gravity="center_vertical"
+                        android:background="@color/settings_category_bg_color"
+                        android:text="Session"
+                        android:textColor="@android:color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_blue"
+                        />
+                    <LinearLayout
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="10dp">
+
+                        <Spinner
+                            android:id="@+id/spinner_session"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/item_corner_blue"
+                            android:background="@drawable/spinner_selector"/>
+                        <Button
+                            android:id="@+id/btn_get_session"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/get" />
+
+                        <Button
+                            android:id="@+id/btn_set_session"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/set" />
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- END Session -->
+
+                <!-- Target -->
+                <LinearLayout
+                    app:layout_constraintTop_toBottomOf="@+id/content_session_setting"
+                    android:id="@+id/content_target_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@color/white"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/dimen_settings_category_title_height"
+                        android:padding="5dp"
+                        android:gravity="center_vertical"
+                        android:background="@color/settings_category_bg_color"
+                        android:text="Target"
+                        android:textColor="@android:color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_blue"
+                        />
+                    <LinearLayout
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="10dp">
+
+                        <Spinner
+                            android:id="@+id/spinner_target"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/item_corner_blue"
+                            android:background="@drawable/spinner_selector"/>
+                        <Button
+                            android:id="@+id/btn_get_target"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/get" />
+
+                        <Button
+                            android:id="@+id/btn_set_target"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/set" />
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- END Target -->
+
+                <!-- Tag encoder -->
+                <LinearLayout
+                    app:layout_constraintTop_toBottomOf="@+id/content_target_setting"
+                    android:id="@+id/content_encode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@color/white"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/dimen_settings_category_title_height"
+                        android:padding="5dp"
+                        android:gravity="center_vertical"
+                        android:background="@color/settings_category_bg_color"
+                        android:text="@string/reader_encode"
+                        android:textColor="@android:color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_blue"
+                        />
+                    <LinearLayout
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="10dp">
+
+                        <Spinner
+                            android:id="@+id/spinner_encode"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/item_corner_blue"
+                            android:background="@drawable/spinner_selector"/>
+                        <Button
+                            android:id="@+id/btn_get_encode"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/get" />
+
+                        <Button
+                            android:id="@+id/btn_set_encode"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/set" />
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- END Tag encoder -->
+
+                <!-- Q value -->
+                <LinearLayout
+                    app:layout_constraintTop_toBottomOf="@+id/content_encode"
+                    android:id="@+id/content_q_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:background="@color/white"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/dimen_settings_category_title_height"
+                        android:padding="5dp"
+                        android:gravity="center_vertical"
+                        android:background="@color/settings_category_bg_color"
+                        android:text="@string/q_value"
+                        android:textColor="@android:color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_blue"
+                        />
+                    <LinearLayout
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="10dp">
+
+                        <Spinner
+                            android:id="@+id/spinner_q_value"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/item_corner_blue"
+                            android:background="@drawable/spinner_selector"/>
+                        <Button
+                            android:id="@+id/btn_get_q_value"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/get" />
+
+                        <Button
+                            android:id="@+id/btn_set_q_value"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/set" />
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- END Q value -->
+
+            </com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText>
+
+            <View
+                android:id="@+id/split_under_ctv_kongKou"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                app:layout_constraintTop_toBottomOf="@+id/ctv_kongKou"></View>
+
+            <!--swr-->
+            <com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText
+                android:id="@+id/ctv_test"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="2dp"
+                android:layout_marginVertical="10dp"
+                android:paddingStart="5dp"
+                android:layout_marginEnd="5dp"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:textSize="15sp"
+                android:visibility="visible"
+                app:layout_constraintTop_toBottomOf="@+id/split_under_ctv_kongKou"
+                app:prefixTxt="@string/left_top_swr">
+
+                <com.nlscan.uhf.demo.view.IndustryTextSpinnerView
+                    android:id="@+id/swr_antenna"
+                    android:name="@string/swr_ant_name"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:entries="@array/swr_ant"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toStartOf="@id/swr_power"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"></com.nlscan.uhf.demo.view.IndustryTextSpinnerView>
+
+                <com.nlscan.uhf.demo.view.IndustryTextSpinnerView
+                    android:id="@+id/swr_power"
+                    android:name="@string/swr_power_name"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_marginHorizontal="10dp"
+                    android:entries="@array/swr_tx"
+                    app:layout_constraintEnd_toStartOf="@+id/swr_region"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@+id/swr_antenna"
+                    app:layout_constraintTop_toTopOf="parent"></com.nlscan.uhf.demo.view.IndustryTextSpinnerView>
+
+
+                <com.nlscan.uhf.demo.view.IndustryTextSpinnerView
+                    android:id="@+id/swr_region"
+                    android:name="@string/swr_region_name"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:entries="@array/swr_region"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_chainStyle="spread"
+                    app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@+id/swr_power"
+                    app:layout_constraintTop_toTopOf="parent"></com.nlscan.uhf.demo.view.IndustryTextSpinnerView>
+
+                <Button
+                    android:id="@+id/btn_swr_send"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/send_cmd"
+                    android:textColor="@color/text_color"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/swr_region"></Button>
+
+
+                <com.nlscan.uhf.demo.fragment.urx.CustomListView
+                    android:id="@+id/swr_list"
+                    android:layout_width="wrap_content"
+                    android:layout_height="300dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/btn_swr_send"></com.nlscan.uhf.demo.fragment.urx.CustomListView>
+            </com.nlscan.uhf.demo.view.ConstraintLayoutPreFixText>
+
+            <!--settings moved-->
+
+
+        </android.support.constraint.ConstraintLayout>
+    </ScrollView>
+
+</android.support.constraint.ConstraintLayout>

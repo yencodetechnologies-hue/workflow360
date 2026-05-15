@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.WriteTagActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/head"
+        >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimens_8dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/dimens_20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="center"
+                    android:text="@string/uhf_write_tag_tid"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/dimens_24dp" />
+
+                <TextView
+                    android:id="@+id/uhf_write_tag_tid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/dimens_8dp"
+                    android:gravity="center"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/dimens_24dp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:text="@string/uhf_write_tag_area"
+                android:textColor="@color/black"
+                android:textSize="@dimen/dimens_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimens_32dp"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:orientation="horizontal">
+
+                <RadioGroup
+                    android:id="@+id/uhf_write_area_rg"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/uhf_write_tag_epc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/uhf_write_tag_area_epc"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <RadioButton
+                        android:id="@+id/uhf_write_tag_user"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_write_tag_area_user"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <RadioButton
+                        android:id="@+id/uhf_write_tag_hold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_write_tag_area_hold"
+                        android:textSize="@dimen/dimens_16dp" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:text="@string/uhf_write_tag_text"
+                android:textColor="@color/black"
+                android:textSize="@dimen/dimens_24dp" />
+
+            <EditText
+                android:id="@+id/uhf_write_tag_user_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:digits="0123456789abcdefABCDEF"
+                android:hint="@string/uhf_wrtite_tag_hint_text" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginTop="@dimen/dimens_8dp"
+                android:layout_marginEnd="@dimen/dimens_24dp">
+
+                <CheckBox
+                    android:id="@+id/uhf_write_tag_is_use_cb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/uhf_wrtite_tag_use_password" />
+
+                <EditText
+                    android:id="@+id/uhf_write_tag_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/uhf_write_tag_start_bt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:text="@string/uhf_wrtite_tag_write" />
+
+            <Button
+                android:id="@+id/uhf_write_tag_read_bt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:text="@string/uhf_wrtite_tag_read" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginTop="@dimen/dimens_24dp"
+                android:text="@string/uhf_wrtite_tag_check_write"
+                android:textColor="@color/black"
+                android:textSize="@dimen/dimens_24dp" />
+
+            <!-- 布局覆盖严重，需要有人来改 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/uhf_write_tag_area_epc"
+                    android:textColor="@color/black_80"
+                    android:textSize="@dimen/dimens_16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_size"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_epc_size_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_epc_content_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/uhf_write_tag_area_user"
+                    android:textColor="@color/black_80"
+                    android:textSize="@dimen/dimens_16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_size"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_user_size_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_user_content_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/dimens_24dp"
+                android:layout_marginEnd="@dimen/dimens_24dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/uhf_write_tag_area_hold"
+                    android:textColor="@color/black_80"
+                    android:textSize="@dimen/dimens_16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_size"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_hold_size_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/uhf_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+
+                    <TextView
+                        android:id="@+id/tag_hold_content_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/black_60"
+                        android:textSize="@dimen/dimens_16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!--<TextView-->
+            <!--android:id="@+id/uhf_write_tag_get_data_tv"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_marginStart="@dimen/dimens_24dp"-->
+            <!--android:layout_marginEnd="@dimen/dimens_24dp"-->
+            <!--android:text="@string/uhf_wrtite_tag_no_data"-->
+            <!--android:textColor="@color/black_60"-->
+            <!--android:textSize="@dimen/dimens_16dp" />-->
+
+        </LinearLayout>
+    </ScrollView>
+
+
+    <RelativeLayout
+        android:id="@+id/get_tag_size_rl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:clickable="true"
+        >
+
+        <ProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/black_40" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/uhf_getting_data"
+            android:textColor="@color/colorAccent"
+            android:textSize="@dimen/dimens_24dp" />
+
+    </RelativeLayout>
+
+
+    <include
+        android:id="@+id/head"
+        layout="@layout/include_header" />
+
+</RelativeLayout>

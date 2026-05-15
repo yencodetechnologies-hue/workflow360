@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ScrollView1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCCCCC"
+        android:orientation="vertical">
+
+        <!-- Tag filter -->
+        <LinearLayout
+            android:id="@+id/content_tag_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/dimens_10dp"
+            android:layout_marginTop="@dimen/dimens_10dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/uhf_inv_filter"
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/dimen_tag_face_category_text_size" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_inv_filter"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_filter_tag"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_select_tag"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <Spinner
+                    android:id="@+id/spinner_filter_tag"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+            </LinearLayout>
+
+            <!-- Bank -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="Bank"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <Spinner
+                    android:id="@+id/spinner_filter_bank"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="150dp"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/rg_match_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <RadioButton
+                    android:id="@+id/rb_match"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    style="@style/CheckBox"
+                    android:text="@string/match"/>
+                <RadioButton
+                    android:id="@+id/rb_non_match"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/non_match"/>
+            </RadioGroup>
+
+            <RadioGroup
+                android:id="@+id/rg_enable_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <RadioButton
+                    android:id="@+id/rb_tag_filter_disable"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/tag_filter_off"/>
+
+                <RadioButton
+                    android:id="@+id/rb_tag_filter_enable"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/tag_filter_on"/>
+            </RadioGroup>
+            <CheckBox
+                android:text="@string/uhf_tag_search_enable"
+                android:id="@+id/cb_tag_search"
+                android:enabled="false"
+                android:layout_width="wrap_content"
+                style="@style/CheckBox"
+                android:layout_height="wrap_content">
+            </CheckBox>
+
+            <Button
+                android:id="@+id/btn_set_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginLeft="@dimen/dimens_16dp"
+                android:layout_marginRight="20dp"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background"
+                android:textColor="@color/text_color"
+                android:text="@string/set" />
+        </LinearLayout>
+        <!-- End Tag filter -->
+
+    </LinearLayout>
+
+</ScrollView>

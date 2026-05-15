@@ -1,0 +1,379 @@
+<resources>
+    <string name="app_name">NL-RFID Demo</string>
+    <!-- 主页 -->
+    <string name="uhf_main_tag_inventory_params_set">参数设置</string>
+    <string name="uhf_main_tag_inventory">盘点演示</string>
+    <string name="uhf_main_tag_inventory_data">盘点结果</string>
+    <string name="uhf_main_power_set">功率设置</string>
+    <string name="uhf_main_start_tag_inventory">开始盘点</string>
+    <string name="uhf_main_stop_tag_inventory">停止盘点</string>
+    <string name="uhf_main_clear_tag_data">清除数据</string>
+    <string name="uhf_main_help">结束盘点后点击对应的EPC写入内容</string>
+
+    <string name="uhf_main_tag_num">标签总数：</string>
+
+    <string name="uhf_main_write_power">写入功率</string>
+    <string name="uhf_main_read_power">读取功率</string>
+
+    <string name="uhf_main_regional_frequency">区域频率设置</string>
+
+    <!-- 写入界面 -->
+    <string name="uhf_write_tag_tid">TID&#160;:</string>
+    <string name="uhf_write_tag_area">写入区域</string>
+    <string name="uhf_write_tag_area_epc">EPC区</string>
+    <string name="uhf_write_tag_area_user">用户区</string>
+    <string name="uhf_write_tag_area_hold">保留区</string>
+    <string name="uhf_write_tag_area_tid">TID区</string>
+    <string name="uhf_write_tag_text">待写入</string>
+    <string name="uhf_wrtite_tag_hint_text">支持数据(0~9,a~f)</string>
+    <string name="uhf_wrtite_tag_check_write">标签数据(16进制)</string>
+    <string name="uhf_wrtite_tag_write">写入</string>
+    <string name="uhf_wrtite_tag_read">读取</string>
+    <string name="uhf_wrtite_tag_no_data">未获取到数据</string>
+    <string name="uhf_wrtite_tag_use_password">启用密码</string>
+    <string name="uhf_wrtite_tag_input_password">输入密码</string>
+
+    <string name="uhf_num">序号</string>
+    <string name="uhf_epc_data">EPC数据</string>
+    <string name="uhf_tag_total_count">标签总数</string>
+    <string name="uhf_init_complete">初始化完毕</string>
+    <string name="uhf_poweron_failed">上电失败</string>
+    <string name="uhf_not_available">没有检测到UHF设备</string>
+    <string name="uhf_set_power_failed">设置UHF功率出错</string>
+    <string name="uhf_set_interval_time_failed">设置UHF盘点时间出错</string>
+    <string name="uhf_set_embeddata_failed">设置UHF附加数据出错</string>
+    <string name="uhf_close_fastmode_failed">关闭快速模式失败，程序将不可用</string>
+    <string name="uhf_poweron_failed_ex">上电失败，请重新打开应用</string>
+    <string name="uhf_read_nothing">获取数据为空</string>
+    <string name="uhf_set_region_success">设置区域成功</string>
+    <string name="uhf_set_write_power_success">设置写入功率成功</string>
+    <string name="uhf_set_read_power_success">设置读取功率成功</string>
+    <string name="uhf_count">次数</string>
+    <string name="uhf_ant">天线</string>
+    <string name="uhf_protocol">协议</string>
+    <string name="uhf_rssi">RSSI</string>
+    <string name="uhf_freq">频率</string>
+    <string name="uhf_embeddata">附加数据</string>
+    <string name="uhf_data_limit">字符长度应为2字节的倍数或过长</string>
+    <string name="uhf_write_failed_tip">设置过滤失败，单独写入将不可用，请确保卡片周围无其他卡片</string>
+    <string name="uhf_freq_region_china">中国</string>
+    <string name="uhf_freq_region_china_2">中国2</string>
+    <string name="uhf_freq_region_north_america">北美</string>
+    <string name="uhf_freq_region_europe">欧洲</string>
+    <string name="uhf_freq_region_all">全频段</string>
+    <string name="uhf_size">大小 : </string>
+    <string name="uhf_content">内容 : </string>
+    <string name="uhf_getting_data">获取标签数据中</string>
+    <string name="uhf_init_ufh">初始化UHF中</string>
+
+    <string name="uhf_read_time">盘点时间：</string>
+    <string name="uhf_read_count_once">本次读到标签数：</string>
+
+    <!-- 2022改造 -->
+    <string name="common_confirm">确定</string>
+    <string name="common_cancel">取消</string>
+    <string name= "common_tip">提示</string>
+    <string name="common_no">否</string>
+    <string name="loading_uhf_module">正在检测,请稍后...</string>
+    <string name="uhf_module_unavailable">未检测到UHF设备,请确认是否存在UHF模块并正确安装.</string>
+    <string name="common_exit">退出</string>
+    <string name="search_again">重新检测</string>
+    <string name="power_on_failed_prompt">连接失败,请重新拔插UHF模块.</string>
+    <string name="success">成功</string>
+    <string name="failed">失败</string>
+    <string name="exit_confirm_tip">再按一次退出程序</string>
+    <string name="stop_inventory_first">正在盘点中，请先停止</string>
+
+    <!-- 盘点界面 -->
+    <string name="power_oning">连接中...</string>
+    <string name="uhf_read_write">读卡写卡</string>
+    <string name="uhf_inventory">盘存</string>
+    <string name= "settings">设置</string>
+    <string name="uhf_tag">标签</string>
+    <string name="uhf_record_max_rssi">最高RSSI</string>
+    <string name="uhf_multip_tags">多标签</string>
+    <string name="uhf_tag_tid">TID</string>
+    <string name="uhf_total_count">总次数:%s</string>
+    <string name="uhf_total_tag">张数:%s</string>
+    <string name="uhf_inv_speed">速度:%s</string>
+    <string name="uhf_inv_mode_normal">普通模式</string>
+    <string name="battery_temperature">温度：%s°C</string>
+    <string name="filter_repetitive_tag">过滤重复标签</string>
+
+    <!-- 读写器配置界面 -->
+    <string name="no_data">无数据</string>
+    <string name="setting_success">设置成功</string>
+    <string name="setting_fail">设置失败</string>
+    <string name="unsupport_region">不支持的区域</string>
+    <string name="tips_para_on">电量监控开启</string>
+    <string name="tips_para_off">电量监控关闭</string>
+    <string name="tips_para_warn1">将提醒充电</string>
+    <string name="tips_para_warn2">将提醒下电</string>
+    <!-- 开启(最大功率,S1[多标签],间隔0) -->
+    <!-- 开启(最大功率,S0[单标签],间隔0) -->
+    <string name= "start_quick_mode_s1">多标签模式</string>
+    <string name= "start_quick_mode_s0">单标签模式</string>
+    <string name="get">获取</string>
+    <string name= "set">设置</string>
+    <string name="protocal_choose">协议选择</string>
+    <string name="protocal_national">国标/国军标</string>
+    <string name="ant_power_setting">功率设置</string>
+    <string name="read_power">读功率</string>
+    <string name="write_power">写功率</string>
+    <string name="region_choose">区域选择</string>
+    <string name="frequence_choose">频率选择</string>
+    <string name="reader_encode">阅读器编码</string>
+    <string name="q_value">Q值</string>
+    <string name="ant_check">天线检测</string>
+    <string name="check">检测</string>
+    <string name="non_check">不检测</string>
+    <string name= "inventory">盘存</string>
+    <string name= "tag">标签</string>
+    <string name= "trigger_key_handler">枪把键触发</string>
+    <string name= "inv_prompt_sound">蜂鸣器</string>
+    <string name= "inv_prompt_vibrate">震动</string>
+    <string name="power_monitor">电池电量监听</string>
+    <string name="if_monitor">启用监听</string>
+    <string name="power_warning_1">电量警戒值1:</string>
+    <string name="power_warning_2">电量警戒值2:</string>
+    <string name ="low_power_title">低电量功率</string>
+    <string name ="low_power">电量小于(%):</string>
+    <string name ="power">功率:</string>
+    <string name ="other">其他</string>
+    <!--
+            SIM7000组合盘点策略：
+            均衡模式：31dBm+多标签智能(控温)模式
+            高性能模式：33dBm+多标签智能(控温)模式
+        -->
+    <string name= "inv_compose_policy">盘点策略</string>
+    <string name="inv_policy_normal_label">单标签模式</string>
+    <string name="inv_policy_balance_label">快速模式</string>
+    <string name="inv_policy_quickly_label">多标签模式</string>
+    <string name="inv_policy_mass_label">大量标签模式</string>
+    <string name="inv_policy_few_label">少量标签模式</string>
+    <string-array name="inv_policy_labels">
+        <item>@string/inv_policy_normal_label</item>
+        <item>@string/inv_policy_balance_label</item>
+        <item>@string/inv_policy_quickly_label</item>
+    </string-array>
+
+    <string-array name="inv_policy_labels_urm300_v2">
+        <item>@string/inv_policy_normal_label</item>
+        <item>@string/inv_policy_balance_label</item>
+    </string-array>
+
+    <!-- 支持的频段 -->
+    <string name="select_all">全选</string>
+    <string name= "region_item_china_label">中国</string>
+    <string name= "region_item_china2_label">中国2</string>
+    <string name= "region_item_north_america_label">北美</string>
+    <string name= "region_item_euro3_label">欧洲3</string>
+    <string name= "region_item_india_label">印度</string>
+    <string name= "region_item_korea_label">韩国</string>
+    <string name= "region_item_all_label">全频段</string>
+    <string-array name="region_item_labels">
+        <item>@string/region_item_china_label</item>
+        <item>@string/region_item_china2_label</item>
+        <item>@string/region_item_north_america_label</item>
+        <item>@string/region_item_euro3_label</item>
+        <item>@string/region_item_india_label</item>
+        <item>@string/region_item_korea_label</item>
+        <item>@string/region_item_all_label</item>
+    </string-array>
+
+    <string name="high_temperature_policy">高温策略</string>
+    <string name="temperature_more_then">温度高于</string>
+    <string name="inventory_stragy">盘点策略</string>
+
+    <string name="extended_params">扩展参数</string>
+    <string name="fast_id">FastId</string>
+
+    <string name="extended_output_mode">特殊输出方式</string>
+    <string name="output_mode">输出方式:</string>
+    <string name="label_output_mode_autofill">直接填充</string>
+    <string name="label_output_mode_emulate_key">模拟按键</string>
+    <string-array name="labels_output_mode">
+        <item>@string/none</item>
+        <item>@string/label_output_mode_autofill</item>
+        <item>@string/label_output_mode_emulate_key</item>
+    </string-array>
+    <string name="special_keys">后缀按键:</string>
+    <string name="key_label_enter">回车键</string>
+    <string name="key_label_backspace">退格键</string>
+    <string name="key_label_f1">F1</string>
+    <string name="key_label_f2">F2</string>
+    <string name="key_label_f3">F3</string>
+    <string name="key_label_f4">F4</string>
+    <string name="key_label_f5">F5</string>
+    <string name="key_label_f6">F6</string>
+    <string name="key_label_f7">F7</string>
+    <string name="key_label_f8">F8</string>
+    <string name="key_label_f9">F9</string>
+    <string name="key_label_f10">F10</string>
+    <string name="key_label_f11">F11</string>
+    <string name="key_label_f12">F12</string>
+    <string-array name="labels_special_key">
+        <item>@string/none</item>
+        <item>@string/key_label_enter</item>
+        <item>@string/key_label_backspace</item>
+        <item>@string/key_label_f1</item>
+        <item>@string/key_label_f2</item>
+        <item>@string/key_label_f3</item>
+        <item>@string/key_label_f4</item>
+        <item>@string/key_label_f5</item>
+        <item>@string/key_label_f6</item>
+        <item>@string/key_label_f7</item>
+        <item>@string/key_label_f8</item>
+        <item>@string/key_label_f9</item>
+        <item>@string/key_label_f10</item>
+        <item>@string/key_label_f11</item>
+        <item>@string/key_label_f12</item>
+    </string-array>
+
+
+
+    <!-- 标签界面 -->
+    <!-- 盘点过滤 -->
+    <string name="uhf_inv_filter">过滤标签</string>
+    <string name="uhf_select_tag">选择标签</string>
+    <string name="none">无</string>
+    <string name="match">匹配</string>
+    <string name="non_match">不匹配</string>
+    <string name="tag_filter_on">启用</string>
+    <string name="tag_filter_off">不启用</string>
+
+    <!-- 读写标签 -->
+    <string name="uhf_tag_read_write">读写标签</string>
+    <string name="uhf_tag_start_addr">起始地址</string>
+    <string name="uhf_byte_count">字节数</string>
+    <string name="uhf_block_count">块数</string>
+    <string name="uhf_access_pwd">访问密码</string>
+    <string name="uhf_read_tag_data">读数据</string>
+    <string name="uhf_write_tag_data">写数据</string>
+    <string name="uhf_read_tag">读标签</string>
+    <string name="uhf_write_tag">写标签</string>
+    <string name="uhf_read_tag_recycle">循环读标签</string>
+    <string name="uhf_stop_read_tag_recycle">停止循环读标签</string>
+
+    <!-- 锁定标签 -->
+    <string name="uhf_tag_lock">锁定标签</string>
+    <string name="uhf_tag_lock_type">锁定类型</string>
+    <string name="uhf_tag_lock_tip">注意：锁定标签前请先设置访问密码，注意永久锁定标签后无法解决，且无法写入数据</string>
+    <string name="uhf_lock">锁定</string>
+    <string name="access_pwd">访问密码</string>
+    <string name="destroy_pwd">销毁密码</string>
+    <string name="release_lock">解锁定</string>
+    <string name="temp_lock">暂时锁定</string>
+    <string name="fix_lock">永久锁定</string>
+
+    <!-- 销毁标签 -->
+    <string name="uhf_tag_destroy">销毁标签</string>
+    <string name="uhf_tag_kill_pwd">销毁密码（hex）</string>
+    <string name="uhf_destroy">销毁</string>
+
+    <!--盘点列表，表头-->
+    <string name="sn">序号</string>
+    <string name="epc_data">EPC数据</string>
+    <string name="times">次数</string>
+    <string name="rssi">RSSI</string>
+    <string name="freq">频率</string>
+
+    <!-- 盘点策略的详细部分 -->
+    <string name="inv_read_power">读功率:</string>
+    <string name="inv_fae_mode">模式:</string>
+    <string name="urm_e7_inv_fae_mode_0">普通模式</string>
+    <string name="urm_e7_inv_fae_mode_1">单标签手持机模式</string>
+    <string name="urm_e7_inv_fae_mode_2">多标签快速模式</string>
+    <string name="urm_e7_inv_fae_mode_3">多标签手持机模式</string>
+    <string name="urm_e7_inv_fae_mode_4">多标签智能（控温）模式</string>
+    <string name="urm_e7_inv_fae_mode_5">多标签测试模式</string>
+    <string name="urm_e7_inv_fae_mode_6">E7智能模式</string>
+    <string name="urm_e7_inv_fae_mode_7">E7智能模式v2</string>
+    <string name="urm_e7_inv_fae_mode_8">E7新快速模式</string>
+    <string-array name="urm_e7_inv_fae_mode_labels">
+        <item>@string/urm_e7_inv_fae_mode_0</item>
+        <item>@string/urm_e7_inv_fae_mode_1</item>
+        <item>@string/urm_e7_inv_fae_mode_2</item>
+        <item>@string/urm_e7_inv_fae_mode_3</item>
+        <item>@string/urm_e7_inv_fae_mode_4</item>
+        <item>@string/urm_e7_inv_fae_mode_5</item>
+        <item>@string/urm_e7_inv_fae_mode_6</item>
+        <item>@string/urm_e7_inv_fae_mode_7</item>
+        <item>@string/urm_e7_inv_fae_mode_8</item>
+    </string-array>
+
+    <!-- 开发者选项 -->
+    <string name="developer_options">开发者选项</string>
+    <string name="goto_developer_options">进入开发者选项</string>
+    <string name="input_password">验证密码:</string>
+
+    <!-- 导出数据  -->
+    <string name="export_data">导出数据</string>
+    <string name="exporting">导出中...</string>
+    <string name="export_confirm">导出</string>
+    <string name="export_data_prompt_conent">您将导出标签数据到\"%s\"文件吗？</string>
+    <string name="export_state_success">导出成功.</string>
+    <string name="export_state_fail">导出失败.</string>
+    <string name="export_state_create_file_fail">文件写入失败.</string>
+
+    <!-- 选择连接的设备入口 -->
+    <string name="device_select">选择设备</string>
+    <string name="bt_device">蓝牙设备</string>
+    <string name="serial_device">串口设备</string>
+    <string name="socket_device">Socket设备</string>
+    <string name="do_counnect">连接</string>
+    <string name="uhf_devices">UHF设备</string>
+    <string name="uhf_devices_summary">选择目标连接设备</string>
+    <string name="target_uhf_device">目标设备: </string>
+    <string name="bound_devices">配对的蓝牙设备</string>
+    <string name="bound_devices_summary">选择目标配对的设备</string>
+    <string name="no_bound_device">无配对的蓝牙设备</string>
+    <string name="serial_device_summary">输入串口设备节点路径</string>
+
+    <!--commond cmd fragment-->
+    <string name="send_cmd">发送</string>
+    <string name="clear_cmd">清空</string>
+    <string name="tag_name">命令</string>
+    <string name="send_cmd_inv">发送盘点</string>
+
+    <string name="left_top_common_cmd">通用指令</string>
+    <string name="left_top_swr">VSWR 传感器</string>
+    <string name="left_top_module_info">模块信息</string>
+
+    <string name="swr_ant_name">天线</string>
+    <string name="swr_power_name">TX功率</string>
+    <string name="swr_region_name">区域</string>
+    <string name="plaid_mode">全性能模式</string>
+    <string name="uhf_pda_bank">区域</string>
+    <string name="uhf_pda_power">功率</string>
+
+    <string name="data_encode">数据编码格式</string>
+    <string name="uhf_tag_search_enable">标签查找启用</string>
+    <string name="module_type_serial">串口模块</string>
+    <string name="module_type_bluetooth">蓝牙模块</string>
+    <string name="module_type_network">网络模块</string>
+
+    <!-- Ant enable -->
+    <string name="ant_enable">天线启用/禁用</string>
+    <string name="ant_1">天线1</string>
+    <string name="ant_2">天线2</string>
+    <string name="ant_3">天线3</string>
+    <string name="ant_4">天线4</string>
+
+    <string name="power_off_prompt">当前是连接状态,是否断开?</string>
+    <string name="do_power_down">断开</string>
+
+    <string name="inventory_send_params">盘点标签的缓存输出</string>
+    <string name="inventory_send_params_summary">盘点时长或标签数量先达到指定条件,则输出标签</string>
+    <string name="inventory_send_params_timeout">时长(ms)</string>
+    <string name="inventory_send_params_tag_count">标签数</string>
+
+    <string name="no_network_connection">无网络,请连接网络</string>
+    <string name="searching_network_device">正在搜索网络中的设备...</string>
+    <string name="network_device_list">网络设备列表</string>
+    <string name="no_ip_tip">请输入IP地址.</string>
+
+    <string name="connect_on_boot">开机自动连接</string>
+
+</resources>
+

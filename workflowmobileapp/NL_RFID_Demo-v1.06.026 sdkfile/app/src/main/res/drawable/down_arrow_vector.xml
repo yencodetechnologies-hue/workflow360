@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/down_arrow">
+
+    <target
+        android:animation="@anim/down_arrow_anim_up"
+        android:name="path1"/>
+</animated-vector>

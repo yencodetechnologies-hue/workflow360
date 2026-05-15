@@ -1,0 +1,504 @@
+<resources>
+    <string name="app_name">NL-RFID Demo</string>
+    <!-- Main page -->
+    <string name="uhf_main_tag_inventory_params_set">Parameter settings</string>
+    <string name="uhf_main_tag_inventory">Inventory</string>
+    <string name="uhf_main_tag_inventory_data">Inventory result</string>
+    <string name="uhf_main_power_set">Power setting</string>
+    <string name="uhf_main_start_tag_inventory">Start</string>
+    <string name="uhf_main_stop_tag_inventory">Stop</string>
+    <string name="uhf_main_clear_tag_data">Clear data</string>
+    <string name="uhf_main_help">Click on the corresponding EPC to write the tag</string>
+
+    <string name="uhf_main_tag_num">Total：</string>
+
+    <string name="uhf_main_write_power">Write power</string>
+    <string name="uhf_main_read_power">Read power</string>
+
+    <string name="uhf_main_regional_frequency">Regional frequency settings</string>
+
+    <!-- Write tag page -->
+    <string name="uhf_write_tag_tid">TID&#160;:</string>
+    <string name="uhf_write_tag_area">Write partition</string>
+    <string name="uhf_write_tag_area_epc">EPC bank</string>
+    <string name="uhf_write_tag_area_user">User bank</string>
+    <string name="uhf_write_tag_area_hold">Reserved bank</string>
+    <string name="uhf_write_tag_area_tid">TID bank</string>
+    <string name="uhf_write_tag_text">To be written</string>
+    <string name="uhf_wrtite_tag_hint_text">Support(0~9,a~f)</string>
+    <string name="uhf_wrtite_tag_check_write">Label data(hex)</string>
+    <string name="uhf_wrtite_tag_write">Write</string>
+    <string name="uhf_wrtite_tag_read">Read</string>
+    <string name="uhf_wrtite_tag_no_data">No data</string>
+    <string name="uhf_wrtite_tag_use_password">Enable password</string>
+    <string name="uhf_wrtite_tag_input_password">Input password</string>
+
+    <string name="uhf_num">Number</string>
+    <string name="uhf_epc_data">EPC data</string>
+    <string name="uhf_tag_total_count">Total</string>
+    <string name="uhf_init_complete">Init completed.</string>
+    <string name="uhf_poweron_failed">Failed to power on</string>
+    <string name="uhf_not_available">Not found uhf device.</string>
+    <string name="uhf_set_power_failed">Set power data failed.</string>
+    <string name="uhf_set_interval_time_failed">Set inventory-timeout failed.</string>
+    <string name="uhf_set_embeddata_failed">Error setting UHF additional data.</string>
+    <string name="uhf_close_fastmode_failed">Failed to close the quick mode.</string>
+    <string name="uhf_poweron_failed_ex">Power on failed, please restart the app</string>
+    <string name="uhf_read_nothing">No data</string>
+    <string name="uhf_set_region_success">Set region success.</string>
+    <string name="uhf_set_write_power_success">Set write-power success</string>
+    <string name="uhf_set_read_power_success">Set read-power success</string>
+    <string name="uhf_count">Count</string>
+    <string name="uhf_ant">Antenna</string>
+    <string name="uhf_protocol">Protocol</string>
+    <string name="uhf_rssi">RSSI</string>
+    <string name="uhf_freq">Frequency</string>
+    <string name="uhf_embeddata">Additional data</string>
+    <string name="uhf_data_limit">The character length should be a multiple of 2 bytes or too long</string>
+    <string name="uhf_write_failed_tip">please make sure there are no other tags around it</string>
+    <string name="uhf_freq_region_china">China</string>
+    <string name="uhf_freq_region_china_2">China2</string>
+    <string name="uhf_freq_region_north_america">North America</string>
+    <string name="uhf_freq_region_europe">Europe</string>
+    <string name="uhf_freq_region_all">Full band</string>
+    <string name="uhf_size">Size : </string>
+    <string name="uhf_content">Content : </string>
+    <string name="uhf_getting_data">Geting tag data...</string>
+    <string name="uhf_init_ufh">Init UHF...</string>
+
+    <string name="uhf_read_time">Reading time：</string>
+    <string name="uhf_read_count_once">Once tag count：%s</string>
+
+    <!-- 2022 Modify -->
+    <string name="common_confirm">Confirm</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_tip">Tip</string>
+    <string name="common_no">No</string>
+    <string name="loading_uhf_module">Loading module...</string>
+    <string name="uhf_module_unavailable">UHF device not detected, verify that UHF module exists and install correctly.</string>
+    <string name="common_exit">Exit</string>
+    <string name="search_again">Reload</string>
+    <string name="power_on_failed_prompt">Power failure, please unplug the UHF module again.</string>
+    <string name="success">Success</string>
+    <string name="failed">Failed</string>
+    <string name="exit_confirm_tip">Press again to exit app.</string>
+    <string name="stop_inventory_first">Inventory is in progress, please stop first</string>
+
+    <!-- Inventory -->
+    <string name="power_oning">Connecting to module...</string>
+    <string name="uhf_read_write">RFID Reader</string>
+    <string name="uhf_inventory">Inventory</string>
+    <string name="settings">Settings</string>
+    <string name="uhf_tag">Tag</string>
+    <string name="uhf_record_max_rssi">Max RSSI</string>
+    <string name="uhf_multip_tags">Multi-tag</string>
+    <string name="uhf_tag_tid">TID</string>
+    <string name="uhf_total_count">Total:%s</string>
+    <string name="uhf_total_tag">Tag count:%s</string>
+    <string name="uhf_inv_speed">Speed:%s</string>
+    <string name="uhf_inv_mode_normal">Normal mode</string>
+    <string name="battery_temperature">Temperature:%s°C</string>
+    <string name="filter_repetitive_tag">Non-repeat</string>
+
+    <!-- Reader settings -->
+    <string name="no_data">No data</string>
+    <string name="setting_success">Succeess</string>
+    <string name="setting_fail">Failed</string>
+    <string name="unsupport_region">Unsupported region</string>
+    <string name="tips_para_on">Battery monitor on</string>
+    <string name="tips_para_off">Battery monitor off</string>
+    <string name="tips_para_warn1">it will notice charging</string>
+    <string name="tips_para_warn2">it will notice powerring off</string>
+    <!-- Enable (Max power,S1[Multi tags],interval 0) -->
+    <!-- Enable (Max power,S0[Single tags],interval 0) -->
+    <string name="start_quick_mode_s1">Multi tags mode</string>
+    <string name="start_quick_mode_s0">Single tag mode</string>
+    <string name="get">Get</string>
+    <string name="set">Set</string>
+    <string name="protocal_choose">Protocal</string>
+    <string name="protocal_national">National/Military</string>
+    <string name="ant_power_setting">Ant power</string>
+    <string name="read_power">Read power</string>
+    <string name="write_power">Write power</string>
+    <string name="region_choose">Region</string>
+    <string name="frequence_choose">Frequence</string>
+    <string name="reader_encode">Tag encode</string>
+    <string name="q_value">Q value</string>
+    <string name="ant_check">Ant check</string>
+    <string name="check">Check</string>
+    <string name="non_check">Uncheck</string>
+    <string name="inventory">Inventory</string>
+    <string name="tag">Tag</string>
+    <string name="trigger_key_handler">Handle key</string>
+    <string name="inv_prompt_sound">Sound</string>
+    <string name="inv_prompt_vibrate">Vibrate</string>
+    <string name="power_monitor">Battery capacity</string>
+    <string name="if_monitor">Enable</string>
+    <string name="power_warning_1">Warning1:</string>
+    <string name="power_warning_2">Warning2:</string>
+    <string name="low_power_title">Power of low battery</string>
+    <string name="low_power">Low battery(%):</string>
+    <string name="power">Power:</string>
+    <string name="other">Other</string>
+    <string name="inv_compose_policy">Inventory strategy</string>
+    <string name="inv_policy_normal_label">Single label mode</string>
+    <string name="inv_policy_balance_label">Quickly mode</string>
+    <string name="inv_policy_quickly_label">Multi label mode</string>
+    <string name="inv_policy_mass_label">Mass Tag mode</string>
+    <string name="inv_policy_few_label">Few Tag mode</string>
+    <string-array name="inv_policy_labels">
+        <item>@string/inv_policy_normal_label</item>
+        <item>@string/inv_policy_balance_label</item>
+        <item>@string/inv_policy_quickly_label</item>
+    </string-array>
+    <string-array name="inv_policy_labels_urm300_v2">
+        <item>@string/inv_policy_normal_label</item>
+        <item>@string/inv_policy_balance_label</item>
+    </string-array>
+    <integer name="inv_policy_normal_value">0</integer>
+    <integer name="inv_policy_balance_value">1</integer>
+    <integer name="inv_policy_quickly_value">2</integer>
+    <integer name="inv_policy_mass_value">1</integer>
+    <integer name="inv_policy_few_value">2</integer>
+    <integer-array name="inv_policy_values">
+        <item>@integer/inv_policy_normal_value</item>
+        <item>@integer/inv_policy_balance_value</item>
+        <item>@integer/inv_policy_quickly_value</item>
+    </integer-array>
+    <!-- Supported region -->
+    <string name="select_all">All</string>
+    <string name="region_item_china_label">China</string>
+    <string name="region_item_china2_label">China2</string>
+    <string name="region_item_north_america_label">North America</string>
+    <string name="region_item_euro3_label">Europe3</string>
+    <string name="region_item_india_label">India</string>
+    <string name="region_item_korea_label">Korea</string>
+    <string name="region_item_all_label">All</string>
+    <string-array name="region_item_labels">
+        <item>@string/region_item_china_label</item>
+        <item>@string/region_item_china2_label</item>
+        <item>@string/region_item_north_america_label</item>
+        <item>@string/region_item_euro3_label</item>
+        <item>@string/region_item_india_label</item>
+        <item>@string/region_item_korea_label</item>
+        <item>@string/region_item_all_label</item>
+    </string-array>
+    <string-array name="region_item_labels_URM300">
+        <item>@string/region_item_china_label</item>
+        <item>@string/region_item_china2_label</item>
+        <item>@string/region_item_north_america_label</item>
+        <item>@string/region_item_euro3_label</item>
+        <item>@string/region_item_all_label</item>
+    </string-array>
+    <string-array name="region_item_labels_URF520">
+        <item>@string/region_item_china_label</item>
+<!--        <item>@string/region_item_china2_label</item>-->
+        <item>@string/region_item_north_america_label</item>
+        <item>@string/region_item_euro3_label</item>
+        <item>@string/region_item_all_label</item>
+    </string-array>
+
+    <string name="high_temperature_policy">High temperature strategy</string>
+    <string name="temperature_more_then">"Temperature >"</string>
+    <string name="inventory_stragy">Inventory strategy</string>
+    <string-array name="high_temperature_labels">
+        <item>65</item>
+        <item>60</item>
+        <item>55</item>
+        <item>50</item>
+        <item>45</item>
+    </string-array>
+
+    <string name="extended_params">Extended parameters</string>
+    <string name="fast_id">FastId</string>
+
+    <string name="extended_output_mode">Special output mode</string>
+    <string name="output_mode">Output mode:</string>
+    <string name="label_output_mode_autofill">Auto fill</string>
+    <string name="label_output_mode_emulate_key">Emulate keys</string>
+    <integer name="value_output_mode_none">-1</integer>
+    <integer name="value_output_mode_autofill">1</integer>
+    <integer name="value_output_mode_emulate_key">2</integer>
+    <string-array name="labels_output_mode">
+        <item>@string/none</item>
+        <item>@string/label_output_mode_autofill</item>
+        <item>@string/label_output_mode_emulate_key</item>
+    </string-array>
+    <integer-array name="values_output_mode">
+        <item>@integer/value_output_mode_none</item>
+        <item>@integer/value_output_mode_autofill</item>
+        <item>@integer/value_output_mode_emulate_key</item>
+    </integer-array>
+    <string name="special_keys">Suffix key:</string>
+    <string name="key_label_enter">Enter</string>
+    <string name="key_label_backspace">Backspace</string>
+    <string name="key_label_f1">F1</string>
+    <string name="key_label_f2">F2</string>
+    <string name="key_label_f3">F3</string>
+    <string name="key_label_f4">F4</string>
+    <string name="key_label_f5">F5</string>
+    <string name="key_label_f6">F6</string>
+    <string name="key_label_f7">F7</string>
+    <string name="key_label_f8">F8</string>
+    <string name="key_label_f9">F9</string>
+    <string name="key_label_f10">F10</string>
+    <string name="key_label_f11">F11</string>
+    <string name="key_label_f12">F12</string>
+    <string-array name="labels_special_key">
+        <item>@string/none</item>
+        <item>@string/key_label_enter</item>
+        <item>@string/key_label_backspace</item>
+        <item>@string/key_label_f1</item>
+        <item>@string/key_label_f2</item>
+        <item>@string/key_label_f3</item>
+        <item>@string/key_label_f4</item>
+        <item>@string/key_label_f5</item>
+        <item>@string/key_label_f6</item>
+        <item>@string/key_label_f7</item>
+        <item>@string/key_label_f8</item>
+        <item>@string/key_label_f9</item>
+        <item>@string/key_label_f10</item>
+        <item>@string/key_label_f11</item>
+        <item>@string/key_label_f12</item>
+    </string-array>
+    <string name="key_value_none">KEYCODE_UNKNOWN</string>
+    <string name="key_value_enter">KEYCODE_ENTER</string>
+    <string name="key_value_backspace">KEYCODE_DEL</string>
+    <string name="key_value_f1">KEYCODE_F1</string>
+    <string name="key_value_f2">KEYCODE_F2</string>
+    <string name="key_value_f3">KEYCODE_F3</string>
+    <string name="key_value_f4">KEYCODE_F4</string>
+    <string name="key_value_f5">KEYCODE_F5</string>
+    <string name="key_value_f6">KEYCODE_F6</string>
+    <string name="key_value_f7">KEYCODE_F7</string>
+    <string name="key_value_f8">KEYCODE_F8</string>
+    <string name="key_value_f9">KEYCODE_F9</string>
+    <string name="key_value_f10">KEYCODE_F10</string>
+    <string name="key_value_f11">KEYCODE_F11</string>
+    <string name="key_value_f12">KEYCODE_F12</string>
+    <string-array name="values_special_key">
+        <item>@string/key_value_none</item>
+        <item>@string/key_value_enter</item>
+        <item>@string/key_value_backspace</item>
+        <item>@string/key_value_f1</item>
+        <item>@string/key_value_f2</item>
+        <item>@string/key_value_f3</item>
+        <item>@string/key_value_f4</item>
+        <item>@string/key_value_f5</item>
+        <item>@string/key_value_f6</item>
+        <item>@string/key_value_f7</item>
+        <item>@string/key_value_f8</item>
+        <item>@string/key_value_f9</item>
+        <item>@string/key_value_f10</item>
+        <item>@string/key_value_f11</item>
+        <item>@string/key_value_f12</item>
+    </string-array>
+
+    <!-- Read/Write tags -->
+    <!-- Tag filter -->
+    <string name="uhf_inv_filter">Tag filter</string>
+    <string name="uhf_select_tag">Select tag</string>
+    <string name="none">none</string>
+    <string name="match">Match</string>
+    <string name="non_match">Mismatch</string>
+    <string name="tag_filter_on">On</string>
+    <string name="tag_filter_off">Off</string>
+
+    <!-- Tag reader/writer -->
+    <string name="uhf_tag_read_write">Tag read/write</string>
+    <string name="uhf_tag_start_addr">Start address</string>
+    <string name="uhf_byte_count">bytes</string>
+    <string name="uhf_block_count">blocks</string>
+    <string name="uhf_access_pwd">Access password</string>
+    <string name="uhf_read_tag_data">Read data</string>
+    <string name="uhf_write_tag_data">Write data</string>
+    <string name="uhf_read_tag">Read tag</string>
+    <string name="uhf_write_tag">Write tag</string>
+    <string name="uhf_read_tag_recycle">Continue reading</string>
+    <string name="uhf_stop_read_tag_recycle">Stop reading</string>
+    <!-- 锁定标签 -->
+    <string name="uhf_tag_lock">Tag lock</string>
+    <string name="uhf_tag_lock_type">Lock type</string>
+    <string name="uhf_tag_lock_tip">Note：Please set access password before locking the label. After permanently locking the label, it cannot be solved and cannot be written</string>
+    <string name="uhf_lock">Lock</string>
+    <string name="access_pwd">Access password</string>
+    <string name="destroy_pwd">Kill password</string>
+    <string name="release_lock">Unlock</string>
+    <string name="temp_lock">Temporary Lock</string>
+    <string name="fix_lock">Permanent Lock</string>
+
+    <!-- Kill tags -->
+    <string name="uhf_tag_destroy">Kill tag</string>
+    <string name="uhf_tag_kill_pwd">Kill password（hex）</string>
+    <string name="uhf_destroy">Kill</string>
+
+
+    <!-- Inventory table header-->
+    <string name="sn">SN</string>
+    <string name="epc_data">EPC Data</string>
+    <string name="times">Times</string>
+    <string name="rssi">RSSI</string>
+    <string name="freq">Frequency</string>
+
+    <!-- Inventory detail datas -->
+    <string name="inv_read_power">Read power:</string>
+    <string name="inv_fae_mode">Mode:</string>
+    <string name="urm_e7_inv_fae_mode_0">Normal</string>
+    <string name="urm_e7_inv_fae_mode_1">Single tag mode</string>
+    <string name="urm_e7_inv_fae_mode_2">Multi tags quick mode</string>
+    <string name="urm_e7_inv_fae_mode_3">Multi tags handheld mode</string>
+    <string name="urm_e7_inv_fae_mode_4">Multi tags temperature control mode</string>
+    <string name="urm_e7_inv_fae_mode_5">Multi tags testing mode</string>
+    <string name="urm_e7_inv_fae_mode_6">E7 Intelligent mode</string>
+    <string name="urm_e7_inv_fae_mode_7">E7 Intelligent mode v2</string>
+    <string name="urm_e7_inv_fae_mode_8">E7 New quick mode</string>
+    <string-array name="urm_e7_inv_fae_mode_labels">
+        <item>@string/urm_e7_inv_fae_mode_0</item>
+        <item>@string/urm_e7_inv_fae_mode_1</item>
+        <item>@string/urm_e7_inv_fae_mode_2</item>
+        <item>@string/urm_e7_inv_fae_mode_3</item>
+        <item>@string/urm_e7_inv_fae_mode_4</item>
+        <item>@string/urm_e7_inv_fae_mode_5</item>
+        <item>@string/urm_e7_inv_fae_mode_6</item>
+        <item>@string/urm_e7_inv_fae_mode_7</item>
+        <item>@string/urm_e7_inv_fae_mode_8</item>
+    </string-array>
+    <string-array name="urm_e7_inv_fae_mode_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+    </string-array>
+
+    <!-- Developer options -->
+    <string name="developer_options">Developer options</string>
+    <string name="goto_developer_options">Developer options</string>
+
+    <!-- Export data  -->
+    <string name="export_data">Export data</string>
+    <string name="exporting">Exporting...</string>
+    <string name="export_confirm">To export</string>
+    <string name="export_data_prompt_conent">Will you export tag data to a file:\"%s\"？</string>
+    <string name="export_state_success">Export success.</string>
+    <string name="export_state_fail">Export fail.</string>
+    <string name="export_state_create_file_fail">Writing file failed.</string>
+
+    <!-- Select target device to connect -->
+    <string name="device_select">Choose device</string>
+    <string name="bt_device">Bluetooth devices</string>
+    <string name="serial_device">Serial device</string>
+    <string name="socket_device">Socket device</string>
+    <string name="do_counnect">Connect</string>
+    <string name="uhf_devices">UHF devices</string>
+    <string name="uhf_devices_summary">Select a device to connect</string>
+    <string name="target_uhf_device">Target device: </string>
+    <string name="bound_devices">Bound devices</string>
+    <string name="bound_devices_summary">Select a bound device to connect</string>
+    <string name="no_bound_device">No bound BT device</string>
+    <string name="serial_device_summary">Input serial device path</string>
+
+    <!--commond cmd fragment-->
+    <string name="send_cmd">send</string>
+    <string name="clear_cmd">clear</string>
+    <string name="tag_name">Cmd</string>
+    <string name="send_cmd_inv">sendInv</string>
+    <string name="left_top_common_cmd">common command</string>
+    <string name="left_top_swr">VSWR measure_chip_sensors</string>
+    <string name="left_top_module_info">module info</string>
+    <string name="swr_ant_name">Antenna</string>
+    <string name="swr_power_name">Tx Power</string>
+    <string name="swr_region_name">Region</string>
+    <string name="plaid_mode">Plaid Mode</string>
+    <string name="uhf_pda_bank">Region</string>
+    <string name="uhf_pda_power">Tx Power</string>
+
+
+    <!--v swr-->
+    <string-array name="swr_ant">
+        <item>1|1</item>
+        <item>2|2</item>
+    </string-array>
+    <string-array name="swr_tx">
+        <item>5|5</item>
+        <item>6|6</item>
+        <item>7|7</item>
+        <item>8|8</item>
+        <item>9|9</item>
+        <item>10|10</item>
+        <item>11|11</item>
+        <item>12|12</item>
+        <item>13|13</item>
+        <item>14|14</item>
+        <item>15|15</item>
+        <item>16|16</item>
+        <item>17|17</item>
+        <item>18|18</item>
+        <item>19|19</item>
+        <item>20|20</item>
+        <item>21|21</item>
+        <item>22|22</item>
+        <item>23|23</item>
+        <item>24|24</item>
+        <item>25|25</item>
+        <item>26|26</item>
+        <item>27|27</item>
+        <item>28|28</item>
+        <item>29|29</item>
+        <item>30|30</item>
+        <item>31|31</item>
+        <item>32|32</item>
+        <item>33|33</item>
+        <item>34|34</item>
+    </string-array>
+    <string-array name="swr_region">
+        <item>FCC|0</item>
+        <item>CN|10</item>
+        <item>ETSI|7</item>
+        <item>ALL|-1</item>
+    </string-array>
+
+    <string name="data_encode">Data encode</string>
+    <string-array name="data_encode_labels">
+        <item>Hex</item>
+        <item>ASCII</item>
+        <item>GBK</item>
+    </string-array>
+    <integer-array name="data_encode_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </integer-array>
+
+    <string name="uhf_tag_search_enable">TagSearchEnable</string>
+    <string name="module_type_serial">MODULE_TYPE_SERIAL</string>
+    <string name="module_type_bluetooth">MODULE_TYPE_BLUETOOTH</string>
+    <string name="module_type_network">MODULE_TYPE_NETWORK</string>
+
+    <!-- Ant enable -->
+    <string name="ant_enable">Ant enable/disable</string>
+    <string name="ant_1">Ant 1</string>
+    <string name="ant_2">Ant 2</string>
+    <string name="ant_3">Ant 3</string>
+    <string name="ant_4">Ant 4</string>
+
+    <string name="power_off_prompt">Do disconnect ?</string>
+    <string name="do_power_down">Disconnect</string>
+
+    <string name="inventory_send_params">Output inventory tags</string>
+    <string name="inventory_send_params_summary">If the inventory duration or number of tags reaches the specified condition first, output the tags</string>
+    <string name="inventory_send_params_timeout">Timeout(ms)</string>
+    <string name="inventory_send_params_tag_count">Tag count</string>
+
+    <string name="no_network_connection">No network, please connect to the network</string>
+    <string name="searching_network_device">Searching for devices in the network...</string>
+    <string name="network_device_list">List of network devices</string>
+    <string name="no_ip_tip">Please input ip address.</string>
+
+    <string name="connect_on_boot">Auto connect on boot</string>
+
+</resources>

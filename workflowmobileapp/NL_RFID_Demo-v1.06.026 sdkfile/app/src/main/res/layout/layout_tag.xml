@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ScrollView1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CCCCCC"
+        android:orientation="vertical">
+
+        <!-- Tag filters   -->
+        <include layout="@layout/layout_tag_filter"/>
+
+        <!-- Read/Write tag -->
+        <LinearLayout
+            android:id="@+id/content_read_write_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/dimens_10dp"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/uhf_tag_read_write"
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/dimen_tag_face_category_text_size" />
+            <RadioGroup
+                    android:id="@+id/rg_encoding"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="hex"
+                        android:gravity="left|center"
+                        android:id="@+id/rb_hex"
+                        android:layout_weight="1"
+                        android:checked="true"/>
+                <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="asc"
+                        android:gravity="left|center"
+                        android:id="@+id/rb_asc"
+                        android:layout_weight="1"
+                        android:checked="false"/>
+                <RadioButton
+                        android:gravity="left|center"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="gbk"
+                        android:id="@+id/rb_gbk"
+                        android:layout_weight="1"
+                        android:checked="false"/>
+            </RadioGroup>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <!-- Bank -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="Bank"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <Spinner
+                    android:id="@+id/spinner_read_bank"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+            <!-- Start address -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_tag_start_addr"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_start_addr"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:layout_weight="1"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_block_count"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_byte_count"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+            <!-- Access password -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_access_pwd"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_access_pwd"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+            <!-- read tag data -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_read_tag_data"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_read_tag_data"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+            <!-- write tag data -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_write_tag_data"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_write_tag_data"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_rw_tag_button_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <Button
+                    android:id="@+id/btn_read_tag"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/uhf_read_tag" />
+
+                <Button
+                    android:id="@+id/btn_write_tag"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginLeft="@dimen/dimens_16dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/uhf_write_tag" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/dimens_10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btn_read_tag_recycle"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dimens_40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/uhf_read_tag_recycle" />
+
+                <Button
+                    android:id="@+id/btn_stop_read_tag_recycle"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dimens_40dp"
+                    android:layout_marginLeft="@dimen/dimens_16dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/uhf_stop_read_tag_recycle" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- End Read/Write tag -->
+
+        <!-- Lock tag -->
+        <LinearLayout
+            android:id="@+id/content_lock_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/dimens_10dp"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/uhf_tag_lock"
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/dimen_tag_face_category_text_size" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <!-- Bank -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="50dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="Bank"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <Spinner
+                    android:id="@+id/spinner_lock_bank"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+            <!-- Lock type -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="50dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_tag_lock_type"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <Spinner
+                    android:id="@+id/spinner_lock_type"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+            <!-- Access password -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_access_pwd"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_lock_access_pwd"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_lock_tag"
+                android:layout_width="120dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_gravity="right"
+                android:layout_marginRight="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:background="@drawable/button_background"
+                android:textColor="@color/text_color"
+                android:text="@string/uhf_lock" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:gravity="center_vertical"
+                android:text="@string/uhf_tag_lock_tip"
+                android:textColor="@android:color/black"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+        <!-- End Lock tag -->
+
+        <!-- Destroy tag -->
+        <LinearLayout
+            android:id="@+id/content_destroy_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/dimens_10dp"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/uhf_tag_destroy"
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/dimen_tag_face_category_text_size" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <!-- Bank -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="10dp"
+                android:paddingRight="50dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/uhf_tag_kill_pwd"
+                    android:textColor="@android:color/black"
+                    android:textSize="@dimen/dimen_tag_face_normal_text_size" />
+
+                <EditText
+                    android:id="@+id/et_kill_pwd"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+            </LinearLayout>
+
+
+            <Button
+                android:id="@+id/btn_kill_tag"
+                android:layout_width="120dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_gravity="right"
+                android:layout_marginRight="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:background="@drawable/button_background"
+                android:textColor="@color/text_color"
+                android:text="@string/uhf_destroy" />
+
+        </LinearLayout>
+        <!-- End Destroy tag -->
+
+    </LinearLayout>
+
+</ScrollView>

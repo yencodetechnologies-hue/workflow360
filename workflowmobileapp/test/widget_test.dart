@@ -1,15 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:workflow360_rfid_app/app/app.dart';
+import 'package:provider/provider.dart';
+import 'package:rfid_product_manager/main.dart';
+import 'package:rfid_product_manager/services/app_state.dart';
 
 void main() {
-  testWidgets('App loads management screen', (WidgetTester tester) async {
+  testWidgets('RFID app loads', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: Workflow360App(),
+      ChangeNotifierProvider(
+        create: (_) => AppState(),
+        child: const RfidApp(),
       ),
     );
-    await tester.pumpAndSettle();
-    expect(find.text('Management'), findsOneWidget);
+    await tester.pump();
+    // AppState opens the reader in mock mode with an 800ms delay.
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.byType(RfidApp), findsOneWidget);
   });
 }

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <!-- SIM7100[URM_E7] -->
+    <RadioGroup
+        android:id="@+id/rg_inv_policy_sim7100"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <RadioButton
+            android:id="@+id/rb_item_inv_normal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/inv_policy_normal_label"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_balance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/inv_policy_balance_label"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_quickly"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/inv_policy_quickly_label"/>
+    </RadioGroup>
+
+    <!-- SLR1200[URM_R2] -->
+    <RadioGroup
+        android:id="@+id/rg_inv_policy_slr1200"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <RadioButton
+            android:id="@+id/rb_item_inv_quickly_normal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/uhf_inv_mode_normal"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_quickly_s1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="0dp"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/start_quick_mode_s1"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_quickly_s0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/start_quick_mode_s0"/>
+    </RadioGroup>
+
+    <!-- [urf520] -->
+    <RadioGroup
+        android:id="@+id/rg_inv_policy_urf520"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <RadioButton
+            android:id="@+id/rb_item_inv_urf520_normal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/uhf_inv_mode_normal"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_urf520_mass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="0dp"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/inv_policy_mass_label"/>
+        <RadioButton
+            android:id="@+id/rb_item_inv_urf520_few"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:buttonTint="@color/checkbox"
+            android:text="@string/inv_policy_few_label"/>
+    </RadioGroup>
+
+</LinearLayout>

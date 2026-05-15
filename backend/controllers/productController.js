@@ -126,7 +126,7 @@ const deleteProduct = async (req, res) => {
 
 // @desc    Assign RFID tag to product
 // @route   POST /api/products/assign-tag
-// @access  Private (ADMIN, GODOWN) — JWT via productRoutes
+// @access  Public (called from mobile device after physical write)
 const assignTag = async (req, res) => {
     try {
         const { productId, tagId } = req.body;
@@ -135,12 +135,18 @@ const assignTag = async (req, res) => {
             return res.status(400).json({ status: "error", message: "productId and tagId are required" });
         }
 
-        // Check if this tag is already on a different product
-        const existingOwner = await Product.findOne({ tagId, productId: { $ne: productId } });
+        // Resolve by either MongoDB _id or productId string field
+        const product = await findProductByRouteId(productId);
+        if (!product) {
+            return res.status(404).json({ status: "not_found", message: "Product not found" });
+        }
+
+        // Check if this tag is already assigned to a DIFFERENT product
+        const existingOwner = await Product.findOne({ tagId, _id: { $ne: product._id } });
         if (existingOwner) {
             return res.status(409).json({
                 status: "conflict",
-                message: `Tag already assigned to "${existingOwner.particulars}" (ID ${existingOwner.productId}). Remove it first or reassign from that product.`,
+                message: `Tag already assigned to "${existingOwner.particulars}" (ID ${existingOwner.productId}). Unassign it first.`,
                 conflictProduct: {
                     productId: existingOwner.productId,
                     name: existingOwner.particulars
@@ -148,20 +154,13 @@ const assignTag = async (req, res) => {
             });
         }
 
-        const product = await Product.findOneAndUpdate(
-            { productId },
-            { tagId },
-            { new: true }
-        );
-
-        if (!product) {
-            return res.status(404).json({ status: "not_found", message: "Product not found" });
-        }
+        product.tagId = tagId;
+        const updated = await product.save();
 
         res.json({
             status: "success",
             message: "Tag assigned",
-            product
+            product: updated
         });
     } catch (error) {
         res.status(500).json({ status: "error", message: error.message });

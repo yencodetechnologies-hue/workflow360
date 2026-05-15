@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Jeyaram/Downloads/**)",
+      "Bash(jar tf *)",
+      "Bash(grep \"\\\\.class$\")",
+      "Bash(unzip -l '/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\)/app/libs/aidc_uhf_sdk.jar')",
+      "Read(//c/tmp/**)",
+      "Bash(unzip -o \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"*/java/*\" -d /tmp/nl_sdk_v13)",
+      "Read(//tmp/**)",
+      "Bash(unzip -l \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\")",
+      "Bash(grep \"\\\\.java$\")",
+      "Bash(unzip -p \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"app/src/main/java/com/nlscan/uhf/demo/fragment/InventoryFragment.java\")",
+      "Bash(unzip -p \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"app/src/main/java/com/nlscan/uhf/demo/activity/MainActivity.java\")",
+      "Bash(unzip -p \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"app/src/main/java/com/nlscan/uhf/demo/fragment/TagWriteFragment.java\")",
+      "Bash(unzip -p \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"app/src/main/java/com/nlscan/uhf/demo/util/Constant.java\")",
+      "Bash(unzip -l \"/c/Users/Jeyaram/Downloads/rfid_product_manager/rfid_product_manager/android/app/libs/nls_uhf_lib.jar\")",
+      "Bash(unzip -p \"/c/Users/Jeyaram/Downloads/sdk/sdk/Android/Newland-AIDC RFID Module Android Platform Development Documentation and SDK-v13.1\\(Demo-v1.07.030\\)_2026-04-08/Demo source code/v1.07.030/NL_RFID_Demo-v1.07.030_sdk-v13.1\\(source code\\).zip\" \"app/src/main/java/com/nlscan/uhf/demo/activity/SplashActivity.java\")"
+    ]
+  }
+}

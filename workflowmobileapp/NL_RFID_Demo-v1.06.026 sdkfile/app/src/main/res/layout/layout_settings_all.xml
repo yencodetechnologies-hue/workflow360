@@ -1,0 +1,1760 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ScrollView1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:id="@+id/root_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#CCCCCC"
+        android:orientation="vertical" >
+
+        <!-- Protocal choice -->
+        <LinearLayout
+            android:id="@+id/content_protocal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimens_10dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/protocal_choose"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cb_6c"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:layout_weight="1"
+                    android:text="18000-6C"/>
+
+                <CheckBox
+                    android:id="@+id/cb_6b"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    style="@style/CheckBox"
+                    android:text="18000-6B"/>
+
+                <CheckBox
+                    android:id="@+id/cb_national"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    style="@style/CheckBox"
+                    android:text="@string/protocal_national"/>
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Protocal choice -->
+
+        <!-- Inventory strategy -->
+        <LinearLayout
+            android:id="@+id/content_inv_policy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/inv_compose_policy"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:id="@+id/content_SLR1200"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <!-- 开启(最大功率,S1,间隔0) -->
+                <CheckBox
+                    android:id="@+id/checkbox_q1enable1200"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/start_quick_mode_s1" />
+
+                <!-- 开启(最大功率,S0,间隔0) -->
+                <CheckBox
+                    android:id="@+id/checkbox_q2enable1200"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/start_quick_mode_s0" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/content_SIM7100"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <Spinner
+                        android:id="@+id/spinner_inv_policy"
+                        android:layout_width="1dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:backgroundTint="@color/item_corner_blue"
+                        android:background="@drawable/spinner_selector"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="left"
+                        android:layout_weight="1"
+                        android:textColor="@color/black"
+                        android:textSize="13sp"
+                        android:text=""/>
+                </LinearLayout>
+
+                <!-- Inventory strategy's details -->
+                <LinearLayout
+                    android:id="@+id/ll_inv_detail_data_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="5dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/inv_read_power"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tv_inv_data_read_power"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="5dp"
+                            android:gravity="center_vertical"
+                            android:text="33dBm"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/tv_inv_title_fae_mode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="5dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/inv_fae_mode"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tv_inv_data_fae_mode"
+                            android:layout_width="1dp"
+                            android:layout_height="wrap_content"
+                            android:padding="5dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:textStyle="bold"
+                            android:textColor="@android:color/black"
+                            android:textSize="12sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="right">
+                            <Button
+                                android:id="@+id/btn_get_inv_policy"
+                                android:layout_width="0dp"
+                                android:layout_height="@dimen/button_height"
+                                android:layout_margin="5dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/button_background"
+                                android:textColor="@color/text_color"
+                                android:text="@string/get" />
+
+                            <Button
+                                android:id="@+id/btn_set_inv_policy"
+                                android:layout_width="0dp"
+                                android:layout_height="@dimen/button_height"
+                                android:layout_margin="5dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/button_background"
+                                android:textColor="@color/text_color"
+                                android:text="@string/set" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/im_show_fae_inv_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="10dp"
+                        android:scaleType="fitCenter"
+                        android:layout_gravity="right"
+                        android:visibility="gone"
+                        android:src="@drawable/next_selector"/>
+
+                    <LinearLayout
+                        android:id="@+id/ll_fae_inv_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:orientation="vertical">
+
+                        <Spinner
+                            android:id="@+id/spinner_inv_fae_mode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:minWidth="100dp"
+                            android:backgroundTint="@color/item_corner_blue"
+                            android:background="@drawable/spinner_selector"/>
+
+                        <Button
+                            android:id="@+id/btn_set_inv_fae_mode"
+                            android:layout_width="100dp"
+                            android:layout_height="@dimen/button_height"
+                            android:layout_margin="5dp"
+                            android:background="@drawable/button_background"
+                            android:textColor="@color/text_color"
+                            android:text="@string/set" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Inventory strategy -->
+
+        <!-- Ant power setting -->
+        <LinearLayout
+            android:id="@+id/content_power_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/ant_power_setting"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:id="@+id/ant_power_group_input_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:visibility="visible">
+
+                <CheckBox
+                    android:id="@+id/cb_ant_1"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:text="@string/ant_1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/read_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_read_power_1"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="5dp"
+                    android:text="@string/write_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_write_power_1"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ant_power_group_input_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:visibility="visible">
+
+                <CheckBox
+                    android:id="@+id/cb_ant_2"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:text="@string/ant_2" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/read_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_read_power_2"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="5dp"
+                    android:text="@string/write_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_write_power_2"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/ant_power_group_input_3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:visibility="visible">
+
+                <CheckBox
+                    android:id="@+id/cb_ant_3"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:text="@string/ant_3" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/read_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_read_power_3"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="5dp"
+                    android:text="@string/write_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_write_power_3"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/ant_power_group_input_4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                android:visibility="visible">
+
+                <CheckBox
+                    android:id="@+id/cb_ant_4"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:text="@string/ant_4" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="@string/read_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_read_power_4"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:padding="5dp"
+                    android:text="@string/write_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_write_power_4"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/spinner_selector"
+                    android:backgroundTint="@color/item_corner_blue" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ant_power_group_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <Button
+                    android:id="@+id/btn_get_ant_power"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/get"
+                    android:textColor="@color/text_color" />
+
+                <Button
+                    android:id="@+id/btn_set_ant_power"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/set"
+                    android:textColor="@color/text_color" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Ant power setting -->
+
+        <!-- Region choice -->
+        <LinearLayout
+            android:id="@+id/content_region_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/region_choose"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_region"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_region"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_region"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Region choice -->
+
+        <!-- Frequence choice -->
+        <LinearLayout
+            android:id="@+id/content_frequnce_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/frequence_choose"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/spinner_frequence"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_frequence"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_frequence"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Frequence choice -->
+
+        <!-- Session -->
+        <LinearLayout
+            android:id="@+id/content_session_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="Session"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_session"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_session"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_session"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Session -->
+
+        <!-- Target -->
+        <LinearLayout
+            android:visibility="gone"
+            android:id="@+id/content_target_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="Target"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_target"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_target"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_target"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Target -->
+
+        <!-- Tag encoder -->
+        <LinearLayout
+            android:visibility="gone"
+            android:id="@+id/content_encode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/reader_encode"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_encode"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_encode"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_encode"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Tag encoder -->
+
+        <!-- Q value -->
+        <LinearLayout
+            android:visibility="gone"
+            android:id="@+id/content_q_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/q_value"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_q_value"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_q_value"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_q_value"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- END Q value -->
+
+        <!-- Ant checking -->
+        <LinearLayout
+            android:visibility="gone"
+            android:id="@+id/content_ant_check"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/ant_check"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cb_ant_check"
+                    style="@style/CheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ant_check"/>
+
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Ant checking -->
+
+        <!-- GPIO -->
+        <LinearLayout
+            android:id="@+id/content_gpio_params"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:background="@color/settings_category_bg_color"
+                android:gravity="center_vertical"
+                android:padding="5dp"
+                android:text="GPIO"
+                android:textColor="@android:color/black"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp">
+                <CheckBox
+                    android:id="@+id/cb_gpio_0"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:padding="5dp"
+                    android:text="GPI_0" />
+                <CheckBox
+                    android:id="@+id/cb_gpio_1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:padding="5dp"
+                    android:text="GPI_1" />
+                <CheckBox
+                    android:id="@+id/cb_gpio_2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:padding="5dp"
+                    android:text="GPI_2" />
+                <CheckBox
+                    android:id="@+id/cb_gpio_3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/checkbox"
+                    android:padding="5dp"
+                    android:text="GPI_3" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/gpio_group_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <Button
+                    android:id="@+id/btn_get_gpio"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/get"
+                    android:textColor="@color/text_color" />
+
+                <Button
+                    android:id="@+id/btn_set_gpio"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:text="@string/set"
+                    android:textColor="@color/text_color" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End GPIO -->
+
+        <!-- Extended parameters -->
+        <LinearLayout
+            android:id="@+id/content_extended_params"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/extended_params"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <!-- Fast id -->
+            <CheckBox
+                android:id="@+id/cb_fast_id"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp"
+                style="@style/CheckBox"
+                android:text="@string/fast_id" />
+
+        </LinearLayout>
+        <!-- End Extended parameters -->
+
+        <!-- Data encode parameters -->
+        <LinearLayout
+            android:id="@+id/content_data_encode_params"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/data_encode"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+
+            <!-- Data encode -->
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <Spinner
+                    android:id="@+id/spinner_data_encode"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+                <Button
+                    android:id="@+id/btn_get_data_encode"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_data_encode"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- End Data encode parameters -->
+
+        <!-- Ant power of lower battery -->
+        <LinearLayout
+            android:id="@+id/content_low_power"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/low_power_title"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/cb_enable_low_battery_monitor"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    style="@style/CheckBox"
+                    android:text="@string/if_monitor"/>
+
+                <Button
+                    android:id="@+id/btn_get_low_battery_power"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+                <Button
+                    android:id="@+id/btn_set_low_battery_power"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/low_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_battery_level"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_low_battery_power"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- End Ant power of lower battery -->
+
+        <!-- Batter level listener -->
+        <LinearLayout
+            android:id="@+id/content_battery_monitor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/power_monitor"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/cb_enable_battery_warning"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    style="@style/CheckBox"
+                    android:text="@string/if_monitor"/>
+
+                <Button
+                    android:id="@+id/btn_get_battery_monitor"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+                <Button
+                    android:id="@+id/btn_set_battery_monitor"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/power_warning_1"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_battery_warning_1"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/power_warning_2"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_battery_warning_2"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_power_monitor_tips"
+                android:layout_marginTop="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"/>
+
+        </LinearLayout>
+        <!-- End Batter level listener -->
+
+        <!-- Ant Inventory policy of high temperature battery -->
+        <LinearLayout
+            android:id="@+id/content_high_temperature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/high_temperature_policy"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/cb_enable_high_temperature_monitor"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    style="@style/CheckBox"
+                    android:text="@string/if_monitor"/>
+
+                <Button
+                    android:id="@+id/btn_get_high_temperature_policy"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+                <Button
+                    android:id="@+id/btn_set_high_temperature_policy"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="bottom"
+                android:padding="10dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/temperature_more_then"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_battery_temperature"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="left"
+                    android:layout_weight="1"
+                    android:textColor="@color/black"
+                    android:textSize="13sp"
+                    android:text="°C"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/read_power"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_high_temperature_power"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/inventory_stragy"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_high_temp_inv_strategy"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- End Inventory policy of high temperature battery -->
+
+        <!-- Special output mode -->
+        <LinearLayout
+            android:id="@+id/content_output_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/extended_output_mode"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/output_mode"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_output_mode"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/special_keys"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinner_special_keys"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@color/item_corner_blue"
+                    android:background="@drawable/spinner_selector"/>
+            </LinearLayout>
+
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+                <Button
+                    android:id="@+id/btn_get_output_datas"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_output_datas"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Special output mode -->
+
+        <!-- Inventory tags output parameters -->
+        <LinearLayout
+            android:id="@+id/content_inv_tags_output"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/inventory_send_params"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/inventory_send_params_timeout"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:id="@+id/et_output_inv_tag_timeout"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/black"
+                    android:inputType="number"
+                    android:textSize="@dimen/dimen_params_bar_text_size"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/inventory_send_params_tag_count"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:id="@+id/et_output_inv_tag_count"
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/black"
+                    android:inputType="number"
+                    android:textSize="@dimen/dimen_params_bar_text_size"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+
+                <Button
+                    android:id="@+id/btn_get_inv_tag_output_datas"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/get" />
+
+                <Button
+                    android:id="@+id/btn_set_inv_tag_output_datas"
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/button_background"
+                    android:textColor="@color/text_color"
+                    android:text="@string/set" />
+            </LinearLayout>
+        </LinearLayout>
+        <!-- End Inventory tags output parameters -->
+
+        <!-- Other -->
+        <LinearLayout
+            android:visibility="visible"
+            android:id="@+id/content_other"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dimen_settings_category_title_height"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@color/settings_category_bg_color"
+                android:text="@string/other"
+                android:textColor="@android:color/black"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/light_blue"
+                />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cb_trigger_gun"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/trigger_key_handler"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cb_inv_prompt_sound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/inv_prompt_sound"/>
+
+                <CheckBox
+                    android:id="@+id/cb_inv_prompt_vibrate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/CheckBox"
+                    android:text="@string/inv_prompt_vibrate"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp">
+
+                <CheckBox
+                    android:id="@+id/cb_non_repeat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/dimen_params_bar_text_size"
+                    style="@style/CheckBox"
+                    android:text="@string/filter_repetitive_tag"/>
+
+                <CheckBox
+                    android:id="@+id/cb_connect_on_boot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/black"
+                    android:textSize="@dimen/dimen_params_bar_text_size"
+                    style="@style/CheckBox"
+                    android:text="@string/connect_on_boot"/>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_into_developer"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/button_height"
+                android:layout_gravity="right"
+                android:layout_margin="5dp"
+                android:background="@drawable/button_background"
+                android:textAllCaps="false"
+                android:textColor="@color/text_color"
+                android:visibility="visible"
+                android:text="@string/goto_developer_options" />
+
+        </LinearLayout>
+        <!-- End Other -->
+
+    </LinearLayout>
+
+</ScrollView>

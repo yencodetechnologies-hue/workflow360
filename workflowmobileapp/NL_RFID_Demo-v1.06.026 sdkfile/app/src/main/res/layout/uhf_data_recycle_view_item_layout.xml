@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/uhf_data_item_head_relative"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.nlscan.uhf.demo.view.TextViewCombined
+            android:id="@+id/uhf_data_item_num_textview"
+            android:layout_width="@dimen/number"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:minHeight="@dimen/dimens_36dp"
+            android:textColor="@color/black_80" />
+
+        <!-- EPC -->
+        <com.nlscan.uhf.demo.view.TextViewCombined
+            android:id="@+id/uhf_data_item_epc_textview"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:layout_weight="1"
+            android:minHeight="@dimen/dimens_36dp"
+            android:paddingLeft="10dp"
+            android:textColor="@color/black_80" />
+
+        <!-- 次数 -->
+        <com.nlscan.uhf.demo.view.TextViewCombined
+            android:id="@+id/uhf_data_item_count_textview"
+            android:layout_width="@dimen/times"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:layout_toEndOf="@id/uhf_data_item_epc_textview"
+            android:gravity="center"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+
+        <!-- 天线 -->
+        <com.nlscan.uhf.demo.view.MyRectFrameTextView
+            android:id="@+id/uhf_data_item_ant_textview"
+            android:layout_width="@dimen/dimens_64dp"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:layout_toEndOf="@id/uhf_data_item_count_textview"
+            android:gravity="center"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+
+
+        <!-- 协议 -->
+        <com.nlscan.uhf.demo.view.MyRectFrameTextView
+            android:id="@+id/uhf_data_item_protocol_textview"
+            android:layout_width="@dimen/protocol"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:gravity="center"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+
+
+        <!-- RSSI -->
+        <com.nlscan.uhf.demo.view.TextViewCombined
+            android:id="@+id/uhf_data_item_rssi_textview"
+            android:layout_width="@dimen/rssi"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:gravity="center"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+
+
+        <!-- 频率 -->
+        <com.nlscan.uhf.demo.view.TextViewCombined
+            android:id="@+id/uhf_data_item_freq_textview"
+            android:layout_width="@dimen/freq"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:gravity="center"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+
+        <!-- 附加数据 -->
+        <com.nlscan.uhf.demo.view.MyRectFrameTextView
+            android:id="@+id/uhf_data_item_embeddata_textview"
+            android:layout_width="@dimen/dimens_280dp"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/dimens_36dp"
+            android:paddingLeft="10dp"
+            android:visibility="gone"
+            android:gravity="center_vertical"
+            android:textColor="@color/black_80"
+            android:textSize="@dimen/text_size" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/uhf_data_item_rssi_strength"
+        style="@style/UHF_InvSignStrength"
+        android:max="-25"
+        android:min="-81"
+        android:paddingHorizontal="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
+
+</LinearLayout>
