@@ -72,19 +72,6 @@ class AppRouter {
         ),
         GoRoute(
           parentNavigatorKey: _rootKey,
-          path: '/godowns/:id',
-          builder: (_, state) => GodownDetailScreen(godownId: state.pathParameters['id']!),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootKey,
-          path: '/godowns/:godownId/assign-rfid',
-          builder: (_, state) => AssignRfidIntakeScreen(
-            godownId: state.pathParameters['godownId']!,
-            initialProductId: state.uri.queryParameters['productId'],
-          ),
-        ),
-        GoRoute(
-          parentNavigatorKey: _rootKey,
           path: '/scan/:deliveryId',
           builder: (_, state) {
             final extra = state.extra as Map<String, dynamic>?;
@@ -119,7 +106,28 @@ class AppRouter {
           routes: [
             GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
             GoRoute(path: '/queue', builder: (_, __) => const QueueScreen()),
-            GoRoute(path: '/godowns', builder: (_, __) => const GodownsListScreen()),
+            GoRoute(
+              path: '/godowns',
+              builder: (_, __) => const GodownsListScreen(),
+              routes: [
+                GoRoute(
+                  parentNavigatorKey: _rootKey,
+                  path: ':id',
+                  builder: (_, state) =>
+                      GodownDetailScreen(godownId: state.pathParameters['id']!),
+                  routes: [
+                    GoRoute(
+                      parentNavigatorKey: _rootKey,
+                      path: 'assign-rfid',
+                      builder: (_, state) => AssignRfidIntakeScreen(
+                        godownId: state.pathParameters['id']!,
+                        initialProductId: state.uri.queryParameters['productId'],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             GoRoute(path: '/products', builder: (_, __) => const ProductsAdminScreen()),
             GoRoute(path: '/deliveries', builder: (_, __) => const DeliveriesListScreen()),
             GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),

@@ -21,6 +21,7 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
   String? _error;
   String _q = '';
   String _role = '';
+  String? _userGodownId;
 
   bool get _isAdmin => _role == 'ADMIN';
 
@@ -32,7 +33,10 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
 
   Future<void> _init() async {
     final user = await AuthService.getUser();
-    setState(() => _role = user?.role ?? '');
+    setState(() {
+      _role = user?.role ?? '';
+      _userGodownId = user?.godownId;
+    });
     _load();
   }
 
@@ -51,8 +55,12 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
       for (final r in stock) {
         map[r.godownId] = (map[r.godownId] ?? 0) + r.qty;
       }
+      var godowns = results[0] as List<GodownRow>;
+      if (_role == 'GODOWN' && _userGodownId != null && _userGodownId!.isNotEmpty) {
+        godowns = godowns.where((g) => g.id == _userGodownId).toList();
+      }
       setState(() {
-        _godowns = results[0] as List<GodownRow>;
+        _godowns = godowns;
         _stockByGodown = map;
       });
     } catch (e) {

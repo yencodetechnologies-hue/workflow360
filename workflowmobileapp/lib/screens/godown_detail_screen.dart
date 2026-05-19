@@ -38,9 +38,9 @@ class _GodownDetailScreenState extends State<GodownDetailScreen> with SingleTick
   List<DeliveryRow> _deliveries = [];
   bool _loading = true;
   String? _error;
-  String _role = 'ADMIN';
+  String _role = '';
   String? _userGodownId;
-  late TabController _tabs;
+  TabController? _tabs;
 
   final _editName = TextEditingController();
   final _editCode = TextEditingController();
@@ -76,31 +76,35 @@ class _GodownDetailScreenState extends State<GodownDetailScreen> with SingleTick
       ..sort((a, b) => a.name.compareTo(b.name));
   }
 
+  int get _tabCount => _canEditGodown ? 4 : 3;
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
     _init();
   }
 
   Future<void> _init() async {
     final user = await AuthService.getUser();
     final role = user?.role ?? 'ADMIN';
-    final canEdit = role == 'ADMIN' || (role == 'GODOWN' && user?.godownId == widget.godownId);
-    if (canEdit && _tabs.length == 3) {
-      _tabs.dispose();
-      _tabs = TabController(length: 4, vsync: this);
-    }
     setState(() {
       _role = role;
       _userGodownId = user?.godownId;
     });
-    _load();
+    _syncTabController();
+    await _load();
+  }
+
+  void _syncTabController() {
+    final count = _tabCount;
+    if (_tabs != null && _tabs!.length == count) return;
+    _tabs?.dispose();
+    _tabs = TabController(length: count, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabs.dispose();
+    _tabs?.dispose();
     _editName.dispose();
     _editCode.dispose();
     _editAddress.dispose();
@@ -125,27 +129,40 @@ class _GodownDetailScreenState extends State<GodownDetailScreen> with SingleTick
       _error = null;
     });
     try {
-      final results = await Future.wait([
-        GodownApi.getGodown(widget.godownId),
-        GodownApi.listProducts(widget.godownId),
-        ReportApi.stockReport(godownId: widget.godownId),
-        DeliveryApi.listDeliveries(limit: 50),
-      ]);
-      final allDel = results[3] as List<DeliveryRow>;
-      final g = results[0] as GodownRow;
-      final catalog = results[1] as List<CatalogRow>;
+      final g = await GodownApi.getGodown(widget.godownId);
+      final catalogFuture = GodownApi.listProducts(widget.godownId);
+      final stockFuture = ReportApi.stockReport(godownId: widget.godownId);
+      final deliveriesFuture = DeliveryApi.listDeliveries(limit: 50);
+
+      final catalog = await catalogFuture;
+      List<StockRow> stock;
+      List<DeliveryRow> allDel;
+      try {
+        stock = await stockFuture;
+      } catch (_) {
+        stock = [];
+      }
+      try {
+        allDel = await deliveriesFuture;
+      } catch (_) {
+        allDel = [];
+      }
+
       catalog.sort((a, b) => (a.particulars ?? '').compareTo(b.particulars ?? ''));
+      if (!mounted) return;
       setState(() {
         _godown = g;
         _catalog = catalog;
-        _stock = results[2] as List<StockRow>;
+        _stock = stock;
         _deliveries = allDel.where((d) => d.fromGodownId == widget.godownId).take(20).toList();
         _fillEditForm(g);
       });
+      _syncTabController();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', ''));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -240,7 +257,7 @@ class _GodownDetailScreenState extends State<GodownDetailScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading || _tabs == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppColors.cyan)));
     }
     if (_error != null || _godown == null) {
@@ -369,13 +386,13 @@ class _GodownDetailScreenState extends State<GodownDetailScreen> with SingleTick
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
         bottom: TabBar(
-          controller: _tabs,
+          controller: _tabs!,
           isScrollable: tabs.length > 3,
           tabs: tabs,
         ),
       ),
       body: TabBarView(
-        controller: _tabs,
+        controller: _tabs!,
         children: views,
       ),
     );
