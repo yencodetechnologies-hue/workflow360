@@ -1,12 +1,33 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
+import { Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
+
+type DeliveryLine = {
+  productId: string
+  godownId?: string
+  godownName?: string
+  qty: number
+  particulars?: string
+  sku?: string
+  rate?: string
+  parsedRate?: number
+  unit?: string
+}
+
+type BillerReturnLine = {
+  productId: string
+  qty: number
+  particulars?: string
+  sku?: string
+  note?: string
+}
 
 type DeliveryDetail = {
   id: string
@@ -21,10 +42,12 @@ type DeliveryDetail = {
   returnExpectedAt?: string
   vehicleLabel?: string
   status: string
-  lines: Array<{ productId: string; qty: number }>
+  lines: DeliveryLine[]
   deliveryVerifierName?: string
   deliveryVerifiedAt?: string
   billerReturnSubmittedAt?: string
+  billerMissingLines?: BillerReturnLine[]
+  billerDamagedLines?: BillerReturnLine[]
   damageTotal?: number
   missingTotal?: number
   deliveryVerifyUrl?: string
@@ -70,7 +93,7 @@ export function DeliveryDetailPage() {
   if (!d) {
     return (
       <div>
-        <PageHeader title="Delivery" subtitle="Loading…" />
+        <PageHeader title="Delivery" subtitle="Loadingâ€¦" />
       </div>
     )
   }
@@ -79,7 +102,7 @@ export function DeliveryDetailPage() {
     <div>
       <PageHeader
         title={d.deliveryNo}
-        subtitle={`${d.customerName} • ${d.siteName || d.siteAddress || '—'}`}
+        subtitle={`${d.customerName} â€¢ ${d.siteName || d.siteAddress || 'â€”'}`}
         right={
           <Link to="/deliveries" className="text-sm font-semibold text-slate-900 hover:text-slate-700">
             Back to list
@@ -121,22 +144,29 @@ export function DeliveryDetailPage() {
                 {d.contactPhone}
               </div>
             ) : null}
-            {d.deliveryVerifierName ? (
-              <div>
-                <span className="text-slate-600">Verified by (delivery): </span>
-                {d.deliveryVerifierName}{' '}
-                {d.deliveryVerifiedAt ? <span className="text-slate-500">({formatDateTime(d.deliveryVerifiedAt)})</span> : null}
-              </div>
-            ) : null}
-            {d.billerReturnSubmittedAt ? (
-              <div className="rounded-xl bg-slate-50 p-3">
-                <div className="font-semibold text-slate-900">Biller return</div>
-                <div className="text-slate-600">Submitted {formatDateTime(d.billerReturnSubmittedAt)}</div>
-                <div className="mt-1 text-slate-700">
-                  Damage total: {d.damageTotal ?? '—'} · Missing total: {d.missingTotal ?? '—'}
+            <div className="rounded-xl border border-slate-200 p-3">
+              <div className="font-semibold text-slate-900">Delivery handover</div>
+              {d.deliveryVerifiedAt ? (
+                <div className="text-slate-700">
+                  Verified by {d.deliveryVerifierName || 'â€”'} ({formatDateTime(d.deliveryVerifiedAt)})
                 </div>
-              </div>
-            ) : null}
+              ) : (
+                <div className="text-amber-700">Pending â€” share delivery verify link</div>
+              )}
+            </div>
+            <div className="rounded-xl border border-slate-200 p-3">
+              <div className="font-semibold text-slate-900">Biller return</div>
+              {d.billerReturnSubmittedAt ? (
+                <>
+                  <div className="text-slate-600">Submitted {formatDateTime(d.billerReturnSubmittedAt)}</div>
+                  <div className="mt-1 text-slate-700">
+                    Damage total: {d.damageTotal ?? 'â€”'} Â· Missing total: {d.missingTotal ?? 'â€”'}
+                  </div>
+                </>
+              ) : (
+                <div className="text-amber-700">Pending â€” share biller return link after delivery</div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -165,7 +195,7 @@ export function DeliveryDetailPage() {
           <CardContent className="space-y-3 text-xs">
             <div>
               <div className="font-semibold text-slate-800">Delivery verify</div>
-              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || '—'}</div>
+              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || 'â€”'}</div>
               {d.deliveryVerifyUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.deliveryVerifyUrl || '')}>
                   Copy
@@ -174,7 +204,7 @@ export function DeliveryDetailPage() {
             </div>
             <div>
               <div className="font-semibold text-slate-800">Biller return</div>
-              <div className="break-all text-slate-600">{d.billerReturnUrl || '—'}</div>
+              <div className="break-all text-slate-600">{d.billerReturnUrl || 'â€”'}</div>
               {d.billerReturnUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.billerReturnUrl || '')}>
                   Copy
@@ -184,6 +214,88 @@ export function DeliveryDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {d.billerReturnSubmittedAt && (d.billerMissingLines?.length || d.billerDamagedLines?.length) ? (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Missing and damage (biller return)</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div>
+              <div className="mb-2 text-sm font-semibold text-slate-800">Missing products</div>
+              {d.billerMissingLines?.length ? (
+                <ul className="space-y-1 text-sm text-slate-700">
+                  {d.billerMissingLines.map((l) => (
+                    <li key={l.productId} className="flex justify-between gap-2">
+                      <span>{l.particulars || l.sku || l.productId}</span>
+                      <span className="font-semibold">qty {l.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-600">None reported.</p>
+              )}
+            </div>
+            <div>
+              <div className="mb-2 text-sm font-semibold text-slate-800">Damaged products</div>
+              {d.billerDamagedLines?.length ? (
+                <ul className="space-y-1 text-sm text-slate-700">
+                  {d.billerDamagedLines.map((l) => (
+                    <li key={l.productId} className="flex justify-between gap-2">
+                      <span>{l.particulars || l.sku || l.productId}</span>
+                      <span className="font-semibold">qty {l.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-600">None reported.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Products in delivery</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {d.lines.length === 0 ? (
+            <p className="text-sm text-slate-600">No products on this delivery.</p>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Product</Th>
+                  <Th>SKU</Th>
+                  <Th>Godown</Th>
+                  <Th className="text-right">Qty</Th>
+                  <Th className="text-right">Rate</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.lines.map((l) => (
+                  <tr key={`${l.productId}-${l.godownId ?? ''}`} className="hover:bg-slate-50">
+                    <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
+                    <Td className="font-mono text-xs text-slate-600">{l.sku || 'â€”'}</Td>
+                    <Td className="text-slate-700">{l.godownName || 'â€”'}</Td>
+                    <Td className="text-right font-semibold text-slate-900">
+                      {l.qty}
+                      {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
+                    </Td>
+                    <Td className="text-right text-slate-700">{l.rate ?? 'â€”'}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+          <p className="mt-3 text-xs text-slate-500">
+            {d.lines.length} line{d.lines.length === 1 ? '' : 's'} Â·{' '}
+            {d.lines.reduce((sum, l) => sum + l.qty, 0)} total units
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
+

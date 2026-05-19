@@ -5,7 +5,6 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
-import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
@@ -84,20 +83,16 @@ export function DeliveriesListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Deliveries"
-        subtitle="Create, assign, and track delivery status updates."
-        right={
-          canCreate ? (
-            <Button onClick={() => setCreateOpen(true)} className="gap-2 shadow-lg shadow-violet-200/50">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Create delivery
-            </Button>
-          ) : null
-        }
-      />
+      {canCreate ? (
+        <div className="mb-6 flex justify-end">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 shadow-lg shadow-violet-200/50">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            Create delivery
+          </Button>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

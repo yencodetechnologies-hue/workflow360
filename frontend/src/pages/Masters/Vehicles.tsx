@@ -1,79 +1,111 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
-import { db, useDb } from '../../store/useStore'
+import { apiFetch } from '../../lib/api'
+import { getToken } from '../../auth/store'
+
+type DeliveryRow = {
+  id: string
+  deliveryNo: string
+  vehicleLabel?: string
+  status: string
+  customerName: string
+}
 
 export function VehiclesPage() {
-  const state = useDb()
+  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
-  const [form, setForm] = useState({ label: '', regNo: '' })
+
+  const load = () => {
+    const token = getToken()
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    apiFetch<DeliveryRow[]>('/deliveries?limit=200', { token })
+      .then(setDeliveries)
+      .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const vehicles = useMemo(() => {
+    const map = new Map<string, { label: string; count: number; lastStatus: string }>()
+    for (const d of deliveries) {
+      const label = (d.vehicleLabel || '').trim().toUpperCase()
+      if (!label) continue
+      const prev = map.get(label)
+      map.set(label, {
+        label,
+        count: (prev?.count ?? 0) + 1,
+        lastStatus: d.status,
+      })
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label))
+  }, [deliveries])
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
-    if (!s) return state.vehicles
-    return state.vehicles.filter(
-      (v) => v.label.toLowerCase().includes(s) || v.regNo.toLowerCase().includes(s),
-    )
-  }, [q, state.vehicles])
+    if (!s) return vehicles
+    return vehicles.filter((v) => v.label.toLowerCase().includes(s))
+  }, [vehicles, q])
 
   return (
     <div>
       <PageHeader
         title="Masters: Vehicles"
-        subtitle="Editable master list for vehicles used in deliveries (demo)."
+        subtitle="Vehicle numbers from deliveries on the server (set when creating a delivery)."
       />
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Vehicles</CardTitle>
-          <div className="w-full sm:w-72">
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="h-10" />
+          <CardTitle>Vehicle numbers</CardTitle>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <div className="w-full sm:w-72">
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="h-10" />
+            </div>
+            <Button variant="secondary" onClick={load}>
+              Refresh
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end">
-            <Input label="Label" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Van" />
-            <Input label="Reg No" value={form.regNo} onChange={(e) => setForm((f) => ({ ...f, regNo: e.target.value }))} placeholder="TN-09-AA-1234" />
-            <Button
-              onClick={() => {
-                db.addVehicle({ label: form.label, regNo: form.regNo })
-                setForm({ label: '', regNo: '' })
-              }}
-            >
-              Add
-            </Button>
-          </div>
+          <p className="text-sm text-slate-600">
+            To register a new delivery driver account, use{' '}
+            <a href="/masters/delivery-persons" className="font-semibold text-slate-900 underline">
+              Delivery Persons
+            </a>
+            . Vehicle labels here come from scheduled deliveries.
+          </p>
 
-          {rows.length === 0 ? (
-            <EmptyState title="No vehicles" subtitle="Add your first vehicle above." />
+          {error ? <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+
+          {loading ? (
+            <div className="text-sm text-slate-600">Loading…</div>
+          ) : rows.length === 0 ? (
+            <EmptyState title="No vehicles yet" subtitle="Create a delivery with a vehicle number to see it here." />
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <Th>Label</Th>
-                  <Th>Reg No</Th>
-                  <Th className="text-right">Actions</Th>
+                  <Th>Vehicle label</Th>
+                  <Th className="text-right">Deliveries</Th>
+                  <Th>Latest status</Th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-50">
-                    <Td className="font-semibold text-slate-900">{v.label}</Td>
-                    <Td className="font-mono text-xs text-slate-600">{v.regNo}</Td>
-                    <Td className="text-right">
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => {
-                          if (confirm(`Delete vehicle ${v.label}?`)) db.deleteVehicle(v.id)
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </Td>
+                  <tr key={v.label} className="hover:bg-slate-50">
+                    <Td className="font-mono font-semibold text-slate-900">{v.label}</Td>
+                    <Td className="text-right">{v.count}</Td>
+                    <Td>{v.lastStatus}</Td>
                   </tr>
                 ))}
               </tbody>
@@ -84,4 +116,3 @@ export function VehiclesPage() {
     </div>
   )
 }
-

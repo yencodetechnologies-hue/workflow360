@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
+import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
@@ -12,6 +13,8 @@ type UserRow = {
   email: string
   role: string
   siteName?: string
+  siteAddress?: string
+  contactName?: string
   contactPhone?: string
   active?: boolean
 }
@@ -21,8 +24,22 @@ export function BillersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
-  const [form, setForm] = useState({ siteName: '', contactPhone: '', email: '', password: '' })
+  const [form, setForm] = useState({
+    siteName: '',
+    contactName: '',
+    contactPhone: '',
+    email: '',
+    password: '',
+  })
   const [saving, setSaving] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editing, setEditing] = useState<UserRow | null>(null)
+  const [editForm, setEditForm] = useState({
+    siteName: '',
+    contactName: '',
+    contactPhone: '',
+    siteAddress: '',
+  })
 
   const load = () => {
     const token = getToken()
@@ -48,9 +65,21 @@ export function BillersPage() {
       (b) =>
         b.email.toLowerCase().includes(s) ||
         (b.siteName?.toLowerCase().includes(s) ?? false) ||
-        (b.contactPhone?.toLowerCase().includes(s) ?? false),
+        (b.contactPhone?.toLowerCase().includes(s) ?? false) ||
+        (b.contactName?.toLowerCase().includes(s) ?? false),
     )
   }, [billers, q])
+
+  const openEdit = (b: UserRow) => {
+    setEditing(b)
+    setEditForm({
+      siteName: b.siteName || '',
+      contactName: b.contactName || '',
+      contactPhone: b.contactPhone || '',
+      siteAddress: b.siteAddress || '',
+    })
+    setEditOpen(true)
+  }
 
   return (
     <div>
@@ -64,12 +93,18 @@ export function BillersPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Input
               label="Site name"
               value={form.siteName}
               onChange={(e) => setForm((f) => ({ ...f, siteName: e.target.value }))}
               placeholder="Outlet / site"
+            />
+            <Input
+              label="Contact name"
+              value={form.contactName}
+              onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
+              placeholder="Person name"
             />
             <Input
               label="Contact phone"
@@ -105,11 +140,12 @@ export function BillersPage() {
                   password: form.password,
                   role: 'BILLER',
                   siteName: form.siteName.trim() || undefined,
+                  contactName: form.contactName.trim() || undefined,
                   contactPhone: form.contactPhone.trim() || undefined,
                 }),
               })
                 .then(() => {
-                  setForm({ siteName: '', contactPhone: '', email: '', password: '' })
+                  setForm({ siteName: '', contactName: '', contactPhone: '', email: '', password: '' })
                   load()
                 })
                 .catch((e: any) => setError(e?.message || 'Create failed'))
@@ -131,6 +167,7 @@ export function BillersPage() {
                 <tr>
                   <Th>Site</Th>
                   <Th>Contact</Th>
+                  <Th>Phone</Th>
                   <Th>Email</Th>
                   <Th>Status</Th>
                   <Th className="text-right">Actions</Th>
@@ -140,6 +177,7 @@ export function BillersPage() {
                 {rows.map((b) => (
                   <tr key={b.id} className="hover:bg-slate-50">
                     <Td className="font-semibold text-slate-900">{b.siteName || '—'}</Td>
+                    <Td>{b.contactName || '—'}</Td>
                     <Td>{b.contactPhone || '—'}</Td>
                     <Td className="font-mono text-xs">{b.email}</Td>
                     <Td>
@@ -148,9 +186,13 @@ export function BillersPage() {
                       </span>
                     </Td>
                     <Td className="text-right">
+                      <Button size="sm" variant="secondary" onClick={() => openEdit(b)}>
+                        Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="secondary"
+                        className="ml-2"
                         onClick={() => {
                           const token = getToken()
                           if (!token) return
@@ -194,6 +236,72 @@ export function BillersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Modal
+        open={editOpen}
+        title={editing ? `Edit ${editing.siteName || editing.email}` : 'Edit biller'}
+        onClose={() => setEditOpen(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={saving || !editing}
+              onClick={() => {
+                const token = getToken()
+                if (!token || !editing) return
+                setSaving(true)
+                apiFetch(`/users/${editing.id}`, {
+                  token,
+                  method: 'PATCH',
+                  body: JSON.stringify({
+                    siteName: editForm.siteName.trim() || undefined,
+                    contactName: editForm.contactName.trim() || undefined,
+                    contactPhone: editForm.contactPhone.trim() || undefined,
+                    siteAddress: editForm.siteAddress.trim() || undefined,
+                  }),
+                })
+                  .then(() => {
+                    setEditOpen(false)
+                    setEditing(null)
+                    load()
+                  })
+                  .catch((e: any) => setError(e?.message || 'Update failed'))
+                  .finally(() => setSaving(false))
+              }}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Site name"
+            value={editForm.siteName}
+            onChange={(e) => setEditForm((f) => ({ ...f, siteName: e.target.value }))}
+          />
+          <Input
+            label="Contact name"
+            value={editForm.contactName}
+            onChange={(e) => setEditForm((f) => ({ ...f, contactName: e.target.value }))}
+          />
+          <Input
+            label="Contact phone"
+            value={editForm.contactPhone}
+            onChange={(e) => setEditForm((f) => ({ ...f, contactPhone: e.target.value }))}
+          />
+          <Input
+            label="Site address"
+            value={editForm.siteAddress}
+            onChange={(e) => setEditForm((f) => ({ ...f, siteAddress: e.target.value }))}
+          />
+          {editing ? (
+            <p className="text-sm text-slate-500">Login email: {editing.email} (cannot be changed here)</p>
+          ) : null}
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { PublicCompletionScreen } from '../../components/public/PublicCompletionScreen'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { apiFetch } from '../../lib/api'
 
 type Line = {
@@ -22,14 +24,20 @@ type GetRes = {
   deliveryAt: string
   vehicleLabel?: string
   lines: Line[]
+  deliveryVerifierName?: string
   deliveryVerifiedAt?: string
   hasSignature?: boolean
   canSubmit?: boolean
 }
 
+type Phase = 'form' | 'thankYou' | 'alreadyDone'
+
+const pageShell = 'min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 px-4 py-10'
+
 export function PublicDeliveryVerifyPage() {
   const { token } = useParams()
   const [data, setData] = useState<GetRes | null>(null)
+  const [phase, setPhase] = useState<Phase>('form')
   const [error, setError] = useState<string | null>(null)
   const [verifierName, setVerifierName] = useState('')
   const [checks, setChecks] = useState<Record<string, boolean>>({})
@@ -43,16 +51,17 @@ export function PublicDeliveryVerifyPage() {
     apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
       .then((r) => {
         setData(r)
+        setPhase(r.deliveryVerifiedAt ? 'alreadyDone' : 'form')
         const init: Record<string, boolean> = {}
         for (const l of r.lines) init[l.productId] = false
         setChecks(init)
       })
-      .catch((e: any) => setError(e?.message || 'Failed to load'))
+      .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
 
   const startDraw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
-    if (!canvas || !data?.canSubmit) return
+    if (!canvas || phase !== 'form' || !data?.canSubmit) return
     drawing.current = true
     const rect = canvas.getBoundingClientRect()
     const ctx = canvas.getContext('2d')
@@ -93,18 +102,95 @@ export function PublicDeliveryVerifyPage() {
     return canvas.toDataURL('image/png')
   }
 
-  if (error) {
+  const handleSubmit = async () => {
+    if (!token || !data) return
+    const t = decodeURIComponent(token)
+    setSubmitting(true)
+    setError(null)
+    try {
+      await apiFetch(`/public/delivery-verify/${encodeURIComponent(t)}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          verifierName: verifierName.trim(),
+          signature: getSignatureDataUrl(),
+          lineChecks: data.lines.map((l) => ({
+            productId: l.productId,
+            ok: !!checks[l.productId],
+            qtyAck: l.qty,
+          })),
+        }),
+      })
+      const refreshed = await apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
+      setData(refreshed)
+      setPhase('thankYou')
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message || 'Submit failed'
+      if (msg.toLowerCase().includes('already verified')) {
+        const refreshed = await apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
+        setData(refreshed)
+        setPhase('alreadyDone')
+      } else {
+        setError(msg)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (error && !data) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-lg rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+      <div className={pageShell}>
+        <div className="mx-auto max-w-lg rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">
+          {error}
+        </div>
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-lg text-sm text-slate-600">Loading…</div>
+      <div className={pageShell}>
+        <div className="mx-auto flex max-w-lg flex-col items-center justify-center gap-3 py-20 text-slate-600">
+          <LoadingSpinner size="lg" className="text-emerald-600" />
+          <p className="text-sm">Loading verification…</p>
+        </div>
+      </div>
+    )
+  }
+
+  const completionLines = data.lines.map((l) => ({
+    productId: l.productId,
+    particulars: l.particulars,
+    sku: l.sku,
+    qty: l.qty,
+  }))
+
+  const completionMeta = [
+    { label: 'Site', value: data.siteName || '—' },
+    { label: 'Vehicle', value: data.vehicleLabel || '—' },
+  ]
+
+  if (phase === 'thankYou' || phase === 'alreadyDone') {
+    const isThankYou = phase === 'thankYou'
+    return (
+      <div className={pageShell}>
+        <PublicCompletionScreen
+          variant={isThankYou ? 'thankYou' : 'alreadyDone'}
+          statusLabel={isThankYou ? 'Verified' : 'Already verified'}
+          title={isThankYou ? 'Thank you!' : 'Already verified'}
+          subtitle={
+            isThankYou
+              ? 'Your delivery has been verified successfully.'
+              : 'This delivery was verified earlier. No further action is needed.'
+          }
+          deliveryNo={data.deliveryNo}
+          customerName={data.customerName}
+          meta={completionMeta}
+          lines={completionLines}
+          completedAt={data.deliveryVerifiedAt}
+          verifierName={data.deliveryVerifierName || verifierName.trim() || undefined}
+          hasSignature={data.hasSignature}
+        />
       </div>
     )
   }
@@ -112,7 +198,7 @@ export function PublicDeliveryVerifyPage() {
   const allOk = data.lines.length > 0 && data.lines.every((l) => checks[l.productId])
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10">
+    <div className={pageShell}>
       <div className="mx-auto max-w-2xl space-y-4">
         <div className="text-center">
           <div className="text-lg font-semibold text-slate-900">Delivery verification</div>
@@ -121,17 +207,15 @@ export function PublicDeliveryVerifyPage() {
           </div>
         </div>
 
+        {error ? (
+          <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">{error}</div>
+        ) : null}
+
         <Card>
           <CardHeader>
             <CardTitle>Checklist</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {data.deliveryVerifiedAt ? (
-              <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                Verified on {new Date(data.deliveryVerifiedAt).toLocaleString()}
-                {data.hasSignature ? ' · Signature on file' : ''}
-              </div>
-            ) : null}
             <div className="text-sm text-slate-600">
               Site: {data.siteName || '—'} · Vehicle: {data.vehicleLabel || '—'}
             </div>
@@ -140,7 +224,7 @@ export function PublicDeliveryVerifyPage() {
                 <label key={l.productId} className="flex cursor-pointer items-start gap-3 p-3 hover:bg-slate-50">
                   <input
                     type="checkbox"
-                    className="mt-1"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     checked={!!checks[l.productId]}
                     disabled={!data.canSubmit}
                     onChange={(e) => setChecks((c) => ({ ...c, [l.productId]: e.target.checked }))}
@@ -182,29 +266,13 @@ export function PublicDeliveryVerifyPage() {
             </div>
 
             <Button
+              variant="success"
+              className="w-full"
+              loading={submitting}
               disabled={!data.canSubmit || submitting || !verifierName.trim() || !allOk}
-              onClick={() => {
-                if (!token) return
-                const t = decodeURIComponent(token)
-                setSubmitting(true)
-                apiFetch(`/public/delivery-verify/${encodeURIComponent(t)}`, {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    verifierName: verifierName.trim(),
-                    signature: getSignatureDataUrl(),
-                    lineChecks: data.lines.map((l) => ({
-                      productId: l.productId,
-                      ok: !!checks[l.productId],
-                      qtyAck: l.qty,
-                    })),
-                  }),
-                })
-                  .then(() => apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`).then(setData))
-                  .catch((e: any) => setError(e?.message || 'Submit failed'))
-                  .finally(() => setSubmitting(false))
-              }}
+              onClick={handleSubmit}
             >
-              {submitting ? 'Submitting…' : 'Confirm verification'}
+              Confirm verification
             </Button>
           </CardContent>
         </Card>

@@ -13,6 +13,7 @@ import { BillersPage } from './pages/Masters/Billers'
 import { DeliveryPersonsPage } from './pages/Masters/DeliveryPersons'
 import { VehiclesPage } from './pages/Masters/Vehicles'
 import { ProductsListPage } from './pages/Products/List'
+import { CalendarPage } from './pages/Calendar'
 import { ReportsPage } from './pages/Reports'
 import { QueuePage } from './pages/Queue'
 import { ScanDeliveryPage } from './pages/Scan/ScanDelivery'
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/scan/pickup/:id" element={<ScanDeliveryPage action="pickup" />} />
           <Route path="/scan/deliver/:id" element={<ScanDeliveryPage action="deliver" />} />
           <Route path="/scan/return/:id" element={<ScanDeliveryPage action="return" />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/masters/billers" element={<BillersPage />} />
           <Route path="/masters/delivery-persons" element={<DeliveryPersonsPage />} />

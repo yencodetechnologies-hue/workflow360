@@ -1,0 +1,83 @@
+export type CalendarDay = {
+  date: string
+  total: number
+  byStatus: Record<string, number>
+}
+
+export type CalendarResponse = {
+  month: string
+  days: CalendarDay[]
+}
+
+export type DailyReport = {
+  date: string
+  summary: {
+    total: number
+    byStatus: Record<string, number>
+    lost: number
+    damaged: number
+  }
+  deliveries: DailyDeliveryRow[]
+}
+
+export type DailyDeliveryRow = {
+  id: string
+  deliveryNo: string
+  customerName: string
+  siteName?: string
+  siteAddress?: string
+  fromGodownId?: string
+  godownName?: string
+  deliveryAt: string
+  status: string
+  dispatched: number
+  returned: number
+  lost: number
+  damaged: number
+  missingTotal?: number
+}
+
+export type ProductMissingLine = {
+  productId: string
+  qty: number
+  particulars?: string
+  sku?: string
+  note?: string
+}
+
+export type MissingDeliveryRow = {
+  id: string
+  deliveryNo: string
+  customerName: string
+  siteName?: string
+  siteAddress?: string
+  deliveryAt: string
+  status: string
+  fromGodownId: string
+  godownName?: string
+  missingCount: number
+  missingTagIds: string[]
+  missingTotal?: number
+  damageTotal?: number
+  productMissing: ProductMissingLine[]
+}
+
+export type MissingProductRow = {
+  productId: string
+  particulars?: string
+  sku?: string
+  totalQty: number
+  deliveryCount: number
+  deliveries: Array<{ id: string; deliveryNo: string; qty: number }>
+}
+
+export type StockReportRow = {
+  godownId: string
+  godownName?: string
+  productId: string
+  particulars?: string
+  sku?: string
+  qty: number
+}
+
+export type ReportTab = 'daily' | 'missing' | 'missing-products' | 'stock' | 'customer'

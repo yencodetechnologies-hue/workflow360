@@ -63,7 +63,7 @@ export function Sidebar() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'group relative flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 slide-up',
+                    'group relative flex items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 slide-up',
                     'before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-accent-500/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300',
                     isActive
                       ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/25 transform scale-105'
@@ -73,7 +73,6 @@ export function Sidebar() {
                 style={{ animationDelay: `${(index + navItems.length) * 50}ms` }}
               >
                 <span className="relative z-10">{item.label}</span>
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-400 group-hover:bg-accent-100 group-hover:text-accent-600 transition-all duration-300">Demo</span>
               </NavLink>
             ))}
           </div>

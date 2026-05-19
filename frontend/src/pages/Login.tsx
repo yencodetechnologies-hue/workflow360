@@ -6,8 +6,8 @@ import { login } from '../auth/store'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('admin@godown.local')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [touched, setTouched] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)

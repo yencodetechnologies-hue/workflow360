@@ -1,6 +1,11 @@
 // lib/screens/delivery_scan_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../navigation/nav_config.dart';
+import '../services/app_state.dart';
 import '../services/delivery_api.dart';
 import '../utils/app_theme.dart';
 
@@ -29,18 +34,16 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
   bool _loading = false;
   String? _error;
   String? _lastOk;
+  bool _rfidListening = false;
+  late String _mode;
+
+  bool get _isAdmin => widget.role == 'ADMIN';
 
   @override
   void initState() {
     super.initState();
+    _mode = widget.mode;
     _load();
-  }
-
-  @override
-  void dispose() {
-    _tagCtrl.dispose();
-    _vehicleCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -51,24 +54,24 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
         if (d.vehicleLabel != null) _vehicleCtrl.text = d.vehicleLabel!;
       });
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', ''));
     }
   }
 
-  Future<void> _scan() async {
-    final tag = _tagCtrl.text.trim();
+  Future<void> _scan([String? tagOverride]) async {
+    final tag = (tagOverride ?? _tagCtrl.text).trim();
     if (tag.isEmpty) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      await DeliveryApi.scan(widget.deliveryId, widget.mode, tag);
+      await DeliveryApi.scan(widget.deliveryId, _mode, tag);
       _tagCtrl.clear();
       setState(() => _lastOk = 'Scanned $tag');
       await _load();
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', ''));
     } finally {
       setState(() => _loading = false);
     }
@@ -86,20 +89,76 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
       setState(() => _lastOk = 'Vehicle $v verified');
       await _load();
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', ''));
     } finally {
       setState(() => _loading = false);
     }
   }
 
+  Future<void> _closeReturn() async {
+    setState(() => _loading = true);
+    try {
+      await DeliveryApi.closeReturn(widget.deliveryId);
+      setState(() => _lastOk = 'Return closed');
+      await _load();
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openChallan() async {
+    final url = Uri.parse(DeliveryApi.challanPdfUrl(widget.deliveryId));
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _toggleRfid() async {
+    final app = context.read<AppState>();
+    if (!_rfidListening) {
+      if (!app.isReady) await app.initReader();
+      await app.startScan();
+      setState(() => _rfidListening = true);
+      app.addListener(_onRfidTag);
+    } else {
+      app.removeListener(_onRfidTag);
+      await app.stopScan();
+      setState(() => _rfidListening = false);
+    }
+  }
+
+  void _onRfidTag() {
+    final app = context.read<AppState>();
+    final tag = app.lastInventoryEpc;
+    if (tag != null && tag.isNotEmpty && mounted) {
+      _scan(tag);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_rfidListening) {
+      final app = context.read<AppState>();
+      app.removeListener(_onRfidTag);
+      app.stopScan();
+    }
+    _tagCtrl.dispose();
+    _vehicleCtrl.dispose();
+    super.dispose();
+  }
+
   String get _title {
-    switch (widget.mode) {
+    switch (_mode) {
       case 'dispatch':
         return 'Dispatch scan';
       case 'pickup':
         return 'Pickup at godown';
       case 'deliver':
-        return 'Deliver at biller';
+        return 'Deliver at site';
+      case 'return':
+        return 'Return scan';
       default:
         return 'Scan';
     }
@@ -109,29 +168,50 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
   Widget build(BuildContext context) {
     final d = _detail;
     final dispatchComplete = d != null && d.dispatched >= d.totalRequired && d.totalRequired > 0;
+    final canPickup = _mode != 'pickup' || (d?.vehicleVerified ?? false);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: Text(widget.deliveryNo),
-        backgroundColor: AppColors.surface,
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+        actions: [
+          if (_mode == 'dispatch')
+            IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: _openChallan, tooltip: 'Challan PDF'),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_isAdmin) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: scanModes.map((m) {
+                  final selected = _mode == m;
+                  return ChoiceChip(
+                    label: Text(m[0].toUpperCase() + m.substring(1)),
+                    selected: selected,
+                    onSelected: canScanAction(widget.role, m)
+                        ? (_) => setState(() => _mode = m)
+                        : null,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
             Text(_title, style: Theme.of(context).textTheme.titleLarge),
             if (d != null) ...[
               const SizedBox(height: 8),
               Text('Status: ${d.status}', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
               Text(
-                'Dispatch ${d.dispatched}/${d.totalRequired} · Pickup ${d.pickedUp}/${d.totalRequired} · Deliver ${d.delivered}/${d.totalRequired}',
+                'Dispatch ${d.dispatched}/${d.totalRequired} · Pickup ${d.pickedUp}/${d.totalRequired} · Deliver ${d.delivered}/${d.totalRequired} · Return ${d.returned}/${d.totalRequired}',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
-            if (widget.mode == 'dispatch' && d != null && !d.vehicleVerified) ...[
+            if (_mode == 'dispatch' && d != null && !d.vehicleVerified) ...[
               const SizedBox(height: 16),
               TextField(
                 controller: _vehicleCtrl,
@@ -147,34 +227,36 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
                 onPressed: _loading || !dispatchComplete ? null : _verifyVehicle,
                 child: const Text('Verify vehicle'),
               ),
-              if (!dispatchComplete)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Complete all dispatch scans first',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.amber),
-                  ),
-                ),
             ],
             const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _toggleRfid,
+              icon: Icon(_rfidListening ? Icons.stop : Icons.sensors),
+              label: Text(_rfidListening ? 'Stop RFID listener' : 'Start RFID listener'),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _tagCtrl,
               decoration: InputDecoration(
                 labelText: 'Tag ID (RFID / barcode)',
                 border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _loading ? null : _scan,
-                ),
+                suffixIcon: IconButton(icon: const Icon(Icons.send), onPressed: _loading || !canPickup ? null : () => _scan()),
               ),
               onSubmitted: (_) => _scan(),
-              enabled: widget.mode != 'pickup' || (d?.vehicleVerified ?? false),
+              enabled: canPickup && !_loading,
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: _loading ? null : _scan,
+              onPressed: _loading || !canPickup ? null : () => _scan(),
               child: Text(_loading ? 'Saving…' : 'Submit scan'),
             ),
+            if (_mode == 'return') ...[
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _loading ? null : _closeReturn,
+                child: const Text('Close return'),
+              ),
+            ],
             if (_lastOk != null) ...[
               const SizedBox(height: 12),
               Text(_lastOk!, style: const TextStyle(color: AppColors.green)),

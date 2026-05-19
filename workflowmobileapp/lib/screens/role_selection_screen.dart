@@ -1,8 +1,8 @@
 // lib/screens/role_selection_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../utils/app_theme.dart';
-import 'login_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -62,9 +62,7 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
   void _openLogin(BuildContext context, String role) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => LoginScreen(role: role)),
-    );
+    context.push('/login/${role.toLowerCase()}');
   }
 }
 

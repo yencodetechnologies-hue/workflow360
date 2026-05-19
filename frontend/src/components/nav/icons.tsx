@@ -94,6 +94,23 @@ export function DeliveryIcon() {
   )
 }
 
+export function CalendarIcon() {
+  return (
+    <Icon>
+      <path
+        d="M7 4.5v-1A1.5 1.5 0 0 1 8.5 2h7A1.5 1.5 0 0 1 17 3.5v1"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M5 8h14M7 4.5h10M6 6.5h12A2 2 0 0 1 20 8.5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+    </Icon>
+  )
+}
+
 export function ReportsIcon() {
   return (
     <Icon>

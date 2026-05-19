@@ -1,33 +1,9 @@
 const Delivery = require('../models/Delivery')
 const Product = require('../models/Product')
-
-function parseRate(rateStr) {
-  if (rateStr == null || rateStr === '') return 0
-  const n = Number(String(rateStr).replace(/[^0-9.-]/g, ''))
-  return Number.isFinite(n) ? n : 0
-}
+const { parseRate, populateLineDetails } = require('../utils/deliveryLineDetails')
 
 function allowedLineProductIds(delivery) {
   return new Set((delivery.lines || []).map((l) => String(l.productId)))
-}
-
-async function populateLineDetails(delivery) {
-  const ids = [...new Set((delivery.lines || []).map((l) => String(l.productId)))]
-  const products = await Product.find({ _id: { $in: ids } }).lean()
-  const byId = new Map(products.map((p) => [String(p._id), p]))
-  const linesOut = (delivery.lines || []).map((line) => {
-    const p = byId.get(String(line.productId))
-    return {
-      productId: String(line.productId),
-      qty: line.qty,
-      particulars: p?.particulars,
-      sku: p?.sku || p?.s_no,
-      rate: p?.rate,
-      parsedRate: parseRate(p?.rate),
-      unit: p?.unit,
-    }
-  })
-  return linesOut
 }
 
 async function getDeliveryVerify(req, res) {

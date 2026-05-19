@@ -1,9 +1,9 @@
 // lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
-import 'workflow_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final String role;
@@ -42,10 +42,13 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passCtrl.text,
       );
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => WorkflowHomeScreen(role: widget.role)),
-        (_) => false,
-      );
+      if (widget.role == 'DELIVERY') {
+        context.go('/deliveries');
+      } else if (widget.role == 'GODOWN') {
+        context.go('/queue');
+      } else {
+        context.go('/dashboard');
+      }
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {

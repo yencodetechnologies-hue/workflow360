@@ -8,7 +8,7 @@ import '../services/app_state.dart';
 import '../utils/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
-class ProductListScreen extends StatelessWidget {
+class ProductListScreen extends StatefulWidget {
   final String heading;
   final String description;
 
@@ -20,6 +20,23 @@ class ProductListScreen extends StatelessWidget {
   });
 
   @override
+  State<ProductListScreen> createState() => _ProductListScreenState();
+}
+
+class _ProductListScreenState extends State<ProductListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final state = context.read<AppState>();
+      if (state.products.isEmpty && !state.productsLoading) {
+        state.loadProducts();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, state, _) => Column(
@@ -29,14 +46,14 @@ class ProductListScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(heading,
+              Text(widget.heading,
                   style: GoogleFonts.spaceGrotesk(
                       color: AppColors.text,
                       fontSize: 22,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
-                description,
+                widget.description,
                 style: GoogleFonts.inter(
                     color: AppColors.subtext, fontSize: 13),
               ),

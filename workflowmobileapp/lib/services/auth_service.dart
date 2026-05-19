@@ -89,7 +89,7 @@ class AuthService {
     }
 
     final res = await http.post(
-      Uri.parse('$kApiBaseUrl/auth/login'),
+      apiUri('/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );

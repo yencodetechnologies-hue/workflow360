@@ -8,7 +8,7 @@ import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
-import { getToken } from '../../auth/store'
+import { getToken, useAuth } from '../../auth/store'
 
 export type GodownRow = {
   id: string
@@ -22,6 +22,8 @@ export type GodownRow = {
 }
 
 export function GodownsListPage() {
+  const auth = useAuth()
+  const isAdmin = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
   const [godowns, setGodowns] = useState<GodownRow[]>([])
   const [stockByGodown, setStockByGodown] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -96,9 +98,11 @@ export function GodownsListPage() {
         title="Godowns"
         subtitle="Manage warehouses and view stock distribution."
         right={
-          <Button variant="secondary" onClick={() => setAddOpen(true)}>
-            Add Godown
-          </Button>
+          isAdmin ? (
+            <Button variant="secondary" onClick={() => setAddOpen(true)}>
+              Add Godown
+            </Button>
+          ) : null
         }
       />
 

@@ -27,7 +27,7 @@ class Product {
   });
 
   factory Product.fromWorkflow360Json(Map<String, dynamic> json) {
-    final mongoId = json['_id'] as String? ?? '';
+    final mongoId = _idFromJson(json['_id']);
     final productId = json['productId'] as String? ?? '';
     final id = productId.isNotEmpty ? productId : mongoId;
     final sku = json['sku'] as String? ?? '';
@@ -51,6 +51,16 @@ class Product {
       imageUrl: imageUrl,
       rateDisplay: rateStr,
     );
+  }
+
+  static String _idFromJson(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    if (value is Map) {
+      final oid = value[r'$oid'] ?? value['oid'];
+      if (oid is String) return oid;
+    }
+    return value.toString();
   }
 
   static double _parseRateFirstNumber(String rate) {

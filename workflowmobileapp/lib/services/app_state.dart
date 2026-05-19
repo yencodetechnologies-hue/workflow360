@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../app_tabs.dart';
 import '../models/product.dart';
 import '../models/rfid_tag_data.dart';
+import 'godown_api.dart';
 import 'product_api.dart';
 import 'rfid_service.dart';
 
@@ -39,6 +40,10 @@ class AppState extends ChangeNotifier {
   // Tags discovered in current scan
   final Map<String, ScanResult> _scanResults = {};
   List<ScanResult> get scanResults => _scanResults.values.toList();
+
+  /// Most recently seen EPC during inventory (for delivery scan listener).
+  String? get lastInventoryEpc =>
+      scanResults.isEmpty ? null : scanResults.last.epc;
 
   /// Sum of [ScanResult.inventoryHits] — can exceed [scanResults.length] when the reader reports the same EPC many times.
   int get totalInventoryDetections =>
@@ -193,6 +198,58 @@ class AppState extends ChangeNotifier {
     } else {
       _lastOperation = result;
       _setStatus(ReaderStatus.ready, 'Write failed: ${result.error}');
+    }
+
+    notifyListeners();
+    return _lastOperation!;
+  }
+
+  /// Godown intake: write tag memory, enroll AssetTag, increase stock by 1.
+  Future<OperationResult> enrollTagAndIncreaseStock({
+    required String epc,
+    required String godownId,
+    required String productId,
+    String password = '00000000',
+  }) async {
+    final product = _selectedProduct;
+    if (product == null) {
+      return OperationResult(
+          success: false, message: 'No product selected');
+    }
+    _setStatus(ReaderStatus.busy, 'Writing ${product.name}…');
+    final result = await _rfid.writeProduct(
+        epc: epc, product: product, password: password);
+
+    if (!result.success) {
+      _lastOperation = result;
+      _setStatus(ReaderStatus.ready, 'Write failed: ${result.error}');
+      notifyListeners();
+      return result;
+    }
+
+    try {
+      await GodownApi.rfidIntake(
+        godownId: godownId,
+        tagId: epc,
+        productId: productId,
+        note: 'RFID intake $epc',
+      );
+      _lastOperation = OperationResult(
+        success: true,
+        message: 'Enrolled + stock +1 ✓',
+        hexData: result.hexData,
+        decodedData: result.decodedData,
+      );
+      _setStatus(ReaderStatus.ready, 'Intake OK ✓');
+    } catch (e) {
+      final msg = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', '');
+      _lastOperation = OperationResult(
+        success: false,
+        message: 'Written to tag but backend failed: $msg',
+        hexData: result.hexData,
+        decodedData: result.decodedData,
+      );
+      _setStatus(ReaderStatus.ready, _lastOperation!.message);
     }
 
     notifyListeners();

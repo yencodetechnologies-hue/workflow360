@@ -2,25 +2,57 @@ import { cn } from '../../lib/cn'
 
 export function SparkBars({
   values,
+  labels,
+  highlightIndex,
   className,
 }: {
   values: number[]
+  labels?: string[]
+  highlightIndex?: number
   className?: string
 }) {
   const max = Math.max(1, ...values)
+  const peak =
+    highlightIndex !== undefined
+      ? highlightIndex
+      : values.length
+        ? values.indexOf(Math.max(...values))
+        : -1
+
   return (
-    <div className={cn('flex items-end gap-1', className)}>
-      {values.map((v, i) => (
-        <div
-          key={i}
-          className="w-2 rounded-sm bg-slate-900/70"
-          style={{ height: `${Math.round((v / max) * 42) + 6}px` }}
-          title={`${v}`}
-        />
-      ))}
+    <div className={cn('flex items-end gap-2', className)}>
+      {values.map((v, i) => {
+        const isPeak = i === peak
+        const h = Math.round((v / max) * 42) + 6
+        return (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <div
+              className={cn(
+                'w-3 rounded-md transition-all duration-300',
+                isPeak
+                  ? 'bg-gradient-to-t from-primary-600 to-primary-400 shadow-md shadow-primary-200/50'
+                  : 'bg-gradient-to-t from-slate-400 to-slate-300',
+              )}
+              style={{ height: `${h}px` }}
+              title={`${labels?.[i] ?? ''}: ${v}`}
+            />
+            {labels?.[i] ? (
+              <span
+                className={cn(
+                  'text-[10px] font-semibold',
+                  isPeak ? 'text-primary-600' : 'text-slate-400',
+                )}
+              >
+                {labels[i]}
+              </span>
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }
+
 
 export function DonutChart({
   segments,
@@ -93,4 +125,3 @@ export function DonutChart({
     </svg>
   )
 }
-

@@ -2,10 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
-import 'role_selection_screen.dart';
-import 'workflow_home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,17 +21,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _goNext() async {
-    if (!mounted) return;
     final token = await AuthService.getToken();
     final user = await AuthService.getUser();
+    if (!mounted) return;
     if (token != null && user != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => WorkflowHomeScreen(role: user.role)),
-      );
+      if (user.role == 'DELIVERY') {
+        context.go('/deliveries');
+      } else if (user.role == 'GODOWN') {
+        context.go('/queue');
+      } else {
+        context.go('/dashboard');
+      }
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-      );
+      context.go('/roles');
     }
   }
 

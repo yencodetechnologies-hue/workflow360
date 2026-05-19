@@ -3,9 +3,12 @@ const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
 const DeliveryScanEvent = require('../models/DeliveryScanEvent')
 const AssetTag = require('../models/AssetTag')
+const Godown = require('../models/Godown')
+const GodownProduct = require('../models/GodownProduct')
 const InventoryLedger = require('../models/InventoryLedger')
 const User = require('../models/User')
 const PDFDocument = require('pdfkit')
+const { populateLineDetails, populateBillerReturnLines } = require('../utils/deliveryLineDetails')
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
@@ -240,8 +243,10 @@ async function createDelivery(req, res) {
       if (driver) assignedId = driver._id
     }
 
+    const deliveryNo = makeDeliveryNo()
     const delivery = await Delivery.create({
-      deliveryNo: makeDeliveryNo(),
+      deliveryNo,
+      challanNo: deliveryNo,
       orderId: orderId || undefined,
       customerName,
       siteName,
@@ -302,6 +307,11 @@ async function getDelivery(req, res) {
   const urls = shareUrls(d)
   const required = requiredQtyByProduct(d)
   const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
+  const lines = await populateLineDetails(d)
+  const [billerMissingLines, billerDamagedLines] = await Promise.all([
+    populateBillerReturnLines(d.billerMissingLines),
+    populateBillerReturnLines(d.billerDamagedLines),
+  ])
 
   return res.json({
     id: String(d._id),
@@ -317,7 +327,7 @@ async function getDelivery(req, res) {
     assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
     vehicleLabel: d.vehicleLabel,
     status: d.status,
-    lines: d.lines,
+    lines,
     dispatchedTagIds: d.dispatchedTagIds,
     pickedUpTagIds: d.pickedUpTagIds,
     deliveredTagIds: d.deliveredTagIds,
@@ -333,8 +343,8 @@ async function getDelivery(req, res) {
     deliveryLineChecks: d.deliveryLineChecks,
     deliverySignature: d.deliverySignature,
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
-    billerDamagedLines: d.billerDamagedLines,
-    billerMissingLines: d.billerMissingLines,
+    billerDamagedLines,
+    billerMissingLines,
     damageTotal: d.damageTotal,
     missingTotal: d.missingTotal,
     deliveryVerifyUrl: urls.deliveryVerifyUrl,
@@ -599,18 +609,46 @@ async function closeReturn(req, res) {
 }
 
 async function enrollTag(req, res) {
-  const { tagId, productId, godownId } = req.body || {}
-  if (!tagId || !productId) return res.status(400).json({ message: 'tagId and productId required' })
-  const exists = await AssetTag.findOne({ tagId: String(tagId).trim() }).lean()
-  if (exists) return res.status(400).json({ message: 'tagId already enrolled' })
+  try {
+    const { tagId, productId, godownId } = req.body || {}
+    const trimmedTag = String(tagId || '').trim()
+    if (!trimmedTag || !productId) {
+      return res.status(400).json({ message: 'tagId and productId required' })
+    }
 
-  const tag = await AssetTag.create({
-    tagId: String(tagId).trim(),
-    productId,
-    currentGodownId: godownId || undefined,
-    status: 'IN_STOCK',
-  })
-  return res.status(201).json({ id: String(tag._id), tagId: tag.tagId })
+    if (godownId) {
+      if (!mongoose.Types.ObjectId.isValid(godownId)) {
+        return res.status(400).json({ message: 'godownId must be a valid id' })
+      }
+      if (req.user.role === 'GODOWN' && req.user.godownId && String(req.user.godownId) !== String(godownId)) {
+        return res.status(403).json({ message: 'Forbidden' })
+      }
+      const godown = await Godown.findById(godownId).lean()
+      if (!godown || !godown.active) {
+        return res.status(404).json({ message: 'Godown not found' })
+      }
+      const gp = await GodownProduct.findOne({ godownId, productId }).lean()
+      if (!gp || !gp.enabled) {
+        return res.status(400).json({ message: 'Product is not enabled for this godown' })
+      }
+    }
+
+    const exists = await AssetTag.findOne({ tagId: trimmedTag }).lean()
+    if (exists) return res.status(400).json({ message: 'tagId already enrolled' })
+
+    const tag = await AssetTag.create({
+      tagId: trimmedTag,
+      productId,
+      currentGodownId: godownId || undefined,
+      status: 'IN_STOCK',
+    })
+    return res.status(201).json({ id: String(tag._id), tagId: tag.tagId })
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: 'tagId already enrolled' })
+    }
+    return res.status(500).json({ message: err.message || 'Enroll failed' })
+  }
 }
 
 async function challanPdf(req, res) {
