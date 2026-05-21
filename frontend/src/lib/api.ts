@@ -1,6 +1,6 @@
 export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
-  'https://workflow360.octosofttechnologies.in'
+  'https://workflow360.octosofttechnologies.in/workflow360/api'
 
 export type ApiError = { message: string; status?: number }
 
