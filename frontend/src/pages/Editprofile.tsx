@@ -23,6 +23,7 @@ export function AdminEditProfilePage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -46,16 +47,27 @@ export function AdminEditProfilePage() {
     }))
   }
 
+  // =========================================================
+  // FETCH PROFILE
+  // =========================================================
+
   useEffect(() => {
-    const token = getToken()
+    const loadProfile = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-    if (!token) return
+        const token = getToken()
 
-    setLoading(true)
-    setError(null)
+        if (!token) {
+          setError('Unauthorized')
+          return
+        }
 
-    apiFetch<ProfileResponse>('/users/me', { token })
-      .then((data) => {
+        const data = await apiFetch<ProfileResponse>('/users/me', {
+          token,
+        })
+
         setForm({
           email: data.email || '',
           loginId: data.loginId || '',
@@ -68,17 +80,24 @@ export function AdminEditProfilePage() {
           password: '',
           confirmPassword: '',
         })
-      })
-      .catch((e: unknown) => {
+      } catch (e: unknown) {
         const msg =
           e && typeof e === 'object' && 'message' in e
             ? String((e as { message: string }).message)
             : 'Failed to load profile'
 
         setError(msg)
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
   }, [])
+
+  // =========================================================
+  // UPDATE PROFILE
+  // =========================================================
 
   const handleSave = async () => {
     try {
@@ -86,11 +105,9 @@ export function AdminEditProfilePage() {
       setSuccess(null)
 
       if (form.password && form.password !== form.confirmPassword) {
-        setError('Password confirmation does not match')
+        setError('Passwords do not match')
         return
       }
-
-      setSaving(true)
 
       const token = getToken()
 
@@ -99,7 +116,9 @@ export function AdminEditProfilePage() {
         return
       }
 
-      const body = {
+      setSaving(true)
+
+      const payload = {
         email: form.email.trim(),
         loginId: form.loginId.trim(),
         godownId: form.godownId.trim(),
@@ -107,6 +126,7 @@ export function AdminEditProfilePage() {
         siteAddress: form.siteAddress.trim(),
         contactPhone: form.contactPhone.trim(),
         contactName: form.contactName.trim(),
+
         ...(form.password
           ? {
               password: form.password,
@@ -117,7 +137,7 @@ export function AdminEditProfilePage() {
       await apiFetch('/users/me', {
         method: 'PUT',
         token,
-        body,
+        body: JSON.stringify(payload),
       })
 
       setSuccess('Profile updated successfully')
@@ -131,7 +151,7 @@ export function AdminEditProfilePage() {
       const msg =
         e && typeof e === 'object' && 'message' in e
           ? String((e as { message: string }).message)
-          : 'Failed to update profile'
+          : 'Profile update failed'
 
       setError(msg)
     } finally {
@@ -144,13 +164,12 @@ export function AdminEditProfilePage() {
       {/* HEADER */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
             Admin Profile
           </h1>
 
           <p className="mt-2 text-sm text-slate-500 sm:text-base">
-            Manage administrator profile details, credentials and account
-            settings.
+            Manage administrator profile details and account settings.
           </p>
         </div>
 
@@ -224,18 +243,31 @@ export function AdminEditProfilePage() {
         </div>
       ) : null}
 
+      {/* PROFILE CARD */}
       {!loading ? (
         <Card className="overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.12)]">
           {/* TOP BANNER */}
-          <div className="relative h-44 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600">
+          <div className="relative h-40 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_40%)]" />
+          </div>
 
-            {/* AVATAR */}
-            <div className="absolute -bottom-16 left-8">
-              <div className="relative">
-                <div className="flex h-32 w-32 items-center justify-center rounded-[30px] border-4 border-white bg-white shadow-2xl">
+          {/* CONTENT */}
+          <CardContent className="p-8">
+            {/* PROFILE HEADER */}
+            <div className="mb-10 flex flex-col gap-5 border-b border-slate-100 pb-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-5">
+                {/* AVATAR */}
+                <div
+                  className="
+                    flex h-24 w-24 items-center justify-center
+                    rounded-[28px]
+                    bg-gradient-to-br from-violet-100 to-fuchsia-100
+                    text-violet-700
+                    shadow-inner
+                  "
+                >
                   <svg
-                    className="h-14 w-14 text-slate-400"
+                    className="h-10 w-10"
                     viewBox="0 0 24 24"
                     fill="none"
                   >
@@ -254,62 +286,27 @@ export function AdminEditProfilePage() {
                   </svg>
                 </div>
 
-                {/* CAMERA */}
-                <button
-                  className="
-                    absolute -right-1 -bottom-1
-                    flex h-11 w-11 items-center justify-center
-                    rounded-2xl border-4 border-white
-                    bg-violet-600 text-white shadow-lg
-                    transition hover:bg-violet-700
-                  "
-                >
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <path
-                      d="M4 7h3l2-2h6l2 2h3v10H4V7z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinejoin="round"
-                    />
+                <div>
+                  <h2 className="text-3xl font-bold text-slate-900">
+                    {form.contactName || 'Administrator'}
+                  </h2>
 
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* CONTENT */}
-          <CardContent className="px-8 pb-8 pt-24">
-            {/* PROFILE DETAILS */}
-            <div className="mb-10 flex flex-col gap-4 border-b border-slate-100 pb-8 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-900">
-                  {form.contactName || 'Administrator'}
-                </h2>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  {form.role}
-                </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {form.role}
+                  </p>
+                </div>
               </div>
 
+              {/* BADGES */}
               <div className="flex flex-wrap gap-3">
                 <div className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700">
                   Full Admin Access
                 </div>
 
                 <div className="rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-                  {auth.status === 'authenticated' ? 'Authenticated' : 'Guest'}
+                  {auth.status === 'authenticated'
+                    ? 'Authenticated'
+                    : 'Guest'}
                 </div>
               </div>
             </div>
@@ -327,7 +324,7 @@ export function AdminEditProfilePage() {
 
               <Input
                 label="Login ID"
-                value={form.loginId}
+                value={form.email}
                 onChange={(e) => updateField('loginId', e.target.value)}
                 className="h-12 rounded-2xl"
               />

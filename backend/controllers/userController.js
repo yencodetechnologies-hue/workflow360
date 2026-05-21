@@ -152,4 +152,187 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { listUsers, listBillers, createUser, createBiller, updateUser, setUserActive, resetPassword }
+
+
+/* =========================================================
+   ADMIN EDIT PROFILE API
+========================================================= */
+
+async function getMyProfile(req, res) {
+  try {
+    const user = await User.findById(req.user.id).lean()
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      })
+    }
+
+    return res.json({
+      id: String(user._id),
+      email: user.email,
+      loginId: user.loginId,
+      role: user.role,
+      godownId: user.godownId,
+      siteName: user.siteName,
+      siteAddress: user.siteAddress,
+      contactPhone: user.contactPhone,
+      contactName: user.contactName,
+      active: user.active,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    })
+  } catch (err) {
+    return res.status(500).json({
+      message: err.message || 'Failed to load profile',
+    })
+  }
+}
+
+async function updateMyProfile(req, res) {
+  try {
+    const user = await User.findById(req.user.id)
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      })
+    }
+
+    const {
+      email,
+      loginId,
+      password,
+      godownId,
+      siteName,
+      siteAddress,
+      contactPhone,
+      contactName,
+    } = req.body || {}
+
+    /* ==============================
+       EMAIL UPDATE
+    ============================== */
+
+    if (email !== undefined) {
+      const normalizedEmail = String(email)
+        .toLowerCase()
+        .trim()
+
+      const emailExists = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: user._id },
+      }).lean()
+
+      if (emailExists) {
+        return res.status(400).json({
+          message: 'Email already exists',
+        })
+      }
+
+      user.email = normalizedEmail
+    }
+
+    /* ==============================
+       LOGIN ID UPDATE
+    ============================== */
+
+    if (loginId !== undefined) {
+      const normalizedLoginId = String(loginId)
+        .trim()
+        .toUpperCase()
+
+      const loginExists = await User.findOne({
+        loginId: normalizedLoginId,
+        _id: { $ne: user._id },
+      }).lean()
+
+      if (loginExists) {
+        return res.status(400).json({
+          message: 'loginId already exists',
+        })
+      }
+
+      user.loginId = normalizedLoginId
+    }
+
+    /* ==============================
+       PASSWORD UPDATE
+    ============================== */
+
+    if (password && String(password).trim()) {
+      const saltRounds = Number(
+        process.env.BCRYPT_ROUNDS || 10,
+      )
+
+      user.passwordHash = await bcrypt.hash(
+        String(password),
+        saltRounds,
+      )
+    }
+
+    /* ==============================
+       OTHER FIELDS
+    ============================== */
+
+    if (godownId !== undefined) {
+      user.godownId = godownId || undefined
+    }
+
+    if (siteName !== undefined) {
+      user.siteName = siteName
+        ? String(siteName).trim()
+        : undefined
+    }
+
+    if (siteAddress !== undefined) {
+      user.siteAddress = siteAddress
+        ? String(siteAddress).trim()
+        : undefined
+    }
+
+    if (contactPhone !== undefined) {
+      user.contactPhone = contactPhone
+        ? String(contactPhone).trim()
+        : undefined
+    }
+
+    if (contactName !== undefined) {
+      user.contactName = contactName
+        ? String(contactName).trim()
+        : undefined
+    }
+
+    await user.save()
+
+    return res.json({
+      message: 'Profile updated successfully',
+
+      user: {
+        id: String(user._id),
+        email: user.email,
+        loginId: user.loginId,
+        role: user.role,
+        godownId: user.godownId,
+        siteName: user.siteName,
+        siteAddress: user.siteAddress,
+        contactPhone: user.contactPhone,
+        contactName: user.contactName,
+        active: user.active,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    })
+  } catch (err) {
+    console.log("adminprofileupdate",err);
+    
+    return res.status(500).json({
+      message: err.message || 'Profile update failed',
+    })
+  }
+}
+
+
+
+module.exports = {   getMyProfile,
+  updateMyProfile,listUsers, listBillers, createUser, createBiller, updateUser, setUserActive, resetPassword }

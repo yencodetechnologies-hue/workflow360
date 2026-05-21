@@ -242,7 +242,7 @@ export function GodownsDetailsPage() {
         subtitle={[godown.code ? `Code: ${godown.code}` : null, godown.location].filter(Boolean).join(' · ') || 'Godown details'}
         right={
           <div className="flex flex-wrap items-center gap-3">
-            {canEditGodown ? (
+            {/* {canEditGodown ? (
               <Button
                 size="sm"
                 variant="secondary"
@@ -253,7 +253,7 @@ export function GodownsDetailsPage() {
               >
                 Edit godown
               </Button>
-            ) : null}
+            ) : null} */}
             <Link to="/godowns" className="text-sm font-semibold text-slate-700 hover:text-slate-900">
               Back to list
             </Link>

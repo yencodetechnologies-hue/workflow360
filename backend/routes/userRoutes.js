@@ -7,6 +7,8 @@ const {
   updateUser,
   setUserActive,
   resetPassword,
+  getMyProfile,
+  updateMyProfile
 } = require('../controllers/userController')
 const { requireAuth, requireRole } = require('../middleware/auth')
 
@@ -24,5 +26,10 @@ router.post('/', createUser)
 router.patch('/:id/active', setUserActive)
 router.post('/:id/reset-password', resetPassword)
 router.patch('/:id', updateUser)
+router.get('/me',  getMyProfile)
+
+/* UPDATE ADMIN PROFILE */
+router.put('/me',  updateMyProfile)
+
 
 module.exports = router

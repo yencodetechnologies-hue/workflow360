@@ -293,6 +293,7 @@ import { Link } from 'react-router-dom'
 
 import { formatNumber } from '../../lib/format'
 import { Button } from '../../components/ui/Button'
+
 import {
   Card,
   CardContent,
@@ -347,6 +348,10 @@ export function GodownsListPage() {
 
   const [q, setQ] = useState('')
 
+  /* ======================================================
+     ADD MODAL
+  ====================================================== */
+
   const [addOpen, setAddOpen] = useState(false)
 
   const [addForm, setAddForm] = useState({
@@ -358,7 +363,32 @@ export function GodownsListPage() {
     password: '',
   })
 
+  /* ======================================================
+     EDIT MODAL
+  ====================================================== */
+
+  const [editOpen, setEditOpen] = useState(false)
+
+  const [editingGodownId, setEditingGodownId] =
+    useState<string | null>(null)
+
+  const [editForm, setEditForm] = useState({
+    name: '',
+    code: '',
+    address: '',
+    mobile: '',
+    location: '',
+    newPassword: '',
+  })
+
   const [saving, setSaving] = useState(false)
+
+  const [editSaving, setEditSaving] =
+    useState(false)
+
+  /* ======================================================
+     LOAD
+  ====================================================== */
 
   const load = () => {
     const token = getToken()
@@ -418,6 +448,10 @@ export function GodownsListPage() {
     load()
   }, [])
 
+  /* ======================================================
+     SEARCH
+  ====================================================== */
+
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
 
@@ -465,7 +499,10 @@ export function GodownsListPage() {
         }
       />
 
-      {/* MODAL */}
+      {/* ======================================================
+          ADD MODAL
+      ====================================================== */}
+
       <Modal
         open={addOpen}
         title="Add godown"
@@ -624,6 +661,172 @@ export function GodownsListPage() {
         </div>
       </Modal>
 
+      {/* ======================================================
+          EDIT MODAL
+      ====================================================== */}
+
+      <Modal
+        open={editOpen}
+        title="Edit godown"
+        onClose={() => setEditOpen(false)}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setEditOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              disabled={
+                editSaving ||
+                !editForm.name.trim() ||
+                !editForm.code.trim() ||
+                (editForm.newPassword.length >
+                  0 &&
+                  editForm.newPassword.length <
+                    6)
+              }
+              onClick={() => {
+                const token = getToken()
+
+                if (
+                  !token ||
+                  !editingGodownId
+                )
+                  return
+
+                setEditSaving(true)
+
+                apiFetch<GodownRow>(
+                  `/godowns/${editingGodownId}`,
+                  {
+                    token,
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                      name:
+                        editForm.name.trim(),
+                      code:
+                        editForm.code.trim(),
+                      address:
+                        editForm.address.trim(),
+                      mobile:
+                        editForm.mobile.trim(),
+                      location:
+                        editForm.location.trim(),
+
+                      ...(editForm.newPassword.trim()
+                        .length >= 6
+                        ? {
+                            password:
+                              editForm.newPassword,
+                          }
+                        : {}),
+                    }),
+                  },
+                )
+                  .then(() => {
+                    setEditOpen(false)
+
+                    setEditingGodownId(
+                      null,
+                    )
+
+                    load()
+                  })
+
+                  .catch((e: any) =>
+                    setError(
+                      e?.message ||
+                        'Update failed',
+                    ),
+                  )
+
+                  .finally(() =>
+                    setEditSaving(false),
+                  )
+              }}
+            >
+              {editSaving
+                ? 'Saving…'
+                : 'Save'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Godown name"
+            value={editForm.name}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                name: e.target.value,
+              }))
+            }
+          />
+
+          <Input
+            label="Godown code"
+            value={editForm.code}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                code: e.target.value.toUpperCase(),
+              }))
+            }
+          />
+
+          <Input
+            label="Address"
+            value={editForm.address}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                address: e.target.value,
+              }))
+            }
+          />
+
+          <Input
+            label="Mobile number"
+            value={editForm.mobile}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                mobile: e.target.value,
+              }))
+            }
+          />
+
+          <Input
+            label="Location"
+            value={editForm.location}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                location: e.target.value,
+              }))
+            }
+          />
+
+          <Input
+            type="password"
+            label="New password (optional)"
+            value={editForm.newPassword}
+            onChange={(e) =>
+              setEditForm((f) => ({
+                ...f,
+                newPassword:
+                  e.target.value,
+              }))
+            }
+            placeholder="Leave blank to keep current"
+          />
+        </div>
+      </Modal>
+
       {/* STATS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="rounded-3xl border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl shadow-violet-300/30">
@@ -670,168 +873,203 @@ export function GodownsListPage() {
         </Card>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* TABLE CARD */}
-        <Card className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-xl shadow-slate-200/40 xl:col-span-3">
-          {/* HEADER */}
-          <CardHeader
-            className="
-              flex flex-col gap-4
-              border-b border-slate-100
-              bg-gradient-to-r
-              from-slate-50 to-white
-              sm:flex-row sm:items-center sm:justify-between
-            "
-          >
-            <div>
-              <CardTitle className="text-3xl font-bold text-slate-900">
-                Godown List
-              </CardTitle>
+      {/* TABLE */}
+      <Card className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
+        <CardHeader
+          className="
+            flex flex-col gap-4
+            border-b border-slate-100
+            bg-gradient-to-r
+            from-slate-50 to-white
+            sm:flex-row sm:items-center sm:justify-between
+          "
+        >
+          <div>
+            <CardTitle className="text-3xl font-bold text-slate-900">
+              Godown List
+            </CardTitle>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Warehouse details and stock
-                overview
-              </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Warehouse details and stock
+              overview
+            </p>
+          </div>
+
+          <div className="w-full sm:max-w-sm">
+            <Input
+              value={q}
+              onChange={(e) =>
+                setQ(e.target.value)
+              }
+              placeholder="Search godown..."
+              className="
+                h-12 rounded-2xl
+                border-slate-200
+                bg-white
+                shadow-sm
+              "
+            />
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {error ? (
+            <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+              {error}
             </div>
-
-            {/* SEARCH */}
-            <div className="w-full sm:max-w-sm">
-              <Input
-                value={q}
-                onChange={(e) =>
-                  setQ(e.target.value)
-                }
-                placeholder="Search godown..."
-                className="
-                  h-12 rounded-2xl
-                  border-slate-200
-                  bg-white
-                  shadow-sm
-                "
+          ) : loading ? (
+            <div className="p-8 text-sm text-slate-600">
+              Loading...
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="p-8">
+              <EmptyState
+                title="No godowns found"
+                subtitle="Try a different search or add a new godown."
               />
             </div>
-          </CardHeader>
-
-          {/* CONTENT */}
-          <CardContent className="p-0">
-            {error ? (
-              <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
-                {error}
-              </div>
-            ) : loading ? (
-              <div className="p-8 text-sm text-slate-600">
-                Loading...
-              </div>
-            ) : rows.length === 0 ? (
-              <div className="p-8">
-                <EmptyState
-                  title="No godowns found"
-                  subtitle="Try a different search or add a new godown."
-                />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table className="min-w-[920px]">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <Th>Code</Th>
-                      <Th>Name</Th>
-                      <Th>Location</Th>
-                      <Th>Mobile</Th>
-                      <Th>Address</Th>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[1100px]">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <Th>Code</Th>
+                    <Th>Name</Th>
+                    <Th>Location</Th>
+                    <Th>Mobile</Th>
+                    <Th>Address</Th>
+                    <Th className="text-right">
+                      Stock
+                    </Th>
+                    {isAdmin ? (
                       <Th className="text-right">
-                        Stock
+                        Edit
                       </Th>
-                      <Th className="text-right">
-                        Open
-                      </Th>
-                    </tr>
-                  </thead>
+                    ) : null}
+                    <Th className="text-right">
+                      Open
+                    </Th>
+                  </tr>
+                </thead>
 
-                  <tbody>
-                    {rows.map((g, idx) => (
-                      <tr
-                        key={
-                          g.id ||
-                          `row-${idx}`
-                        }
-                        className="
-                          border-b border-slate-100
-                          transition-all
-                          hover:bg-violet-50/40
-                        "
-                      >
-                        <Td className="py-5">
-                          <span
-                            className="
-                              rounded-xl
-                              bg-slate-100
-                              px-3 py-2
-                              font-mono text-xs
-                              font-bold
-                              text-slate-800
-                            "
-                          >
-                            {g.code || '—'}
-                          </span>
-                        </Td>
+                <tbody>
+                  {rows.map((g, idx) => (
+                    <tr
+                      key={
+                        g.id ||
+                        `row-${idx}`
+                      }
+                      className="
+                        border-b border-slate-100
+                        transition-all
+                        hover:bg-violet-50/40
+                      "
+                    >
+                      <Td className="py-5">
+                        <span
+                          className="
+                            rounded-xl
+                            bg-slate-100
+                            px-3 py-2
+                            font-mono text-xs
+                            font-bold
+                            text-slate-800
+                          "
+                        >
+                          {g.code || '—'}
+                        </span>
+                      </Td>
 
-                        <Td className="py-5">
-                          <div className="font-bold text-slate-900">
-                            {g.name || '—'}
-                          </div>
-                        </Td>
+                      <Td className="py-5">
+                        <div className="font-bold text-slate-900">
+                          {g.name || '—'}
+                        </div>
+                      </Td>
 
-                        <Td className="max-w-[12rem] truncate py-5 text-sm text-slate-600">
-                          {g.location || '—'}
-                        </Td>
+                      <Td className="max-w-[12rem] truncate py-5 text-sm text-slate-600">
+                        {g.location || '—'}
+                      </Td>
 
-                        <Td className="py-5 text-sm text-slate-700">
-                          {g.mobile || '—'}
-                        </Td>
+                      <Td className="py-5 text-sm text-slate-700">
+                        {g.mobile || '—'}
+                      </Td>
 
-                        <Td className="max-w-[16rem] truncate py-5 text-sm text-slate-600">
-                          {g.address || '—'}
-                        </Td>
+                      <Td className="max-w-[16rem] truncate py-5 text-sm text-slate-600">
+                        {g.address || '—'}
+                      </Td>
 
-                        <Td className="py-5 text-right font-bold text-violet-700">
-                          {formatNumber(
-                            stockByGodown[
-                              g.id
-                            ] ?? 0,
-                          )}
-                        </Td>
+                      <Td className="py-5 text-right font-bold text-violet-700">
+                        {formatNumber(
+                          stockByGodown[
+                            g.id
+                          ] ?? 0,
+                        )}
+                      </Td>
 
+                      {isAdmin ? (
                         <Td className="py-5 text-right">
-                          <Link
-                            className="
-                              inline-flex items-center
-                              rounded-xl
-                              bg-violet-100
-                              px-4 py-2
-                              text-sm font-semibold
-                              text-violet-700
-                              transition-all
-                              hover:bg-violet-600
-                              hover:text-white
-                            "
-                            to={`/godowns/${g.id}`}
-                          >
-                            View
-                          </Link>
-                        </Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setEditingGodownId(
+                                g.id,
+                              )
 
-      
-      </div>
+                              setEditForm({
+                                name:
+                                  g.name || '',
+                                code:
+                                  g.code || '',
+                                address:
+                                  g.address ||
+                                  '',
+                                mobile:
+                                  g.mobile ||
+                                  '',
+                                location:
+                                  g.location ||
+                                  '',
+                                newPassword:
+                                  '',
+                              })
+
+                              setEditOpen(
+                                true,
+                              )
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </Td>
+                      ) : null}
+
+                      <Td className="py-5 text-right">
+                        <Link
+                          className="
+                            inline-flex items-center
+                            rounded-xl
+                            bg-violet-100
+                            px-4 py-2
+                            text-sm font-semibold
+                            text-violet-700
+                            transition-all
+                            hover:bg-violet-600
+                            hover:text-white
+                          "
+                          to={`/godowns/${g.id}`}
+                        >
+                          View
+                        </Link>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
