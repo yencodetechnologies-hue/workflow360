@@ -5,7 +5,14 @@ import { logout, useAuth } from '../../auth/store'
 
 export function Sidebar() {
   const auth = useAuth()
+  // console.log("authh",auth?.user?.email);
+
+  const userInitial = auth.status === 'authenticated' && auth.user?.email
+  ? auth.user.email.charAt(0).toUpperCase()
+  : 'A';
+  
   const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
+
   const navItems = navItemsForRole(role)
 
   return (
@@ -86,7 +93,7 @@ export function Sidebar() {
           >
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 shadow-md group-hover:shadow-lg transform group-hover:scale-105 transition-all duration-300 flex items-center justify-center">
               <span className="text-white font-bold text-sm">
-                {auth.status === 'authenticated' ? auth.user.email.slice(0, 1).toUpperCase() : 'A'}
+                 <span>{userInitial}</span>
               </span>
             </div>
             <div className="min-w-0">
