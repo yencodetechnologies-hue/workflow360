@@ -301,10 +301,9 @@
 
 import { useMemo, useState } from 'react'
 import { Button } from '../../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
-import { Select } from '../../components/ui/Select'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { useProducts } from '../../hooks/useProducts'
@@ -315,7 +314,6 @@ export function ProductsListPage() {
     products,
     loading,
     error,
-    reload,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -323,7 +321,6 @@ export function ProductsListPage() {
   } = useProducts()
 
   const [q, setQ] = useState('')
-  const [cat, setCat] = useState('all')
 
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -342,17 +339,10 @@ export function ProductsListPage() {
     imagePath: '',
   })
 
-  const categories = useMemo(() => {
-    const set = new Set(products.map((p) => p.category))
-    return ['all', ...Array.from(set)]
-  }, [products])
-
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
 
     return products.filter((p) => {
-      if (cat !== 'all' && p.category !== cat) return false
-
       if (!s) return true
 
       return (
@@ -361,7 +351,7 @@ export function ProductsListPage() {
         p.category.toLowerCase().includes(s)
       )
     })
-  }, [cat, products, q])
+  }, [products, q])
 
   const imageSrc = (path: string) =>
     path.startsWith('http')
@@ -404,16 +394,6 @@ export function ProductsListPage() {
         {/* TOP FILTER SECTION */}
         <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            {/* <div>
-              <CardTitle className="text-2xl font-bold text-slate-900">
-                Product Inventory
-              </CardTitle>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Search, filter, edit, and manage your products professionally.
-              </p>
-            </div> */}
-
             <div className="flex w-full flex-col gap-3 md:flex-row xl:w-auto">
               <div className="w-full md:w-72">
                 <Input
@@ -423,268 +403,249 @@ export function ProductsListPage() {
                   className="h-12 rounded-2xl border-slate-200 bg-white"
                 />
               </div>
-
-              {/* <div className="w-full md:w-60">
-                <Select
-                  value={cat}
-                  onChange={(e) => setCat(e.target.value)}
-                  options={categories.map((c) => ({
-                    value: c,
-                    label: c === 'all' ? 'All categories' : c,
-                  }))}
-                />
-              </div> */}
-
-              {/* <Button
-                variant="secondary"
-                className="h-12 rounded-2xl px-5"
-                onClick={reload}
-              >
-                Refresh
-              </Button> */}
             </div>
           </div>
         </CardHeader>
 
         {/* TABLE */}
-     <CardContent className="p-0">
-  {error ? (
-    <div className="m-4 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-      {error}
-    </div>
-  ) : null}
+        <CardContent className="p-0">
+          {error ? (
+            <div className="m-4 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {error}
+            </div>
+          ) : null}
 
-  {loading ? (
-    <div className="flex items-center justify-center py-16 text-sm text-slate-500">
-      Loading products...
-    </div>
-  ) : rows.length === 0 ? (
-    <div className="p-8">
-      <EmptyState
-        title="No products found"
-        subtitle="Add a product or adjust your filters."
-      />
-    </div>
-  ) : (
-    <div className="overflow-x-auto">
-      <Table className="min-w-[1050px]">
-        {/* HEADER */}
-        <thead className="border-b border-slate-200 bg-slate-50">
-          <tr>
-            <Th className="w-[60px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-              S.No
-            </Th>
+          {loading ? (
+            <div className="flex items-center justify-center py-16 text-sm text-slate-500">
+              Loading products...
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="p-8">
+              <EmptyState
+                title="No products found"
+                subtitle="Add a product or adjust your filters."
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[1050px]">
+                {/* HEADER */}
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <Th className="w-[60px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      S.No
+                    </Th>
 
-            <Th className="w-[90px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Image
-            </Th>
+                    <Th className="w-[90px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Image
+                    </Th>
 
-            <Th className="w-[170px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Category
-            </Th>
+                    <Th className="w-[170px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Category
+                    </Th>
 
-            <Th className="min-w-[260px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Particulars
-            </Th>
+                    <Th className="min-w-[260px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Particulars
+                    </Th>
 
-            <Th className="min-w-[240px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Specification
-            </Th>
+                    <Th className="min-w-[240px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Specification
+                    </Th>
 
-            <Th className="w-[120px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-              Rate
-            </Th>
+                    <Th className="w-[120px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Rate
+                    </Th>
 
-            <Th className="w-[170px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-              Actions
-            </Th>
-          </tr>
-        </thead>
+                    <Th className="w-[170px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Actions
+                    </Th>
+                  </tr>
+                </thead>
 
-        {/* BODY */}
-        <tbody>
-          {rows.map((p) => (
-            <tr
-              key={p.id}
-              className="
-                border-b border-slate-100
-                bg-white
-                transition-all duration-150
-                hover:bg-violet-50/30
-              "
-            >
-              {/* SNO */}
-              <Td className="py-3 align-middle">
-                <div className="text-sm font-semibold text-slate-700">
-                  {p.sNo}
-                </div>
-              </Td>
+                {/* BODY */}
+                <tbody>
+                  {rows.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="
+                        border-b border-slate-100
+                        bg-white
+                        transition-all duration-150
+                        hover:bg-violet-50/30
+                      "
+                    >
+                      {/* SNO */}
+                      <Td className="py-3 align-middle">
+                        <div className="text-sm font-semibold text-slate-700">
+                          {p.sNo}
+                        </div>
+                      </Td>
 
-              {/* IMAGE */}
-              <Td className="py-3 align-middle">
-                {p.imagePath ? (
-                  <div className="h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <img
-                      src={imageSrc(p.imagePath)}
-                      alt={p.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="
-                      flex h-14 w-14 items-center justify-center
-                      rounded-xl border border-dashed
-                      border-slate-200 bg-slate-50
-                      text-[10px] font-medium text-slate-400
-                    "
-                  >
-                    No Image
-                  </div>
-                )}
-              </Td>
+                      {/* IMAGE */}
+                      <Td className="py-3 align-middle">
+                        {p.imagePath ? (
+                          <div className="h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <img
+                              src={imageSrc(p.imagePath)}
+                              alt={p.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="
+                              flex h-14 w-14 items-center justify-center
+                              rounded-xl border border-dashed
+                              border-slate-200 bg-slate-50
+                              text-[10px] font-medium text-slate-400
+                            "
+                          >
+                            No Image
+                          </div>
+                        )}
+                      </Td>
 
-              {/* CATEGORY */}
-              <Td className="py-3 align-middle">
-                <div
-                  className="
-                    inline-flex items-center
-                    rounded-full
-                    bg-slate-100
-                    px-3 py-1.5
-                    text-[11px]
-                    font-bold
-                    uppercase
-                    tracking-wide
-                    text-slate-700
-                  "
-                >
-                  {p.category}
-                </div>
-              </Td>
+                      {/* CATEGORY */}
+                      <Td className="py-3 align-middle">
+                        <div
+                          className="
+                            inline-flex items-center
+                            rounded-full
+                            bg-slate-100
+                            px-3 py-1.5
+                            text-[11px]
+                            font-bold
+                            uppercase
+                            tracking-wide
+                            text-slate-700
+                          "
+                        >
+                          {p.category}
+                        </div>
+                      </Td>
 
-              {/* PARTICULARS */}
-              <Td className="py-3 align-middle">
-                <div className="max-w-[240px]">
-                  <div
-                    className="
-                      line-clamp-2
-                      text-[15px]
-                      font-bold
-                      leading-5
-                      text-slate-900
-                    "
-                  >
-                    {p.particulars}
-                  </div>
+                      {/* PARTICULARS */}
+                      <Td className="py-3 align-middle">
+                        <div className="max-w-[240px]">
+                          <div
+                            className="
+                              line-clamp-2
+                              text-[15px]
+                              font-bold
+                              leading-5
+                              text-slate-900
+                            "
+                          >
+                            {p.particulars}
+                          </div>
 
-                  <div className="mt-1 text-xs font-medium text-slate-500">
-                    SKU: {p.sku}
-                  </div>
-                </div>
-              </Td>
+                          <div className="mt-1 text-xs font-medium text-slate-500">
+                            SKU: {p.sku}
+                          </div>
+                        </div>
+                      </Td>
 
-              {/* SPEC */}
-              <Td className="py-3 align-middle">
-                <div
-                  className="
-                    max-w-[260px]
-                    text-[14px]
-                    leading-5
-                    text-slate-600
-                  "
-                >
-                  {p.specification}
-                </div>
-              </Td>
+                      {/* SPEC */}
+                      <Td className="py-3 align-middle">
+                        <div
+                          className="
+                            max-w-[260px]
+                            text-[14px]
+                            leading-5
+                            text-slate-600
+                          "
+                        >
+                          {p.specification}
+                        </div>
+                      </Td>
 
-              {/* RATE */}
-              <Td className="py-3 text-right align-middle">
-                <div
-                  className="
-                    inline-flex items-center
-                    rounded-xl
-                    bg-emerald-50
-                    px-3 py-1.5
-                    text-sm font-bold
-                    text-emerald-700
-                  "
-                >
-                  ₹ {p.rate}
-                </div>
-              </Td>
+                      {/* RATE */}
+                      <Td className="py-3 text-right align-middle">
+                        <div
+                          className="
+                            inline-flex items-center
+                            rounded-xl
+                            bg-emerald-50
+                            px-3 py-1.5
+                            text-sm font-bold
+                            text-emerald-700
+                          "
+                        >
+                          ₹ {p.rate}
+                        </div>
+                      </Td>
 
-              {/* ACTIONS */}
-              <Td className="py-3 text-right align-middle">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="
-                      h-10 rounded-xl
-                      border border-slate-200
-                      px-4
-                      text-sm font-semibold
-                    "
-                    onClick={() => {
-                      setEditingId(p.id)
-                      setSaveError(null)
+                      {/* ACTIONS */}
+                      <Td className="py-3 text-right align-middle">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="
+                              h-10 rounded-xl
+                              border border-slate-200
+                              px-4
+                              text-sm font-semibold
+                            "
+                            onClick={() => {
+                              setEditingId(p.id)
+                              setSaveError(null)
 
-                      setForm({
-                        name: p.name,
-                        sku: p.sku,
-                        category: p.category,
-                        specification: p.specification,
-                        rate: p.rate,
-                        sNo: p.sNo,
-                        imagePath: p.imagePath || '',
-                      })
+                              setForm({
+                                name: p.particulars,
+                                sku: p.sku,
+                                category: p.category,
+                                specification: p.specification,
+                                rate: p.rate,
+                                sNo: p.sNo,
+                                imagePath: p.imagePath || '',
+                              })
 
-                      setOpen(true)
-                    }}
-                  >
-                    Edit
-                  </Button>
+                              setOpen(true)
+                            }}
+                          >
+                            Edit
+                          </Button>
 
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    className="
-                      h-10 rounded-xl
-                      px-4
-                      text-sm font-semibold
-                    "
-                    onClick={async () => {
-                      if (!confirm(`Delete product ${p.name}?`))
-                        return
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            className="
+                              h-10 rounded-xl
+                              px-4
+                              text-sm font-semibold
+                            "
+                            onClick={async () => {
+                              if (!confirm(`Delete product ${p.particulars}?`))
+                                return
 
-                      try {
-                        await deleteProduct(p.id)
-                      } catch (e: unknown) {
-                        const msg =
-                          e &&
-                          typeof e === 'object' &&
-                          'message' in e
-                            ? String(
-                                (e as { message: string }).message,
-                              )
-                            : 'Delete failed'
+                              try {
+                                await deleteProduct(p.id)
+                              } catch (e: unknown) {
+                                const msg =
+                                  e &&
+                                  typeof e === 'object' &&
+                                  'message' in e
+                                    ? String(
+                                        (e as { message: string }).message,
+                                      )
+                                    : 'Delete failed'
 
-                        alert(msg)
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </div>
-  )}
-</CardContent>
+                                alert(msg)
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* MODAL */}
