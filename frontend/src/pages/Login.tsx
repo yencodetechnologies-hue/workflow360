@@ -673,47 +673,14 @@ export function LoginPage() {
                   {serverError}
                 </div>
               ) : (
-                <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
-                  Sign in with your role account
-                  (admin/godown/delivery/biller).
-                </div>
+             <></>
               )}
             </form>
 
-            {/* DIVIDER */}
-            <div className="my-3 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
 
-              <span className="text-[11px] uppercase tracking-wider text-slate-400">
-                Or continue with
-              </span>
 
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
+        
 
-            {/* SOCIAL BUTTONS */}
-            <div className="grid grid-cols-2 gap-3">
-
-              <button
-                type="button"
-                className="flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Google
-              </button>
-
-              <button
-                type="button"
-                className="flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Facebook
-              </button>
-            </div>
-
-            {/* FOOTER */}
-            <div className="mt-3 text-center text-xs leading-5 text-slate-400">
-              By continuing, you agree to your company policies and
-              terms of service.
-            </div>
           </div>
         </div>
       </div>
