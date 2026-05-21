@@ -275,7 +275,7 @@ export function DashboardPage() {
               </CardContent>
             </GlassCard>
 
-            <GradientCard variant="warning" className="hover-lift">
+            <GradientCard variant="primary" className="hover-lift">
               <CardHeader className="flex items-center justify-between border-0">
                 <CardTitle className="text-white">Alerts</CardTitle>
                 <Badge className="bg-white/20 text-white border-white/30 animate-pulse">
@@ -369,3 +369,4 @@ export function DashboardPage() {
     </div>
   )
 }
+

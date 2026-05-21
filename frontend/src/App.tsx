@@ -17,6 +17,7 @@ import { CalendarPage } from './pages/Calendar'
 import { ReportsPage } from './pages/Reports'
 import { QueuePage } from './pages/Queue'
 import { ScanDeliveryPage } from './pages/Scan/ScanDelivery'
+import { AdminEditProfilePage } from './pages/Editprofile'
 
 export default function App() {
   return (
@@ -28,6 +29,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
+          <Route path="/editprofile" element={<AdminEditProfilePage />} />
+
           <Route path="/queue" element={<QueuePage />} />
           <Route path="/godowns" element={<GodownsListPage />} />
           <Route path="/godowns/:id" element={<GodownsDetailsPage />} />

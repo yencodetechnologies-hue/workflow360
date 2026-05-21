@@ -22,8 +22,9 @@ export function navItemsForRole(role: Role): NavItem[] {
   if (role === 'GODOWN') {
     return [
       { label: 'Queue', to: '/queue', icon: <DeliveryIcon /> },
-      { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
       { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
+
+      { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
       { label: 'Products', to: '/products', icon: <ProductIcon /> },
       { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
       { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
@@ -32,8 +33,9 @@ export function navItemsForRole(role: Role): NavItem[] {
   // ADMIN, BILLER
   return [
     { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
-    { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
     { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
+
+    { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
     { label: 'Products', to: '/products', icon: <ProductIcon /> },
     { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
     { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
