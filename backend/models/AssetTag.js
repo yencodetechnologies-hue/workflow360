@@ -18,6 +18,7 @@ const assetTagSchema = mongoose.Schema(
 
 assetTagSchema.index({ productId: 1, status: 1 })
 assetTagSchema.index({ currentGodownId: 1 })
+assetTagSchema.index({ currentGodownId: 1, productId: 1, status: 1 })
 assetTagSchema.index({ currentDeliveryId: 1 })
 
 module.exports = mongoose.model('AssetTag', assetTagSchema)

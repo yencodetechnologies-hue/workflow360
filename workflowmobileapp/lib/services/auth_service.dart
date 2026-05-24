@@ -1,6 +1,7 @@
 // lib/services/auth_service.dart
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -88,24 +89,71 @@ class AuthService {
       body['email'] = email!.trim().toLowerCase();
     }
 
-    final res = await http.post(
-      apiUri('/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
+    final uri = apiUri('/auth/login');
+    debugPrint('[Login] POST $uri');
+    debugPrint(
+      '[Login] Request body (password hidden): ${jsonEncode({...body, 'password': '***'})}',
     );
 
+    http.Response res;
+    try {
+      res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+    } on Exception catch (e, st) {
+      debugPrint('[Login] Network error — $e');
+      debugPrint('[Login] Stack trace:\n$st');
+      throw Exception(loginNetworkErrorMessage(e));
+    } catch (e, st) {
+      debugPrint('[Login] Network error — $e');
+      debugPrint('[Login] Stack trace:\n$st');
+      throw Exception(loginNetworkErrorMessage(e));
+    }
+
+    debugPrint('[Login] Response status=${res.statusCode}');
+    debugPrint('[Login] Response body=${res.body}');
+
     if (res.statusCode != 200) {
-      final err = jsonDecode(res.body);
-      throw Exception(err['message'] ?? 'Login failed');
+      String message = 'Login failed (${res.statusCode})';
+      try {
+        final err = jsonDecode(res.body);
+        if (err is Map && err['message'] != null) {
+          message = err['message'] as String;
+        }
+      } catch (e) {
+        debugPrint('[Login] Could not parse error JSON — $e');
+      }
+      debugPrint('[Login] API error — $message');
+      throw Exception(message);
     }
 
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final user = AuthUser.fromJson(data['user'] as Map<String, dynamic>);
     if (user.role != role) {
+      debugPrint('[Login] Role mismatch — expected=$role actual=${user.role}');
       throw Exception('Account is not a $role user');
     }
     final token = data['token'] as String;
     await saveSession(token, user, role);
+    debugPrint('[Login] Session saved — userId=${user.id} role=${user.role}');
     return user;
+  }
+
+  /// User-facing message for http/socket failures (DNS, offline, wrong API URL).
+  static String loginNetworkErrorMessage(Object error) {
+    final text = error.toString();
+    if (text.contains('Failed host lookup') ||
+        text.contains('SocketException') ||
+        text.contains('Network is unreachable') ||
+        text.contains('Connection refused') ||
+        text.contains('Connection timed out')) {
+      return 'Cannot reach the server at $kApiBaseUrl.\n'
+          '• Check Wi‑Fi or mobile data on this device\n'
+          '• For local backend, use your PC IP (not 127.0.0.1):\n'
+          '  flutter run --dart-define=API_BASE_URL=http://YOUR_PC_IP:5000/workflow360/api';
+    }
+    return 'Network error. Please try again.';
   }
 }

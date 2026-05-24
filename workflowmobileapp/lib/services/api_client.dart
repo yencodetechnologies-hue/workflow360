@@ -75,10 +75,15 @@ class ApiClient {
     return res.body.isEmpty ? null : jsonDecode(res.body);
   }
 
-  static Future<void> delete(String path) async {
-    final res = await http.delete(apiUri(path), headers: await _headers());
+  static Future<dynamic> delete(String path, {Object? body}) async {
+    final res = await http.delete(
+      apiUri(path),
+      headers: await _headers(),
+      body: body == null ? null : jsonEncode(body),
+    );
     if (res.statusCode == 401) await AuthService.clearSession();
     if (res.statusCode != 200 && res.statusCode != 204) _throw(res);
+    return res.body.isEmpty ? null : jsonDecode(res.body);
   }
 
   static Future<String> uploadProductImage(List<int> bytes, String filename) async {

@@ -1,7 +1,9 @@
 // lib/screens/login_screen.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../config/api_config.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
 
@@ -30,6 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    debugPrint('[Login] Sign in tapped — role=${widget.role}');
+    debugPrint(
+      '[Login] ${_isDelivery ? 'loginId' : 'email'}=${_idCtrl.text.trim().isEmpty ? '(empty)' : _idCtrl.text.trim()}',
+    );
     setState(() {
       _busy = true;
       _error = null;
@@ -41,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _isDelivery ? null : _idCtrl.text,
         password: _passCtrl.text,
       );
+      debugPrint('[Login] Success — role=${widget.role}');
       if (!mounted) return;
       if (widget.role == 'DELIVERY') {
         context.go('/deliveries');
@@ -49,8 +56,13 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         context.go('/dashboard');
       }
-    } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } catch (e, st) {
+      debugPrint('[Login] Failed — $e');
+      debugPrint('[Login] Stack trace:\n$st');
+      final msg = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : AuthService.loginNetworkErrorMessage(e);
+      setState(() => _error = msg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -65,11 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Text('$roleLabel login'),
         backgroundColor: AppColors.surface,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
               'Workflow 360',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.cyan),
@@ -96,7 +110,20 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: AppColors.red)),
+              Text(
+                _error!,
+                style: const TextStyle(color: AppColors.red, fontSize: 13),
+              ),
+            ],
+            if (kDebugMode) ...[
+              const SizedBox(height: 16),
+              Text(
+                'API: $kApiBaseUrl',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.cyan.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
+              ),
             ],
             const SizedBox(height: 24),
             FilledButton(
@@ -106,7 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(_busy ? 'Signing in…' : 'Sign in'),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

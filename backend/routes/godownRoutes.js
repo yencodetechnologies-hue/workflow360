@@ -2,7 +2,13 @@ const express = require('express')
 const { requireAuth, requireRole } = require('../middleware/auth')
 const { listGodowns, createGodown, updateGodown, getGodown, queueByDate } = require('../controllers/godownController')
 const { listGodownProducts, patchGodownProduct } = require('../controllers/godownProductController')
-const { postGodownAdjustment, postRfidIntake } = require('../controllers/godownInventoryController')
+const {
+  postGodownAdjustment,
+  postRfidIntake,
+  listProductAssetTags,
+  lookupAssetTags,
+  deleteRfidIntake,
+} = require('../controllers/godownInventoryController')
 
 const router = express.Router()
 
@@ -17,6 +23,9 @@ router.get('/:godownId/products', requireRole(['ADMIN', 'GODOWN', 'BILLER']), li
 router.patch('/:godownId/products', requireRole(['ADMIN', 'GODOWN']), patchGodownProduct)
 router.post('/:godownId/inventory/adjust', requireRole(['ADMIN', 'GODOWN']), postGodownAdjustment)
 router.post('/:godownId/inventory/rfid-intake', requireRole(['ADMIN', 'GODOWN']), postRfidIntake)
+router.delete('/:godownId/inventory/rfid-intake', requireRole(['ADMIN', 'GODOWN']), deleteRfidIntake)
+router.get('/:godownId/products/:productId/asset-tags', requireRole(['ADMIN', 'GODOWN', 'BILLER']), listProductAssetTags)
+router.post('/:godownId/asset-tags/lookup', requireRole(['ADMIN', 'GODOWN']), lookupAssetTags)
 
 router.patch('/:godownId', requireRole(['ADMIN', 'GODOWN']), updateGodown)
 

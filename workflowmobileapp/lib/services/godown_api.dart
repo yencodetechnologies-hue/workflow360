@@ -92,6 +92,57 @@ class QueueRow {
       );
 }
 
+class AssetTagRow {
+  final String tagId;
+  final String? assetTagId;
+  final String productId;
+  final String godownId;
+  final String status;
+  final DateTime? enrolledAt;
+
+  AssetTagRow({
+    required this.tagId,
+    this.assetTagId,
+    required this.productId,
+    required this.godownId,
+    required this.status,
+    this.enrolledAt,
+  });
+
+  factory AssetTagRow.fromJson(Map<String, dynamic> j) => AssetTagRow(
+        tagId: j['tagId'] as String,
+        assetTagId: j['assetTagId'] as String?,
+        productId: j['productId'] as String,
+        godownId: j['godownId'] as String,
+        status: j['status'] as String? ?? 'IN_STOCK',
+        enrolledAt: j['enrolledAt'] != null ? DateTime.tryParse(j['enrolledAt'].toString()) : null,
+      );
+}
+
+class TagLookupRow {
+  final String tagId;
+  final String productId;
+  final String productName;
+  final String? godownId;
+  final bool isCurrentProduct;
+
+  TagLookupRow({
+    required this.tagId,
+    required this.productId,
+    required this.productName,
+    this.godownId,
+    required this.isCurrentProduct,
+  });
+
+  factory TagLookupRow.fromJson(Map<String, dynamic> j) => TagLookupRow(
+        tagId: j['tagId'] as String,
+        productId: j['productId'] as String,
+        productName: j['productName'] as String? ?? j['productId'] as String,
+        godownId: j['godownId'] as String?,
+        isCurrentProduct: j['isCurrentProduct'] as bool? ?? false,
+      );
+}
+
 class GodownApi {
   static Future<List<GodownRow>> listGodowns() async {
     final data = await ApiClient.get('/godowns');
@@ -146,6 +197,41 @@ class GodownApi {
       if (note != null && note.isNotEmpty) 'note': note,
     });
     return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> revokeRfidIntake({
+    required String godownId,
+    required String tagId,
+    required String productId,
+    String? note,
+  }) async {
+    final data = await ApiClient.delete('/godowns/$godownId/inventory/rfid-intake', body: {
+      'tagId': tagId.trim(),
+      'productId': productId,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<List<AssetTagRow>> listProductAssetTags({
+    required String godownId,
+    required String productId,
+  }) async {
+    final data = await ApiClient.get('/godowns/$godownId/products/$productId/asset-tags');
+    return (data as List).map((e) => AssetTagRow.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  static Future<List<TagLookupRow>> lookupAssetTags({
+    required String godownId,
+    required List<String> tagIds,
+    String? productId,
+  }) async {
+    if (tagIds.isEmpty) return [];
+    final data = await ApiClient.post('/godowns/$godownId/asset-tags/lookup', body: {
+      'tagIds': tagIds,
+      if (productId != null) 'productId': productId,
+    });
+    return (data as List).map((e) => TagLookupRow.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   static Future<List<QueueRow>> queueByDate(String date) async {

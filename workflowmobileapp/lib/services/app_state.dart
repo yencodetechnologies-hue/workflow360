@@ -451,6 +451,11 @@ class AppState extends ChangeNotifier {
     return result;
   }
 
+  /// Remove one EPC from the current scan list (dismiss without assign).
+  void removeScanResult(String epc) {
+    if (_scanResults.remove(epc) != null) notifyListeners();
+  }
+
   void clearRecords() {
     _tagRecords.clear();
     _scanResults.clear();

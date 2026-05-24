@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/godown_api.dart';
 import '../services/report_api.dart';
 import '../utils/app_theme.dart';
+import '../utils/delivery_wizard.dart';
 
 class GodownsListScreen extends StatefulWidget {
   const GodownsListScreen({super.key});
@@ -20,10 +21,18 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
   bool _loading = true;
   String? _error;
   String _q = '';
+  String _branchFilter = '';
   String _role = '';
   String? _userGodownId;
 
   bool get _isAdmin => _role == 'ADMIN';
+  bool get _showBranchFilter => _isAdmin && _godowns.length > 1;
+
+  List<String> get _branchOptions {
+    final set = _godowns.map(godownBranch).toSet();
+    final list = set.toList()..sort();
+    return list;
+  }
 
   @override
   void initState() {
@@ -125,9 +134,13 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
   }
 
   List<GodownRow> get _filtered {
+    var list = _godowns;
+    if (_branchFilter.isNotEmpty) {
+      list = list.where((g) => godownBranch(g) == _branchFilter).toList();
+    }
     final s = _q.trim().toLowerCase();
-    if (s.isEmpty) return _godowns;
-    return _godowns.where((g) {
+    if (s.isEmpty) return list;
+    return list.where((g) {
       final hay = [g.name, g.code, g.address, g.mobile, g.city].whereType<String>().join(' ').toLowerCase();
       return hay.contains(s);
     }).toList();
@@ -138,20 +151,42 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
             children: [
-              Expanded(child: TextField(
-                decoration: const InputDecoration(hintText: 'Search godowns…', prefixIcon: Icon(Icons.search)),
-                onChanged: (v) => setState(() => _q = v),
-              )),
-              if (_isAdmin) ...[
-                const SizedBox(width: 8),
-                IconButton.filled(onPressed: _showAdd, icon: const Icon(Icons.add)),
+              if (_showBranchFilter) ...[
+                DropdownButtonFormField<String>(
+                  value: _branchFilter.isEmpty ? null : _branchFilter,
+                  decoration: const InputDecoration(labelText: 'Filter by branch / city'),
+                  items: [
+                    const DropdownMenuItem(value: '', child: Text('All branches')),
+                    ..._branchOptions.map((b) => DropdownMenuItem(value: b, child: Text(b))),
+                  ],
+                  onChanged: (v) => setState(() => _branchFilter = v ?? ''),
+                ),
+                const SizedBox(height: 12),
               ],
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search godowns…',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (v) => setState(() => _q = v),
+                    ),
+                  ),
+                  if (_isAdmin) ...[
+                    const SizedBox(width: 8),
+                    IconButton.filled(onPressed: _showAdd, icon: const Icon(Icons.add)),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
+        const SizedBox(height: 8),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: AppColors.cyan))
@@ -170,7 +205,7 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text('${g.code ?? ''} · Stock: $stock units'),
+                              subtitle: Text('${g.code ?? ''} · ${godownBranch(g)} · Stock: $stock units'),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => context.push('/godowns/${g.id}'),
                             ),
