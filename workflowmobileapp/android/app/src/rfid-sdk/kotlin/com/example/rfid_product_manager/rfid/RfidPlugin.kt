@@ -176,15 +176,28 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun readTag(call: MethodCall, result: Result) {
         val m         = mgr ?: return result.error("NO_READER", "Reader not open", null)
+        val epc       = call.argument<String>("epc")?.trim()?.uppercase()
         val bank      = call.argument<Int>("bank")      ?: 3
         val startAddr = call.argument<Int>("startAddr") ?: 0
         val length    = call.argument<Int>("length")    ?: 8
-        val password  = call.argument<String>("password")?.takeIf { it.isNotEmpty() }
+        val password  = accessPassword(call.argument<String>("password"))
         Thread {
-            val data = m.GetTagData(bank, startAddr, length, password)
-            val hex  = data?.let { UHFReader.bytes_Hexstr(it)?.trim() } ?: ""
-            mainHandler.post {
-                result.success(mapOf("success" to (data != null), "data" to hex))
+            try {
+                if (!epc.isNullOrEmpty()) {
+                    val filterState = setEpcFilter(m, epc)
+                    android.util.Log.d("RfidPlugin", "readTag filter $epc: $filterState")
+                }
+                var data: ByteArray? = null
+                var tries = 3
+                while (tries-- > 0 && data == null) {
+                    data = m.GetTagData(bank, startAddr, length, password)
+                }
+                val hex = data?.let { UHFReader.bytes_Hexstr(it)?.trim() } ?: ""
+                mainHandler.post {
+                    result.success(mapOf("success" to (data != null), "data" to hex))
+                }
+            } finally {
+                clearTagFilter(m)
             }
         }.start()
     }
@@ -193,16 +206,52 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun writeTag(call: MethodCall, result: Result) {
         val m         = mgr ?: return result.error("NO_READER", "Reader not open", null)
+        val epc       = call.argument<String>("epc")?.trim()?.uppercase()
+            ?: return result.error("BAD_ARG", "epc required", null)
         val hexData   = call.argument<String>("data")
             ?: return result.error("BAD_ARG", "data required", null)
         val bank      = call.argument<Int>("bank")      ?: 3
         val startAddr = call.argument<Int>("startAddr") ?: 0
-        val password  = call.argument<String>("password")?.takeIf { it.isNotEmpty() }
+        val password  = accessPassword(call.argument<String>("password"))
         Thread {
-            val bytes = UHFReader.Str2Hex(hexData)
-            val state = m.writeTagData(bank, startAddr, bytes, password)
-            val ok    = state == UHFReader.READER_STATE.OK_ERR
-            mainHandler.post { result.success(mapOf("success" to ok)) }
+            var state = UHFReader.READER_STATE.CMD_FAILED_ERR
+            try {
+                val filterState = setEpcFilter(m, epc)
+                android.util.Log.d("RfidPlugin", "writeTag filter $epc: $filterState")
+                if (filterState != UHFReader.READER_STATE.OK_ERR) {
+                    mainHandler.post {
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to "Could not select tag ($filterState)",
+                        ))
+                    }
+                    return@Thread
+                }
+
+                val bytes = UHFReader.Str2Hex(hexData)
+                var tries = 3
+                while (tries-- > 0 && state != UHFReader.READER_STATE.OK_ERR) {
+                    state = m.writeTagData(bank, startAddr, bytes, password)
+                    android.util.Log.d("RfidPlugin", "writeTagData attempt for $epc: $state")
+                }
+                val ok = state == UHFReader.READER_STATE.OK_ERR
+                mainHandler.post {
+                    result.success(mapOf(
+                        "success" to ok,
+                        "error" to if (ok) null else state.name,
+                    ))
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("RfidPlugin", "writeTag exception", e)
+                mainHandler.post {
+                    result.success(mapOf(
+                        "success" to false,
+                        "error" to (e.message ?: "Write exception"),
+                    ))
+                }
+            } finally {
+                clearTagFilter(m)
+            }
         }.start()
     }
 
@@ -220,6 +269,34 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     // ── RF parameter initialisation ─────────────────────────────
+
+    private fun accessPassword(raw: String?): String? {
+        val pwd = raw?.trim().orEmpty()
+        return pwd.takeIf { it.isNotEmpty() }
+    }
+
+    /** Target one tag by EPC before read/write (required when multiple tags are in range). */
+    private fun setEpcFilter(m: UHFManager, epc: String): UHFReader.READER_STATE {
+        return try {
+            val filter = JSONObject()
+            filter.put("bank", UHFReader.BANK_TYPE.EPC.value())
+            filter.put("startaddr", 32)
+            filter.put("fdata", epc.uppercase())
+            filter.put("isInvert", 0)
+            m.setParam("TAG_FILTER", "PARAM_TAG_FILTER", filter.toString())
+        } catch (e: Exception) {
+            android.util.Log.e("RfidPlugin", "setEpcFilter error", e)
+            UHFReader.READER_STATE.CMD_FAILED_ERR
+        }
+    }
+
+    private fun clearTagFilter(m: UHFManager) {
+        try {
+            m.setParam("TAG_FILTER", "PARAM_CLEAR", "1")
+        } catch (e: Exception) {
+            android.util.Log.w("RfidPlugin", "clearTagFilter error: $e")
+        }
+    }
 
     private fun setDefaultParams(m: UHFManager) {
         try {

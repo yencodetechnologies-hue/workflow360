@@ -445,7 +445,7 @@ class _AssignRfidIntakeScreenState extends State<AssignRfidIntakeScreen>
           });
         } else {
           failed++;
-          lastError = result.message;
+          lastError = result.error ?? result.message;
         }
       }
       if (!mounted) return;

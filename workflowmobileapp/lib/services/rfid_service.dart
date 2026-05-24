@@ -198,11 +198,14 @@ class RfidService {
         'startAddr': startAddr, 'length': length, 'password': password,
       });
       final hex = res?['data'] as String? ?? '';
+      final ok = res?['success'] as bool? ?? false;
+      final err = res?['error'] as String?;
       return OperationResult(
-        success: res?['success'] as bool? ?? false,
-        message: 'Read OK',
+        success: ok,
+        message: ok ? 'Read OK' : (err ?? 'Read failed'),
         hexData: hex,
         decodedData: Product.hexToString(hex),
+        error: err,
       );
     } on PlatformException catch (e) {
       return OperationResult(success: false, message: 'Read failed', error: e.message);
@@ -236,10 +239,13 @@ class RfidService {
         'epc': epc, 'bank': bank,
         'startAddr': startAddr, 'data': hexData, 'password': password,
       });
+      final ok = res?['success'] as bool? ?? false;
+      final err = res?['error'] as String?;
       return OperationResult(
-        success: res?['success'] as bool? ?? false,
-        message: 'Write OK',
+        success: ok,
+        message: ok ? 'Write OK' : (err ?? 'Write failed'),
         hexData: hexData,
+        error: err,
       );
     } on PlatformException catch (e) {
       return OperationResult(success: false, message: 'Write failed', error: e.message);

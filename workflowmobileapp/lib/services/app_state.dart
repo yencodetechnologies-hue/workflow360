@@ -197,7 +197,8 @@ class AppState extends ChangeNotifier {
       _setStatus(ReaderStatus.ready, 'Write OK ✓$backendNote');
     } else {
       _lastOperation = result;
-      _setStatus(ReaderStatus.ready, 'Write failed: ${result.error}');
+      final detail = result.error ?? result.message;
+      _setStatus(ReaderStatus.ready, 'Write failed: $detail');
     }
 
     notifyListeners();
@@ -222,7 +223,8 @@ class AppState extends ChangeNotifier {
 
     if (!result.success) {
       _lastOperation = result;
-      _setStatus(ReaderStatus.ready, 'Write failed: ${result.error}');
+      final detail = result.error ?? result.message;
+      _setStatus(ReaderStatus.ready, 'Write failed: $detail');
       notifyListeners();
       return result;
     }
