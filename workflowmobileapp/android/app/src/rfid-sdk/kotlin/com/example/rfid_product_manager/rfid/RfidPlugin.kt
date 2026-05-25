@@ -180,21 +180,34 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
         val bank      = call.argument<Int>("bank")      ?: 3
         val startAddr = call.argument<Int>("startAddr") ?: 0
         val length    = call.argument<Int>("length")    ?: 8
-        val password  = accessPassword(call.argument<String>("password"))
+        val passwords = passwordAttempts(call.argument<String>("password"))
         Thread {
             try {
+                ensureInventoryStopped(m)
                 if (!epc.isNullOrEmpty()) {
                     val filterState = setEpcFilter(m, epc)
                     android.util.Log.d("RfidPlugin", "readTag filter $epc: $filterState")
                 }
                 var data: ByteArray? = null
-                var tries = 3
-                while (tries-- > 0 && data == null) {
-                    data = m.GetTagData(bank, startAddr, length, password)
+                var lastState = UHFReader.READER_STATE.CMD_FAILED_ERR
+                for (pwd in passwords) {
+                    var tries = 5
+                    while (tries-- > 0 && data == null) {
+                        data = m.GetTagData(bank, startAddr, length, pwd)
+                        if (data == null) {
+                            lastState = UHFReader.READER_STATE.IO_ERR
+                            pauseBeforeRetry()
+                        }
+                    }
+                    if (data != null) break
                 }
                 val hex = data?.let { UHFReader.bytes_Hexstr(it)?.trim() } ?: ""
                 mainHandler.post {
-                    result.success(mapOf("success" to (data != null), "data" to hex))
+                    result.success(mapOf(
+                        "success" to (data != null),
+                        "data" to hex,
+                        "error" to if (data != null) null else lastState.name,
+                    ))
                 }
             } finally {
                 clearTagFilter(m)
@@ -212,10 +225,11 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
             ?: return result.error("BAD_ARG", "data required", null)
         val bank      = call.argument<Int>("bank")      ?: 3
         val startAddr = call.argument<Int>("startAddr") ?: 0
-        val password  = accessPassword(call.argument<String>("password"))
+        val passwords = passwordAttempts(call.argument<String>("password"))
         Thread {
             var state = UHFReader.READER_STATE.CMD_FAILED_ERR
             try {
+                ensureInventoryStopped(m)
                 val filterState = setEpcFilter(m, epc)
                 android.util.Log.d("RfidPlugin", "writeTag filter $epc: $filterState")
                 if (filterState != UHFReader.READER_STATE.OK_ERR) {
@@ -229,16 +243,35 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
                 }
 
                 val bytes = UHFReader.Str2Hex(hexData)
-                var tries = 3
-                while (tries-- > 0 && state != UHFReader.READER_STATE.OK_ERR) {
-                    state = m.writeTagData(bank, startAddr, bytes, password)
-                    android.util.Log.d("RfidPlugin", "writeTagData attempt for $epc: $state")
+                if (bytes == null || bytes.isEmpty()) {
+                    mainHandler.post {
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to "Invalid hex data",
+                        ))
+                    }
+                    return@Thread
+                }
+                val maxBytes = 48
+                val writeBytes = if (bytes.size > maxBytes) bytes.copyOf(maxBytes) else bytes
+
+                for (pwd in passwords) {
+                    var tries = 5
+                    while (tries-- > 0 && state != UHFReader.READER_STATE.OK_ERR) {
+                        state = m.writeTagData(bank, startAddr, writeBytes, pwd)
+                        android.util.Log.d(
+                            "RfidPlugin",
+                            "writeTagData attempt for $epc (pwd=${pwd ?: "null"}, ${writeBytes.size}B): $state",
+                        )
+                        if (state != UHFReader.READER_STATE.OK_ERR) pauseBeforeRetry()
+                    }
+                    if (state == UHFReader.READER_STATE.OK_ERR) break
                 }
                 val ok = state == UHFReader.READER_STATE.OK_ERR
                 mainHandler.post {
                     result.success(mapOf(
                         "success" to ok,
-                        "error" to if (ok) null else state.name,
+                        "error" to if (ok) null else "${state.name} — hold tag close, stop scan, check access password",
                     ))
                 }
             } catch (e: Exception) {
@@ -270,9 +303,30 @@ class RfidPlugin : FlutterPlugin, MethodCallHandler {
 
     // ── RF parameter initialisation ─────────────────────────────
 
+    /** NL demo uses null when the password field is empty (factory-default tags). */
     private fun accessPassword(raw: String?): String? {
         val pwd = raw?.trim().orEmpty()
         return pwd.takeIf { it.isNotEmpty() }
+    }
+
+    /** Try explicit password first, then null (matches Newland demo behaviour). */
+    private fun passwordAttempts(raw: String?): List<String?> {
+        val pwd = accessPassword(raw)
+        return if (pwd == null) listOf(null) else listOf(pwd, null)
+    }
+
+    private fun ensureInventoryStopped(m: UHFManager) {
+        val stopState = m.stopTagInventory()
+        android.util.Log.d("RfidPlugin", "stopTagInventory before R/W: $stopState")
+        pauseBeforeRetry()
+    }
+
+    private fun pauseBeforeRetry() {
+        try {
+            Thread.sleep(120)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
     }
 
     /** Target one tag by EPC before read/write (required when multiple tags are in range). */

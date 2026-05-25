@@ -230,6 +230,7 @@ class AppState extends ChangeNotifier {
       return OperationResult(
           success: false, message: 'No product selected');
     }
+    if (isScanning) await stopScan();
     _setStatus(ReaderStatus.busy, 'Writing ${product.name}…');
     final result = await _rfid.writeProduct(
         epc: epc, product: product, password: password);
@@ -272,6 +273,7 @@ class AppState extends ChangeNotifier {
       return OperationResult(
           success: false, message: 'No product selected');
     }
+    if (isScanning) await stopScan();
     _setStatus(ReaderStatus.busy, 'Writing ${product.name}…');
     final result = await _rfid.writeProduct(
         epc: epc, product: product, password: password);
@@ -320,6 +322,7 @@ class AppState extends ChangeNotifier {
     required String epc,
     String password = '00000000',
   }) async {
+    if (isScanning) await stopScan();
     _setStatus(ReaderStatus.busy, 'Reading tag…');
     final result = await _rfid.readTag(epc: epc, password: password);
     _lastOperation = result;

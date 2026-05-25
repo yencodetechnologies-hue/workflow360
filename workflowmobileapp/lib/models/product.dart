@@ -82,10 +82,17 @@ class Product {
     return '#${h.toRadixString(16).padLeft(6, '0')}';
   }
 
+  /// Typical Gen2 USER bank is 32–64 bytes; keep payload within a safe limit.
+  static const int maxUserPayloadChars = 40;
+
   /// Encode product into a compact hex string to write onto RFID user memory.
   /// Format: SKU|NAME (ASCII → hex, padded to word boundary)
   String toHex() {
-    final payload = '$sku|$name';
+    var payload = '$sku|$name';
+    if (payload.length > maxUserPayloadChars) {
+      final maxName = (maxUserPayloadChars - sku.length - 1).clamp(0, name.length);
+      payload = '$sku|${name.substring(0, maxName)}';
+    }
     final bytes = payload.codeUnits;
     var hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     while (hex.length % 4 != 0) {
