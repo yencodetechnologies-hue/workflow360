@@ -1,6 +1,9 @@
 // lib/models/product.dart
 
 class Product {
+  /// MongoDB `_id` — required for godown inventory / RFID intake APIs.
+  final String mongoId;
+  /// Business id (`productId` field) or mongo id when no business id exists.
   final String id;
   final String sku;
   final String name;
@@ -14,6 +17,7 @@ class Product {
   final String rateDisplay;
 
   const Product({
+    this.mongoId = '',
     required this.id,
     required this.sku,
     required this.name,
@@ -28,8 +32,8 @@ class Product {
 
   factory Product.fromWorkflow360Json(Map<String, dynamic> json) {
     final mongoId = _idFromJson(json['_id']);
-    final productId = json['productId'] as String? ?? '';
-    final id = productId.isNotEmpty ? productId : mongoId;
+    final businessId = json['productId'] as String? ?? '';
+    final id = businessId.isNotEmpty ? businessId : mongoId;
     final sku = json['sku'] as String? ?? '';
     final name = json['particulars'] as String? ?? '';
     final category = json['category'] as String? ?? '';
@@ -40,6 +44,7 @@ class Product {
     final imageUrl =
         (rawImage != null && rawImage.isNotEmpty) ? rawImage : null;
     return Product(
+      mongoId: mongoId,
       id: id.isNotEmpty ? id : sku,
       sku: sku,
       name: name,
@@ -132,6 +137,9 @@ class Product {
         if (imageUrl != null) 'imageUrl': imageUrl,
         if (rateDisplay.isNotEmpty) 'rateDisplay': rateDisplay,
       };
+
+  /// Id to send to godown / inventory APIs (always Mongo `_id` when known).
+  String get apiProductId => mongoId.isNotEmpty ? mongoId : id;
 
   @override
   String toString() => 'Product($sku — $name)';

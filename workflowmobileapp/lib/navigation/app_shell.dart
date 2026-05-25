@@ -29,7 +29,7 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.surface.withValues(alpha: 0.92),
         titleSpacing: 0,
         title: Row(
           children: [
@@ -37,14 +37,17 @@ class AppShell extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.cyan, AppColors.green],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppGradients.brandIcon,
                 borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.bolt, color: Colors.black, size: 18),
+              child: const Icon(Icons.bolt, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 10),
             const Text('Workflow 360'),
@@ -74,7 +77,7 @@ class AppShell extends StatelessWidget {
               currentLocation: location,
             )
           : null,
-      body: child,
+      body: AppPageBackground(child: child),
       bottomNavigationBar: items.length <= 1
           ? null
           : _StyledBottomNav(
@@ -188,7 +191,7 @@ class _DrawerHeader extends StatelessWidget {
       case 'DELIVERY':
         return AppColors.green;
       default:
-        return AppColors.cyan;
+        return AppColors.primary;
     }
   }
 
@@ -240,7 +243,7 @@ class _DrawerHeader extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(_roleIcon, color: Colors.black, size: 28),
+            child: Icon(_roleIcon, color: Colors.white, size: 28),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -290,9 +293,9 @@ class _DrawerTile extends StatelessWidget {
       case '/products':
         return AppColors.green;
       case '/masters/billers':
-        return AppColors.cyan;
+        return AppColors.primary;
       default:
-        return AppColors.cyan;
+        return AppColors.primary;
     }
   }
 
@@ -374,9 +377,9 @@ class _StyledBottomNav extends StatelessWidget {
         border: const Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -424,12 +427,12 @@ class _NavBarItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.cyan.withValues(alpha: 0.1)
+                ? AppColors.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected
-                  ? AppColors.cyan.withValues(alpha: 0.22)
+                  ? AppColors.primary.withValues(alpha: 0.22)
                   : Colors.transparent,
             ),
           ),
@@ -439,13 +442,13 @@ class _NavBarItem extends StatelessWidget {
               Icon(
                 item.icon,
                 size: 22,
-                color: isSelected ? AppColors.cyan : AppColors.subtext,
+                color: isSelected ? AppColors.primary : AppColors.subtext,
               ),
               const SizedBox(height: 4),
               Text(
                 item.label,
                 style: TextStyle(
-                  color: isSelected ? AppColors.cyan : AppColors.subtext,
+                  color: isSelected ? AppColors.primary : AppColors.subtext,
                   fontSize: 11,
                   fontWeight:
                       isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -458,12 +461,12 @@ class _NavBarItem extends StatelessWidget {
                 width: isSelected ? 5 : 0,
                 height: isSelected ? 5 : 0,
                 decoration: BoxDecoration(
-                  color: AppColors.cyan,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: AppColors.cyan.withValues(alpha: 0.7),
+                            color: AppColors.primary.withValues(alpha: 0.5),
                             blurRadius: 6,
                           ),
                         ]

@@ -15,10 +15,18 @@ Future<void> assignTag({
   required String tagId,
 }) async {
   try {
-    await ApiClient.post('/products/assign-tag', body: {
+    final data = await ApiClient.post('/products/assign-tag', body: {
       'productId': productId,
-      'tagId': tagId,
+      'tagId': tagId.trim(),
     });
+    if (data is Map) {
+      final status = data['status'] as String?;
+      if (status == 'error' || status == 'not_found' || status == 'conflict') {
+        throw ProductApiException(
+          data['message'] as String? ?? 'Assign tag failed',
+        );
+      }
+    }
   } on ApiException catch (e) {
     throw ProductApiException(e.message);
   }

@@ -13,7 +13,6 @@
 | **Tag → Write** | Writes selected product data (SKU+name) as hex |
 | **Tag → Identify** | Reads tag + looks up SKU in product database |
 | **Tag → Delete** | Clear user memory (soft) or Kill tag (hard/permanent) |
-| **History** | All fetched/identified tags with product info |
 
 ---
 
@@ -159,8 +158,7 @@ lib/
 ├── screens/
 │   ├── product_list_screen.dart Product selection
 │   ├── scan_screen.dart         UHF inventory + tag list
-│   ├── operations_screen.dart   Read / Write / Identify / Delete per tag
-│   └── history_screen.dart      All identified tag records
+│   └── operations_screen.dart   Read / Write / Identify / Delete per tag
 ├── widgets/
 │   └── shared_widgets.dart      Status bar, hex card, RSSI, banners
 └── utils/

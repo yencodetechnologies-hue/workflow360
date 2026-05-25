@@ -180,7 +180,8 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
             IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: _openChallan, tooltip: 'Challan PDF'),
         ],
       ),
-      body: Padding(
+      body: AppPageBackground(
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -267,6 +268,7 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

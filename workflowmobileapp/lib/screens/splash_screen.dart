@@ -41,11 +41,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Center(
+      body: AppPageBackground(
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.hub_outlined, size: 72, color: AppColors.cyan)
+            const Icon(Icons.hub_outlined, size: 72, color: AppColors.primary)
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .scale(begin: const Offset(0.8, 0.8)),
@@ -53,7 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Text(
               'Workflow 360',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.cyan,
+                    color: AppColors.primary,
                     letterSpacing: 1.2,
                   ),
             ).animate().fadeIn(delay: 300.ms),
@@ -64,6 +65,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ).animate().fadeIn(delay: 500.ms),
           ],
         ),
+      ),
       ),
     );
   }

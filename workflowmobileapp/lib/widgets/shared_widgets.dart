@@ -274,6 +274,303 @@ class RssiIndicator extends StatelessWidget {
   }
 }
 
+// ── Branch / city filter (godown lists) ──────────────────────
+
+/// Mobile-friendly branch filter: tappable field opens a bottom sheet list.
+class BranchFilterPicker extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<String> options;
+  final ValueChanged<String?> onChanged;
+  final Map<String, int>? counts;
+
+  const BranchFilterPicker({
+    super.key,
+    this.label = 'Branch / city',
+    required this.value,
+    required this.options,
+    required this.onChanged,
+    this.counts,
+  });
+
+  String get _displayValue {
+    final v = value?.trim();
+    if (v == null || v.isEmpty) return 'All branches';
+    return v;
+  }
+
+  bool get _hasFilter {
+    final v = value?.trim();
+    return v != null && v.isNotEmpty;
+  }
+
+  Future<void> _openSheet(BuildContext context) async {
+    final picked = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _BranchFilterSheet(
+        label: label,
+        selected: value?.trim().isEmpty == true ? null : value?.trim(),
+        options: options,
+        counts: counts,
+      ),
+    );
+    if (!context.mounted || picked == null) return;
+    onChanged(picked.isEmpty ? null : picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openSheet(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hasFilter
+                  ? AppColors.primary.withValues(alpha: 0.45)
+                  : AppColors.border,
+              width: _hasFilter ? 1.5 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.location_city_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          color: AppColors.subtext,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _displayValue,
+                        style: GoogleFonts.inter(
+                          color: AppColors.text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (_hasFilter)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(Icons.close, size: 18, color: AppColors.subtext),
+                    onPressed: () => onChanged(null),
+                    tooltip: 'Clear filter',
+                  ),
+                const Icon(Icons.expand_more, color: AppColors.subtext),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BranchFilterSheet extends StatelessWidget {
+  final String label;
+  final String? selected;
+  final List<String> options;
+  final Map<String, int>? counts;
+
+  const _BranchFilterSheet({
+    required this.label,
+    required this.selected,
+    required this.options,
+    this.counts,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final maxH = MediaQuery.sizeOf(context).height * 0.55;
+    return Container(
+      constraints: BoxConstraints(maxHeight: maxH),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: AppColors.subtext),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+              children: [
+                _BranchTile(
+                  title: 'All branches',
+                  subtitle: 'Show every godown',
+                  icon: Icons.warehouse_outlined,
+                  selected: selected == null || selected!.isEmpty,
+                  onTap: () => Navigator.pop(context, ''),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Divider(height: 1),
+                ),
+                ...options.map((b) {
+                  final n = counts?[b];
+                  return _BranchTile(
+                    title: b,
+                    subtitle: n != null ? '$n godown${n == 1 ? '' : 's'}' : null,
+                    icon: Icons.place_outlined,
+                    selected: selected == b,
+                    onTap: () => Navigator.pop(context, b),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BranchTile extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BranchTile({
+    required this.title,
+    this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: selected
+            ? AppColors.primary.withValues(alpha: 0.08)
+            : AppColors.bg,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: selected ? AppColors.primary : AppColors.subtext,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.subtext,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (selected)
+                  const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Confirm bottom sheet ─────────────────────────────────────
 
 Future<bool> showConfirmSheet(

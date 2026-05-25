@@ -239,7 +239,7 @@ class _ProductCard extends StatelessWidget {
                       width: 2),
                 ),
                 child: isSelected
-                    ? const Icon(Icons.check, size: 14, color: Colors.black)
+                    ? const Icon(Icons.check, size: 14, color: Colors.white)
                     : null,
               ),
             ]),

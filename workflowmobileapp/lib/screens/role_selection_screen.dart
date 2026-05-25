@@ -15,7 +15,8 @@ class RoleSelectionScreen extends StatelessWidget {
         title: const Text('Workflow 360'),
         backgroundColor: AppColors.surface,
       ),
-      body: Padding(
+      body: AppPageBackground(
+        child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,7 +37,7 @@ class RoleSelectionScreen extends StatelessWidget {
               icon: Icons.admin_panel_settings_outlined,
               title: 'Admin',
               subtitle: 'Manage orders and deliveries',
-              color: AppColors.cyan,
+              color: AppColors.primary,
               onTap: () => _openLogin(context, 'ADMIN'),
             ),
             const SizedBox(height: 16),
@@ -52,11 +53,12 @@ class RoleSelectionScreen extends StatelessWidget {
               icon: Icons.local_shipping_outlined,
               title: 'Delivery',
               subtitle: 'Pickup at godown · deliver at biller',
-              color: AppColors.orange,
+              color: AppColors.accent,
               onTap: () => _openLogin(context, 'DELIVERY'),
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -85,7 +87,13 @@ class _RoleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -96,7 +104,7 @@ class _RoleCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 32),
@@ -112,7 +120,7 @@ class _RoleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.subtext),
+              const Icon(Icons.chevron_right, color: AppColors.subtext),
             ],
           ),
         ),

@@ -4,8 +4,19 @@ const Product = require('../models/Product')
 const GodownProduct = require('../models/GodownProduct')
 const InventoryLedger = require('../models/InventoryLedger')
 const AssetTag = require('../models/AssetTag')
+const { resolveProductMongoId } = require('../utils/resolveProduct')
 
 const MAX_ABS_DELTA = 1_000_000
+
+function isValidGodownId(id) {
+  const s = String(id || '').trim()
+  return mongoose.Types.ObjectId.isValid(s) && String(new mongoose.Types.ObjectId(s)) === s
+}
+
+/** Accept Mongo `_id` or business `productId` (e.g. WF360-0001); returns mongo id string. */
+async function resolveGodownProductId(rawId) {
+  return resolveProductMongoId(rawId)
+}
 
 async function sumQtyFor(godownId, productId) {
   const gid = new mongoose.Types.ObjectId(godownId)
@@ -20,10 +31,15 @@ async function sumQtyFor(godownId, productId) {
 async function postGodownAdjustment(req, res) {
   try {
     const { godownId } = req.params
-    const { productId, qtyDelta, note } = req.body || {}
+    const { productId: rawProductId, qtyDelta, note } = req.body || {}
 
-    if (!mongoose.Types.ObjectId.isValid(godownId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'godownId and productId must be valid ids' })
+    if (!isValidGodownId(godownId)) {
+      return res.status(400).json({ message: 'godownId must be a valid id' })
+    }
+
+    const productId = await resolveGodownProductId(rawProductId)
+    if (!productId) {
+      return res.status(400).json({ message: 'Product not found' })
     }
 
     const godown = await Godown.findById(godownId).lean()
@@ -41,11 +57,6 @@ async function postGodownAdjustment(req, res) {
     }
     if (Math.abs(n) > MAX_ABS_DELTA) {
       return res.status(400).json({ message: `qtyDelta must be between -${MAX_ABS_DELTA} and ${MAX_ABS_DELTA}` })
-    }
-
-    const product = await Product.findById(productId).select('_id').lean()
-    if (!product) {
-      return res.status(400).json({ message: 'Product not found' })
     }
 
     const gp = await GodownProduct.findOne({ godownId, productId }).lean()
@@ -90,10 +101,15 @@ async function postRfidIntake(req, res) {
   let createdTag = null
   try {
     const { godownId } = req.params
-    const { tagId, productId, note } = req.body || {}
+    const { tagId, productId: rawProductId, note } = req.body || {}
 
-    if (!mongoose.Types.ObjectId.isValid(godownId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'godownId and productId must be valid ids' })
+    if (!isValidGodownId(godownId)) {
+      return res.status(400).json({ message: 'godownId must be a valid id' })
+    }
+
+    const productId = await resolveGodownProductId(rawProductId)
+    if (!productId) {
+      return res.status(400).json({ message: 'Product not found' })
     }
 
     const trimmedTag = String(tagId || '').trim()
@@ -108,11 +124,6 @@ async function postRfidIntake(req, res) {
 
     if (req.user.role === 'GODOWN' && req.user.godownId && String(req.user.godownId) !== String(godownId)) {
       return res.status(403).json({ message: 'Forbidden' })
-    }
-
-    const product = await Product.findById(productId).select('_id').lean()
-    if (!product) {
-      return res.status(400).json({ message: 'Product not found' })
     }
 
     const gp = await GodownProduct.findOne({ godownId, productId }).lean()
@@ -186,23 +197,19 @@ async function assertGodownAccess(req, godownId) {
 
 async function listProductAssetTags(req, res) {
   try {
-    const { godownId, productId } = req.params
-    if (!mongoose.Types.ObjectId.isValid(godownId)) {
+    const { godownId, productId: rawProductId } = req.params
+    if (!isValidGodownId(godownId)) {
       return res.status(400).json({ message: 'godownId must be a valid id' })
     }
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'productId must be a valid id' })
+    const productId = await resolveGodownProductId(rawProductId)
+    if (!productId) {
+      return res.status(404).json({ message: 'Product not found' })
     }
     const access = await assertGodownAccess(req, godownId)
     if (access.error) return res.status(access.error.status).json({ message: access.error.message })
 
     const gid = new mongoose.Types.ObjectId(godownId)
     const pid = new mongoose.Types.ObjectId(productId)
-
-    const product = await Product.findById(pid).select('_id').lean()
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' })
-    }
 
     const gp = await GodownProduct.findOne({ godownId: gid, productId: pid }).lean()
     if (!gp || !gp.enabled) {
@@ -253,7 +260,8 @@ async function lookupAssetTags(req, res) {
       .lean()
     const productById = new Map(products.map((p) => [String(p._id), p]))
 
-    const currentProductId = productId && mongoose.Types.ObjectId.isValid(productId) ? String(productId) : null
+    const resolvedCurrent = productId ? await resolveGodownProductId(productId) : null
+    const currentProductId = resolvedCurrent ? String(resolvedCurrent) : null
 
     return res.json(
       assets.map((a) => {
@@ -276,10 +284,15 @@ async function lookupAssetTags(req, res) {
 async function deleteRfidIntake(req, res) {
   try {
     const { godownId } = req.params
-    const { tagId, productId, note } = req.body || {}
+    const { tagId, productId: rawProductId, note } = req.body || {}
 
-    if (!mongoose.Types.ObjectId.isValid(godownId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'godownId and productId must be valid ids' })
+    if (!isValidGodownId(godownId)) {
+      return res.status(400).json({ message: 'godownId must be a valid id' })
+    }
+
+    const productId = await resolveGodownProductId(rawProductId)
+    if (!productId) {
+      return res.status(400).json({ message: 'Product not found' })
     }
 
     const trimmedTag = String(tagId || '').trim()

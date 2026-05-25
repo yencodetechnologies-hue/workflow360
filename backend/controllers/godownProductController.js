@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const Godown = require('../models/Godown')
 const Product = require('../models/Product')
 const GodownProduct = require('../models/GodownProduct')
+const { resolveProductMongoId } = require('../utils/resolveProduct')
 
 async function listGodownProducts(req, res) {
   try {
@@ -44,9 +45,13 @@ async function listGodownProducts(req, res) {
 async function patchGodownProduct(req, res) {
   try {
     const { godownId } = req.params
-    const { productId, enabled } = req.body || {}
-    if (!mongoose.Types.ObjectId.isValid(godownId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'godownId and productId required as valid ids' })
+    const { productId: rawProductId, enabled } = req.body || {}
+    if (!mongoose.Types.ObjectId.isValid(godownId)) {
+      return res.status(400).json({ message: 'godownId must be a valid id' })
+    }
+    const productId = await resolveProductMongoId(rawProductId)
+    if (!productId) {
+      return res.status(400).json({ message: 'Product not found' })
     }
     if (typeof enabled !== 'boolean') return res.status(400).json({ message: 'enabled boolean required' })
 

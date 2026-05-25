@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'history_screen.dart';
 import 'product_list_screen.dart';
 import 'scan_screen.dart';
 
@@ -28,7 +27,7 @@ class _RfidShellScreenState extends State<RfidShellScreen> {
       ),
       body: IndexedStack(
         index: _idx,
-        children: const [ProductListScreen(), ScanScreen(), HistoryScreen()],
+        children: const [ProductListScreen(), ScanScreen()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _idx,
@@ -36,7 +35,6 @@ class _RfidShellScreenState extends State<RfidShellScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.inventory_2), label: 'Products'),
           NavigationDestination(icon: Icon(Icons.radar), label: 'Scan'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
         ],
       ),
     );

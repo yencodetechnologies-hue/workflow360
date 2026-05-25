@@ -9,7 +9,6 @@ import '../services/app_state.dart';
 import '../utils/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import 'bulk_results_screen.dart';
-import 'operations_screen.dart';
 
 Future<String?> _bulkAccessPasswordDialog(BuildContext context) async {
   final ctrl = TextEditingController(text: '00000000');
@@ -153,7 +152,7 @@ class ScanScreen extends StatelessWidget {
                   backgroundColor: state.isScanning
                       ? AppColors.orange
                       : AppColors.cyan,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: state.isBusy
@@ -203,69 +202,66 @@ class ScanScreen extends StatelessWidget {
             ),
           ]),
         ),
-        // ── Count bar ──
+        // ── Count bar (assigned products only) ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${state.scanResults.length} unique tag(s) in range',
-                          style: GoogleFonts.inter(
-                              color: AppColors.subtext, fontSize: 12),
-                        ),
-                        Text(
-                          'One list row per EPC — many stickers can share one chip ID.',
-                          style: GoogleFonts.inter(
-                              color: AppColors.subtext.withOpacity(0.85),
-                              fontSize: 10,
-                              height: 1.35),
-                        ),
-                        if (state.totalInventoryDetections >
-                            state.scanResults.length)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              '${state.totalInventoryDetections} reader reports (same EPC updates one row).',
-                              style: GoogleFonts.inter(
-                                  color: AppColors.cyan.withOpacity(0.75),
-                                  fontSize: 10,
-                                  height: 1.35),
-                            ),
-                          ),
-                      ],
+              if (state.isScanning)
+                Text(
+                  'Scanning… stop to load assigned products',
+                  style: GoogleFonts.inter(
+                    color: AppColors.subtext,
+                    fontSize: 12,
+                  ),
+                )
+              else if (state.isBusy)
+                Text(
+                  'Reading tag memory…',
+                  style: GoogleFonts.inter(
+                    color: AppColors.subtext,
+                    fontSize: 12,
+                  ),
+                )
+              else if (state.assignedProductSummaries.isNotEmpty)
+                Text(
+                  '${state.assignedTagCount} assigned tag(s) · ${state.assignedProductSummaries.length} product(s)',
+                  style: GoogleFonts.inter(
+                    color: AppColors.subtext,
+                    fontSize: 12,
+                  ),
+                )
+              else if (state.scanResults.isNotEmpty)
+                Text(
+                  'No assigned products in this scan (${state.scanResults.length} other tag(s) hidden)',
+                  style: GoogleFonts.inter(
+                    color: AppColors.subtext,
+                    fontSize: 12,
+                  ),
+                )
+              else
+                Text(
+                  'Assigned products appear here after a scan',
+                  style: GoogleFonts.inter(
+                    color: AppColors.subtext,
+                    fontSize: 12,
+                  ),
+                ),
+              if (!state.isScanning &&
+                  !state.isBusy &&
+                  state.assignedProductSummaries.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Only tags with a product in memory are listed.',
+                    style: GoogleFonts.inter(
+                      color: AppColors.subtext.withOpacity(0.85),
+                      fontSize: 10,
+                      height: 1.35,
                     ),
                   ),
-                  if (state.selectedProduct != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.cyan.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: AppColors.cyan.withOpacity(0.4)),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(state.selectedProduct!.emoji,
-                            style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 5),
-                        Text(state.selectedProduct!.name,
-                            style: GoogleFonts.inter(
-                                color: AppColors.cyan,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                ],
-              ),
+                ),
             ],
           ),
         ),
@@ -312,215 +308,85 @@ class ScanScreen extends StatelessWidget {
             ),
           ),
         const Divider(height: 1),
-        // ── Tag list ──
+        // ── Assigned products (grouped by name + quantity) ──
         Expanded(
-          child: state.scanResults.isEmpty
-              ? _EmptyState(scanning: state.isScanning)
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 80),
-                  itemCount: state.scanResults.length,
-                  itemBuilder: (_, i) {
-                    final tag = state.scanResults[i];
-                    return _TagCard(scan: tag);
-                  },
-                ),
+          child: state.isScanning || state.isBusy
+              ? _EmptyState(
+                  scanning: state.isScanning,
+                  identifying: state.isBusy,
+                )
+              : state.assignedProductSummaries.isEmpty
+                  ? _EmptyState(
+                      scanning: false,
+                      noAssigned: state.scanResults.isNotEmpty,
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 80),
+                      itemCount: state.assignedProductSummaries.length,
+                      itemBuilder: (_, i) {
+                        final row = state.assignedProductSummaries[i];
+                        return _AssignedProductCard(summary: row);
+                      },
+                    ),
         ),
       ]),
     );
   }
 }
 
-class _TagCard extends StatelessWidget {
-  final ScanResult scan;
-  const _TagCard({required this.scan});
+class _AssignedProductCard extends StatelessWidget {
+  final AssignedProductScanSummary summary;
+  const _AssignedProductCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
-    final state = context.read<AppState>();
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Icon(Icons.nfc, color: AppColors.cyan, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: EpcChip(epc: scan.epc)),
-          RssiIndicator(rssi: scan.rssi),
-        ]),
-        if (scan.inventoryHits > 1)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Text(summary.emoji, style: const TextStyle(fontSize: 28)),
+          const SizedBox(width: 14),
+          Expanded(
             child: Text(
-              'Seen ${scan.inventoryHits}× this scan (one row per EPC)',
+              summary.productName,
               style: GoogleFonts.inter(
-                color: AppColors.subtext,
-                fontSize: 10,
+                color: AppColors.text,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        Consumer<AppState>(
-          builder: (_, s, __) {
-            RfidTagRecord? record;
-            for (final r in s.tagRecords) {
-              if (r.epc == scan.epc) {
-                record = r;
-                break;
-              }
-            }
-            if (record != null) {
-              if (record.hasProduct) {
-                final p = record.resolveProduct(s.products);
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p?.emoji ?? '📦',
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              record.assignedProductName ?? '',
-                              style: GoogleFonts.inter(
-                                color: AppColors.text,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              record.assignedSku ?? '',
-                              style: GoogleFonts.jetBrainsMono(
-                                color: AppColors.subtext,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  record.memoryReadOk
-                      ? 'No product in tag memory'
-                      : 'Could not read tag memory',
-                  style: GoogleFonts.inter(
-                    color: record.memoryReadOk
-                        ? AppColors.subtext
-                        : AppColors.red,
-                    fontSize: 12,
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${summary.quantity}',
+                style: GoogleFonts.inter(
+                  color: AppColors.cyan,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
                 ),
-              );
-            }
-            if (s.isScanning) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Stop scan to load product name',
-                  style: GoogleFonts.inter(
-                    color: AppColors.subtext.withOpacity(0.75),
-                    fontSize: 11,
-                  ),
+              ),
+              Text(
+                summary.quantity == 1 ? 'tag' : 'tags',
+                style: GoogleFonts.inter(
+                  color: AppColors.subtext,
+                  fontSize: 11,
                 ),
-              );
-            }
-            if (s.isBusy) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.amber.withOpacity(0.9),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Loading product…',
-                      style: GoogleFonts.inter(
-                        color: AppColors.subtext,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-        const SizedBox(height: 12),
-        // ── Action buttons ──
-        Row(children: [
-          _ActionBtn(
-            label: 'Read',
-            icon: Icons.download_outlined,
-            color: AppColors.cyan,
-            onTap: () => _navigate(context, scan, _OpTab.read),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          _ActionBtn(
-            label: 'Write',
-            icon: Icons.upload_outlined,
-            color: AppColors.green,
-            onTap: () {
-              if (state.selectedProduct == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text(
-                        'Select a product first from the Products tab')));
-                return;
-              }
-              _navigate(context, scan, _OpTab.write);
-            },
-          ),
-          const SizedBox(width: 8),
-          _ActionBtn(
-            label: 'Identify',
-            icon: Icons.manage_search,
-            color: AppColors.amber,
-            onTap: () => _navigate(context, scan, _OpTab.identify),
-          ),
-          const SizedBox(width: 8),
-          _ActionBtn(
-            label: 'Delete',
-            icon: Icons.delete_outline,
-            color: AppColors.red,
-            onTap: () => _navigate(context, scan, _OpTab.delete),
-          ),
-        ]),
-      ]),
-    );
-  }
-
-  void _navigate(BuildContext ctx, ScanResult scan, _OpTab tab) {
-    Navigator.push(
-      ctx,
-      MaterialPageRoute(
-        builder: (_) => OperationsScreen(
-          scan: scan,
-          initialTab: tab.index,
-        ),
+        ],
       ),
     );
   }
 }
-
-enum _OpTab { read, write, identify, delete }
 
 class _BulkActionBtn extends StatelessWidget {
   final String label;
@@ -566,47 +432,16 @@ class _BulkActionBtn extends StatelessWidget {
       );
 }
 
-class _ActionBtn extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionBtn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
-              border: Border.all(color: color.withOpacity(0.4)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(height: 3),
-              Text(label,
-                  style: GoogleFonts.inter(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600)),
-            ]),
-          ),
-        ),
-      );
-}
-
 class _EmptyState extends StatelessWidget {
   final bool scanning;
-  const _EmptyState({required this.scanning});
+  final bool identifying;
+  final bool noAssigned;
+
+  const _EmptyState({
+    required this.scanning,
+    this.identifying = false,
+    this.noAssigned = false,
+  });
 
   @override
   Widget build(BuildContext context) => Center(
@@ -616,25 +451,38 @@ class _EmptyState extends StatelessWidget {
             duration: const Duration(seconds: 2),
             curve: Curves.easeInOut,
             builder: (_, v, c) => Transform.scale(
-                scale: scanning ? v : 1, child: c),
-            child: Icon(Icons.radar,
-                size: 72,
-                color: scanning
-                    ? AppColors.cyan.withOpacity(0.6)
-                    : AppColors.border),
+                scale: scanning || identifying ? v : 1, child: c),
+            child: Icon(
+              identifying ? Icons.hourglass_top : Icons.radar,
+              size: 72,
+              color: scanning || identifying
+                  ? AppColors.cyan.withOpacity(0.6)
+                  : AppColors.border,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
-            scanning ? 'Scanning for UHF tags…' : 'Tap Start Inventory',
-            style: GoogleFonts.inter(
-                color: AppColors.subtext, fontSize: 15),
+            identifying
+                ? 'Loading assigned products…'
+                : noAssigned
+                    ? 'No assigned products in range'
+                    : scanning
+                        ? 'Scanning for tags…'
+                        : 'Tap Start Inventory',
+            style: GoogleFonts.inter(color: AppColors.subtext, fontSize: 15),
+            textAlign: TextAlign.center,
           ),
-          if (!scanning) ...[
+          if (!scanning && !identifying) ...[
             const SizedBox(height: 6),
             Text(
-              'Hold the NLS-MT95L near a tag',
+              noAssigned
+                  ? 'Unassigned tags are not shown here'
+                  : 'Stop scan to see product names and quantities',
               style: GoogleFonts.inter(
-                  color: AppColors.subtext.withOpacity(0.5), fontSize: 12),
+                color: AppColors.subtext.withOpacity(0.5),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ]),

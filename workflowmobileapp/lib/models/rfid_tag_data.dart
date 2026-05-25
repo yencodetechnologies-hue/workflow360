@@ -90,6 +90,21 @@ class BulkOperationReport {
   int get successCount => rows.where((r) => r.success).length;
 }
 
+/// Assigned tags from the current scan, grouped by product (RFID tools list).
+class AssignedProductScanSummary {
+  final String sku;
+  final String productName;
+  final String emoji;
+  final int quantity;
+
+  const AssignedProductScanSummary({
+    required this.sku,
+    required this.productName,
+    required this.emoji,
+    required this.quantity,
+  });
+}
+
 /// Scan result from a single inventory sweep
 class ScanResult {
   final String epc;

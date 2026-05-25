@@ -77,7 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Text('$roleLabel login'),
         backgroundColor: AppColors.surface,
       ),
-      body: SafeArea(
+      body: AppPageBackground(
+        child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -86,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
             Text(
               'Workflow 360',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.cyan),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -120,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'API: $kApiBaseUrl',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.cyan.withValues(alpha: 0.7),
+                      color: AppColors.subtext,
                       fontSize: 11,
                     ),
               ),
@@ -136,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

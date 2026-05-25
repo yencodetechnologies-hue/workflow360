@@ -86,7 +86,9 @@ class _AssignRfidIntakeScreenState extends State<AssignRfidIntakeScreen>
 
   Product? _productFor(String productId) {
     for (final p in _allProducts) {
-      if (p.id == productId) return p;
+      if (p.id == productId || p.mongoId == productId || p.apiProductId == productId) {
+        return p;
+      }
     }
     return null;
   }
@@ -98,6 +100,7 @@ class _AssignRfidIntakeScreenState extends State<AssignRfidIntakeScreen>
     final catalog = _catalogFor(productId);
     if (catalog == null) return null;
     return Product(
+      mongoId: catalog.productId,
       id: catalog.productId,
       sku: catalog.sku ?? catalog.productId,
       name: catalog.particulars ?? catalog.productId,

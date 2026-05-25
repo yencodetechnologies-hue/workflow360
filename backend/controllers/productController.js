@@ -1,17 +1,6 @@
-const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const ScannedProduct = require('../models/ScannedProduct');
-
-/** Resolve route `:id` as Mongo `_id` or business `productId` (same as assign-tag). */
-async function findProductByRouteId(id) {
-    if (id == null || id === '') return null;
-    const idStr = String(id).trim();
-    if (mongoose.Types.ObjectId.isValid(idStr) && idStr.length === 24) {
-        const byMongo = await Product.findById(idStr);
-        if (byMongo) return byMongo;
-    }
-    return Product.findOne({ productId: idStr });
-}
+const { findProductByRouteId } = require('../utils/resolveProduct');
 
 // @desc    Get all products
 // @route   GET /api/products

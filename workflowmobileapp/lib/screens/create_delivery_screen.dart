@@ -9,6 +9,7 @@ import '../services/report_api.dart';
 import '../services/user_api.dart';
 import '../utils/app_theme.dart';
 import '../utils/delivery_wizard.dart';
+import '../widgets/shared_widgets.dart';
 
 class CreateDeliveryScreen extends StatefulWidget {
   const CreateDeliveryScreen({super.key});
@@ -34,7 +35,7 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
 
   List<GodownRow> _godowns = [];
   final Set<String> _selectedGodowns = {};
-  String _branchFilter = '';
+  String? _branchFilter;
   bool _createGodownOpen = false;
   final _newGodownName = TextEditingController();
   final _newGodownCode = TextEditingController();
@@ -117,9 +118,19 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
     return set.toList()..sort();
   }
 
+  Map<String, int> get _branchCounts {
+    final map = <String, int>{};
+    for (final g in _godowns) {
+      final b = godownBranch(g);
+      map[b] = (map[b] ?? 0) + 1;
+    }
+    return map;
+  }
+
   List<GodownRow> get _godownsInBranch {
-    if (_branchFilter.isEmpty) return _godowns;
-    return _godowns.where((g) => godownBranch(g) == _branchFilter).toList();
+    final branch = _branchFilter?.trim();
+    if (branch == null || branch.isEmpty) return _godowns;
+    return _godowns.where((g) => godownBranch(g) == branch).toList();
   }
 
   int get _totalUnits => _lineQty.values.where((q) => q > 0).fold(0, (a, b) => a + b);
@@ -449,14 +460,12 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
           children: [
             const Text('Select godown sources', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _branchFilter.isEmpty ? null : _branchFilter,
-              decoration: const InputDecoration(labelText: 'Filter by branch / city'),
-              items: [
-                const DropdownMenuItem(value: '', child: Text('All branches')),
-                ..._branchOptions.map((b) => DropdownMenuItem(value: b, child: Text(b))),
-              ],
-              onChanged: (v) => setState(() => _branchFilter = v ?? ''),
+            BranchFilterPicker(
+              label: 'Filter by branch / city',
+              value: _branchFilter,
+              options: _branchOptions,
+              counts: _branchCounts,
+              onChanged: (v) => setState(() => _branchFilter = v),
             ),
             const SizedBox(height: 8),
             ..._godownsInBranch.map((g) {

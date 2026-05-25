@@ -239,7 +239,7 @@ class _ReadTab extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.cyan,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48)),
               onPressed: busy ? null : onRead,
               icon: busy
@@ -247,7 +247,7 @@ class _ReadTab extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.black))
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.download),
               label: Text(busy ? 'Reading…' : 'Read Tag'),
             ),
@@ -322,7 +322,7 @@ class _WriteTab extends StatelessWidget {
           child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
-                foregroundColor: Colors.black,
+                foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48)),
             onPressed: (busy || product == null) ? null : onWrite,
             icon: busy
@@ -330,7 +330,7 @@ class _WriteTab extends StatelessWidget {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.black))
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.upload),
             label: Text(busy ? 'Writing…' : 'Write to Tag'),
           ),
@@ -429,7 +429,7 @@ class _IdentifyTab extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.amber,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48)),
               onPressed: busy ? null : onIdentify,
               icon: busy
@@ -437,7 +437,7 @@ class _IdentifyTab extends StatelessWidget {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.black))
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.manage_search),
               label: Text(busy ? 'Identifying…' : 'Fetch & Identify'),
             ),

@@ -34,7 +34,7 @@ class AppState extends ChangeNotifier {
 
   Product? productBySku(String? sku) => findProductBySku(_products, sku);
 
-  /// Shell tab index (0=Products, 1=Assign products, 2=Scan new products, 3=History). Consumed by [takePendingMainTabIfAny].
+  /// Shell tab index (0=Products, 1=Assign products, 2=Scan new products). Consumed by [takePendingMainTabIfAny].
   int? _pendingMainTabIndex;
 
   // Tags discovered in current scan
@@ -48,6 +48,52 @@ class AppState extends ChangeNotifier {
   /// Sum of [ScanResult.inventoryHits] — can exceed [scanResults.length] when the reader reports the same EPC many times.
   int get totalInventoryDetections =>
       scanResults.fold<int>(0, (sum, s) => sum + s.inventoryHits);
+
+  RfidTagRecord? tagRecordForEpc(String epc) {
+    for (final r in _tagRecords) {
+      if (r.epc == epc) return r;
+    }
+    return null;
+  }
+
+  /// Tags in the current scan that have product data in user memory.
+  int get assignedTagCount {
+    var n = 0;
+    for (final scan in scanResults) {
+      final record = tagRecordForEpc(scan.epc);
+      if (record?.hasProduct == true) n++;
+    }
+    return n;
+  }
+
+  /// Grouped assigned products for the scan tab (product name + tag count).
+  List<AssignedProductScanSummary> get assignedProductSummaries {
+    final bySku = <String, ({String name, String emoji, int qty})>{};
+    for (final scan in scanResults) {
+      final record = tagRecordForEpc(scan.epc);
+      if (record == null || !record.hasProduct) continue;
+      final sku = record.assignedSku!;
+      final product = record.resolveProduct(_products);
+      final name = product?.name ?? record.assignedProductName ?? sku;
+      final emoji = product?.emoji ?? '📦';
+      final prev = bySku[sku];
+      if (prev == null) {
+        bySku[sku] = (name: name, emoji: emoji, qty: 1);
+      } else {
+        bySku[sku] = (name: prev.name, emoji: prev.emoji, qty: prev.qty + 1);
+      }
+    }
+    final list = bySku.entries
+        .map((e) => AssignedProductScanSummary(
+              sku: e.key,
+              productName: e.value.name,
+              emoji: e.value.emoji,
+              quantity: e.value.qty,
+            ))
+        .toList();
+    list.sort((a, b) => a.productName.compareTo(b.productName));
+    return list;
+  }
 
   // Identified/fetched tag records
   final List<RfidTagRecord> _tagRecords = [];
@@ -157,12 +203,20 @@ class AppState extends ChangeNotifier {
 
   Future<void> stopScan() async {
     await _rfid.stopInventory();
-    _setStatus(ReaderStatus.ready,
-        '${_scanResults.length} tag(s) found');
     final tags = List<ScanResult>.from(scanResults);
-    if (tags.isEmpty) return;
+    if (tags.isEmpty) {
+      _setStatus(ReaderStatus.ready, 'No tags found');
+      return;
+    }
     // Resolve product names from user memory (default access password).
     await identifyAllTags(password: '00000000');
+    final assigned = assignedTagCount;
+    _setStatus(
+      ReaderStatus.ready,
+      assigned > 0
+          ? '$assigned assigned product tag(s)'
+          : 'No assigned products in scan',
+    );
   }
 
   // ── Write product to tag ────────────────────────────────────
@@ -183,10 +237,11 @@ class AppState extends ChangeNotifier {
     if (result.success) {
       String backendNote = '';
       try {
-        await assignTag(productId: product.id, tagId: epc);
+        await assignTag(productId: product.apiProductId, tagId: epc);
         backendNote = ' · Assigned in DB ✓';
-      } catch (_) {
-        backendNote = ' · DB assign failed';
+      } catch (e) {
+        final msg = e.toString().replaceFirst('ProductApiException: ', '').replaceFirst('Exception: ', '');
+        backendNote = ' · DB assign failed: $msg';
       }
       _lastOperation = OperationResult(
         success: true,
@@ -229,11 +284,12 @@ class AppState extends ChangeNotifier {
       return result;
     }
 
+    final apiProductId = product.apiProductId.isNotEmpty ? product.apiProductId : productId;
     try {
       await GodownApi.rfidIntake(
         godownId: godownId,
         tagId: epc,
-        productId: productId,
+        productId: apiProductId,
         note: 'RFID intake $epc',
       );
       _lastOperation = OperationResult(
@@ -361,10 +417,11 @@ class AppState extends ChangeNotifier {
           : (result.error ?? result.message);
       if (result.success) {
         try {
-          await assignTag(productId: product.id, tagId: scan.epc);
+          await assignTag(productId: product.apiProductId, tagId: scan.epc);
           msg = 'Written + DB assigned ✓';
-        } catch (_) {
-          msg = 'Written (DB assign failed)';
+        } catch (e) {
+          final detail = e.toString().replaceFirst('ProductApiException: ', '').replaceFirst('Exception: ', '');
+          msg = 'Written (DB assign failed: $detail)';
         }
       }
       rows.add(BulkTagResultRow(

@@ -7,6 +7,7 @@ import '../services/godown_api.dart';
 import '../services/report_api.dart';
 import '../utils/app_theme.dart';
 import '../utils/delivery_wizard.dart';
+import '../widgets/shared_widgets.dart';
 
 class GodownsListScreen extends StatefulWidget {
   const GodownsListScreen({super.key});
@@ -21,7 +22,7 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
   bool _loading = true;
   String? _error;
   String _q = '';
-  String _branchFilter = '';
+  String? _branchFilter;
   String _role = '';
   String? _userGodownId;
 
@@ -32,6 +33,15 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
     final set = _godowns.map(godownBranch).toSet();
     final list = set.toList()..sort();
     return list;
+  }
+
+  Map<String, int> get _branchCounts {
+    final map = <String, int>{};
+    for (final g in _godowns) {
+      final b = godownBranch(g);
+      map[b] = (map[b] ?? 0) + 1;
+    }
+    return map;
   }
 
   @override
@@ -135,8 +145,9 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
 
   List<GodownRow> get _filtered {
     var list = _godowns;
-    if (_branchFilter.isNotEmpty) {
-      list = list.where((g) => godownBranch(g) == _branchFilter).toList();
+    final branch = _branchFilter?.trim();
+    if (branch != null && branch.isNotEmpty) {
+      list = list.where((g) => godownBranch(g) == branch).toList();
     }
     final s = _q.trim().toLowerCase();
     if (s.isEmpty) return list;
@@ -155,14 +166,12 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
           child: Column(
             children: [
               if (_showBranchFilter) ...[
-                DropdownButtonFormField<String>(
-                  value: _branchFilter.isEmpty ? null : _branchFilter,
-                  decoration: const InputDecoration(labelText: 'Filter by branch / city'),
-                  items: [
-                    const DropdownMenuItem(value: '', child: Text('All branches')),
-                    ..._branchOptions.map((b) => DropdownMenuItem(value: b, child: Text(b))),
-                  ],
-                  onChanged: (v) => setState(() => _branchFilter = v ?? ''),
+                BranchFilterPicker(
+                  label: 'Filter by branch / city',
+                  value: _branchFilter,
+                  options: _branchOptions,
+                  counts: _branchCounts,
+                  onChanged: (v) => setState(() => _branchFilter = v),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -172,7 +181,7 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
                     child: TextField(
                       decoration: const InputDecoration(
                         hintText: 'Search godowns…',
-                        prefixIcon: Icon(Icons.search),
+                        prefixIcon: Icon(Icons.search, color: AppColors.subtext),
                       ),
                       onChanged: (v) => setState(() => _q = v),
                     ),
@@ -200,14 +209,84 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
                         itemBuilder: (_, i) {
                           final g = _filtered[i];
                           final stock = _stockByGodown[g.id] ?? 0;
+                          final branch = godownBranch(g);
                           return Card(
                             color: AppColors.card,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text('${g.code ?? ''} · ${godownBranch(g)} · Stock: $stock units'),
-                              trailing: const Icon(Icons.chevron_right),
+                            margin: const EdgeInsets.only(bottom: 10),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
                               onTap: () => context.push('/godowns/${g.id}'),
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        gradient: AppGradients.brandIcon,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.warehouse_outlined,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            g.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            [
+                                              if (g.code != null && g.code!.isNotEmpty) g.code,
+                                              branch,
+                                            ].join(' · '),
+                                            style: const TextStyle(
+                                              color: AppColors.subtext,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '$stock',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const Text(
+                                          'units',
+                                          style: TextStyle(
+                                            color: AppColors.subtext,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: AppColors.subtext,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           );
                         },
