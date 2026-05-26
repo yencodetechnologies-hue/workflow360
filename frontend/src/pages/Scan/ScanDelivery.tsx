@@ -58,7 +58,6 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
   const auth = useAuth()
   const [delivery, setDelivery] = useState<Delivery | null>(null)
   const [tagId, setTagId] = useState('')
-  const [vehicleNumber, setVehicleNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -91,7 +90,6 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     apiFetch<Delivery>(`/deliveries/${id}`, { token })
       .then((d) => {
         setDelivery(d)
-        if (d.vehicleLabel) setVehicleNumber(d.vehicleLabel)
       })
       .catch((e: any) => setError(e?.message || 'Failed to load delivery'))
   }

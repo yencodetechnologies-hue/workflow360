@@ -90,8 +90,8 @@ export function QueuePage() {
       setVehicleModal(null)
       setVehicleNumber('')
       load()
-    } catch (e: { message?: string }) {
-      setError(e?.message || 'Failed')
+    } catch (e: unknown) {
+      setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed')
     } finally {
       setActionBusy(false)
     }
