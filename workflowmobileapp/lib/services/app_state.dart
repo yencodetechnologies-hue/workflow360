@@ -261,7 +261,9 @@ class AppState extends ChangeNotifier {
     return _lastOperation!;
   }
 
-  /// Godown intake: write tag memory, enroll AssetTag, increase stock by 1.
+  /// Godown intake: enroll AssetTag + increase stock by 1.
+  /// Tag USER-bank write is best-effort — tags without USER memory (UMI=0)
+  /// still get assigned in the DB using their EPC as the tagId.
   Future<OperationResult> enrollTagAndIncreaseStock({
     required String epc,
     required String godownId,
@@ -270,23 +272,22 @@ class AppState extends ChangeNotifier {
   }) async {
     final product = _selectedProduct;
     if (product == null) {
-      return OperationResult(
-          success: false, message: 'No product selected');
+      return OperationResult(success: false, message: 'No product selected');
     }
     if (isScanning) await stopScan();
-    _setStatus(ReaderStatus.busy, 'Writing ${product.name}…');
-    final result = await _rfid.writeProduct(
+    _setStatus(ReaderStatus.busy, 'Enrolling ${product.name}…');
+
+    // Attempt to write product data into tag USER memory.
+    // This is informational only — tags with no USER bank (UMI=0 in PC word)
+    // will fail here, but the backend assignment below still proceeds.
+    final writeResult = await _rfid.writeProduct(
         epc: epc, product: product, password: password);
+    final tagNote = writeResult.success
+        ? ' · tag data written ✓'
+        : ' · tag write skipped (${writeResult.error ?? 'no USER memory'})';
 
-    if (!result.success) {
-      _lastOperation = result;
-      final detail = result.error ?? result.message;
-      _setStatus(ReaderStatus.ready, 'Write failed: $detail');
-      notifyListeners();
-      return result;
-    }
-
-    final apiProductId = product.apiProductId.isNotEmpty ? product.apiProductId : productId;
+    final apiProductId =
+        product.apiProductId.isNotEmpty ? product.apiProductId : productId;
     try {
       await GodownApi.rfidIntake(
         godownId: godownId,
@@ -296,18 +297,18 @@ class AppState extends ChangeNotifier {
       );
       _lastOperation = OperationResult(
         success: true,
-        message: 'Enrolled + stock +1 ✓',
-        hexData: result.hexData,
-        decodedData: result.decodedData,
+        message: 'Enrolled + stock +1 ✓$tagNote',
+        hexData: writeResult.hexData,
+        decodedData: writeResult.decodedData,
       );
       _setStatus(ReaderStatus.ready, 'Intake OK ✓');
     } catch (e) {
-      final msg = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', '');
+      final msg = e.toString()
+          .replaceFirst('ApiException: ', '')
+          .replaceFirst('Exception: ', '');
       _lastOperation = OperationResult(
         success: false,
-        message: 'Written to tag but backend failed: $msg',
-        hexData: result.hexData,
-        decodedData: result.decodedData,
+        message: 'Backend failed: $msg',
       );
       _setStatus(ReaderStatus.ready, _lastOperation!.message);
     }
