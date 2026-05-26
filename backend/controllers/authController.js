@@ -66,15 +66,35 @@ async function findUserByPhone(normalizedPhone) {
   return users.find((u) => normalizePhone(u.contactPhone) === normalizedPhone) || null
 }
 
+async function findActiveGodownByMobile(normalizedPhone) {
+  if (!normalizedPhone) return null
+  const direct = await Godown.findOne({ active: true, mobile: normalizedPhone })
+    .select('+passwordHash')
+    .lean()
+  if (direct) return direct
+  const candidates = await Godown.find({
+    active: true,
+    mobile: { $exists: true, $nin: [null, ''] },
+  })
+    .select('+passwordHash')
+    .lean()
+  return candidates.find((gd) => normalizePhone(gd.mobile) === normalizedPhone) || null
+}
+
 async function loginViaGodownFallback(normalizedPhone, password) {
-  const godowns = await Godown.find({ active: true }).select('+passwordHash').lean()
-  const g = godowns.find((gd) => normalizePhone(gd.mobile) === normalizedPhone)
+  const g = await findActiveGodownByMobile(normalizedPhone)
   if (!g || !g.passwordHash) return null
 
   const ok = await bcrypt.compare(String(password), g.passwordHash)
   if (!ok) return null
 
-  return syncGodownLoginUser(g, { passwordHash: g.passwordHash })
+  try {
+    return await syncGodownLoginUser(g, { passwordHash: g.passwordHash })
+  } catch (err) {
+    if (err.code !== 'CONTACT_PHONE_CONFLICT') throw err
+    const linked = await User.findOne({ role: 'GODOWN', godownId: String(g._id) })
+    return linked?.active ? linked : null
+  }
 }
 
 async function resolveUser({ identifier, email, loginId }) {
@@ -110,19 +130,28 @@ async function login(req, res) {
       return res.status(400).json({ message: 'identifier (email, mobile, or loginId) and password are required' })
     }
 
+    const rawId = identifier || email
+    const isEmail = rawId && String(rawId).includes('@')
+    const phone = !loginId && !isEmail ? normalizePhone(rawId) : null
+
     let user = await resolveUser({ identifier: identifier || email, email, loginId })
 
-    if (!user && !loginId && !(String(identifier || email || '').includes('@'))) {
-      const phone = normalizePhone(identifier || email)
-      if (phone) {
-        user = await loginViaGodownFallback(phone, password)
+    let passwordOk = false
+    if (user?.active) {
+      passwordOk = await bcrypt.compare(String(password), user.passwordHash)
+    }
+
+    if (!passwordOk && phone) {
+      const fromGodown = await loginViaGodownFallback(phone, password)
+      if (fromGodown?.active) {
+        user = fromGodown
+        passwordOk = true
       }
     }
 
-    if (!user || !user.active) return res.status(401).json({ message: 'Invalid credentials' })
-
-    const ok = await bcrypt.compare(String(password), user.passwordHash)
-    if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
+    if (!user || !user.active || !passwordOk) {
+      return res.status(401).json({ message: 'Invalid credentials' })
+    }
 
     const token = signToken(user)
     return res.json({ token, user: await mapUser(user) })

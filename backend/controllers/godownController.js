@@ -57,7 +57,21 @@ async function createGodown(req, res) {
       passwordHash,
     })
 
-    await syncGodownLoginUser(g, { passwordHash })
+    try {
+      const synced = await syncGodownLoginUser(g, { passwordHash })
+      if (!synced) {
+        await Godown.findByIdAndDelete(g._id)
+        return res.status(400).json({
+          message: 'Could not create godown login user: mobile number is invalid',
+        })
+      }
+    } catch (syncErr) {
+      await Godown.findByIdAndDelete(g._id)
+      if (syncErr.code === 'CONTACT_PHONE_CONFLICT') {
+        return res.status(400).json({ message: syncErr.message })
+      }
+      throw syncErr
+    }
 
     return res.status(201).json(mapGodown(g.toObject()))
   } catch (err) {
@@ -109,9 +123,21 @@ async function updateGodown(req, res) {
 
     const passwordUpdated = password !== undefined && String(password).trim()
     if (passwordUpdated || mobile !== undefined) {
-      await syncGodownLoginUser(g, {
-        passwordHash: passwordUpdated ? g.passwordHash : undefined,
-      })
+      try {
+        const synced = await syncGodownLoginUser(g, {
+          passwordHash: passwordUpdated ? g.passwordHash : undefined,
+        })
+        if (!synced) {
+          return res.status(400).json({
+            message: 'Could not update godown login user: mobile number is invalid',
+          })
+        }
+      } catch (syncErr) {
+        if (syncErr.code === 'CONTACT_PHONE_CONFLICT') {
+          return res.status(400).json({ message: syncErr.message })
+        }
+        throw syncErr
+      }
     }
 
     return res.json(mapGodown(g.toObject()))

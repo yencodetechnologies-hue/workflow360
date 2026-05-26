@@ -18,6 +18,7 @@ const godownSchema = mongoose.Schema(
 
 godownSchema.index({ name: 1 })
 godownSchema.index({ code: 1 }, { unique: true, sparse: true })
+godownSchema.index({ mobile: 1 }, { sparse: true })
 
 module.exports = mongoose.model('Godown', godownSchema)
 

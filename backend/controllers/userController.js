@@ -1,6 +1,13 @@
 const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 const User = require('../models/User')
+const { normalizePhone } = require('../utils/phone')
+
+function normalizeContactPhone(value) {
+  if (value == null || value === '') return undefined
+  const normalized = normalizePhone(value)
+  return normalized || String(value).trim() || undefined
+}
 
 function mapUser(u) {
   return {
@@ -72,13 +79,16 @@ async function createUser(req, res) {
       godownId: godownId || undefined,
       siteName: siteName ? String(siteName).trim() : undefined,
       siteAddress: siteAddress ? String(siteAddress).trim() : undefined,
-      contactPhone: contactPhone ? String(contactPhone).trim() : undefined,
+      contactPhone: contactPhone ? normalizeContactPhone(contactPhone) : undefined,
       contactName: contactName ? String(contactName).trim() : undefined,
       active: active !== undefined ? Boolean(active) : true,
     })
 
     return res.status(201).json(mapUser(user.toObject()))
   } catch (err) {
+    if (err && (err.code === 11000 || err.code === 11001)) {
+      return res.status(400).json({ message: 'Mobile number is already in use' })
+    }
     return res.status(500).json({ message: err.message || 'Create user failed' })
   }
 }
@@ -112,13 +122,18 @@ async function updateUser(req, res) {
     const { siteName, siteAddress, contactPhone, contactName, godownId, active } = req.body || {}
     if (siteName !== undefined) user.siteName = siteName ? String(siteName).trim() : undefined
     if (siteAddress !== undefined) user.siteAddress = siteAddress ? String(siteAddress).trim() : undefined
-    if (contactPhone !== undefined) user.contactPhone = contactPhone ? String(contactPhone).trim() : undefined
+    if (contactPhone !== undefined) {
+      user.contactPhone = contactPhone ? normalizeContactPhone(contactPhone) : undefined
+    }
     if (contactName !== undefined) user.contactName = contactName ? String(contactName).trim() : undefined
     if (godownId !== undefined) user.godownId = godownId || undefined
     if (active !== undefined) user.active = Boolean(active)
     await user.save()
     return res.json(mapUser(user.toObject()))
   } catch (err) {
+    if (err && (err.code === 11000 || err.code === 11001)) {
+      return res.status(400).json({ message: 'Mobile number is already in use' })
+    }
     return res.status(500).json({ message: err.message || 'Update failed' })
   }
 }
@@ -304,9 +319,7 @@ async function updateMyProfile(req, res) {
     }
 
     if (contactPhone !== undefined) {
-      user.contactPhone = contactPhone
-        ? String(contactPhone).trim()
-        : undefined
+      user.contactPhone = contactPhone ? normalizeContactPhone(contactPhone) : undefined
     }
 
     if (contactName !== undefined) {
