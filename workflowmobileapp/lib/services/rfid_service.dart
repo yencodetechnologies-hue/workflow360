@@ -175,8 +175,8 @@ class RfidService {
     required String epc,
     int bank      = 3, // user bank
     int startAddr = 0,
-    int length    = 8,
-    String password = '00000000',
+    int length    = 24, // 24 words = 48 bytes — covers max product payload
+    String password = '',
   }) async {
     if (!_open) {
       return OperationResult(success: false, message: 'Reader not open');
@@ -219,7 +219,7 @@ class RfidService {
     required String hexData,
     int bank      = 3,
     int startAddr = 0,
-    String password = '00000000',
+    String password = '',
   }) async {
     if (!_open) {
       return OperationResult(success: false, message: 'Reader not open');
@@ -256,19 +256,41 @@ class RfidService {
   Future<OperationResult> writeProduct({
     required String epc,
     required Product product,
-    String password = '00000000',
+    String password = '',
   }) =>
       writeTag(epc: epc, hexData: product.toHex(), password: password);
 
   // ── Fetch / Identify ───────────────────────────────────────
+
+  /// Returns false when PC bit 10 (User Memory Indicator) is 0 — tag has no USER bank.
+  /// Defaults to true when PC cannot be parsed, so we still attempt the read.
+  static bool _tagHasUserMemory(String pc) {
+    try {
+      final pcVal = int.parse(pc, radix: 16);
+      return (pcVal & 0x0400) != 0;
+    } catch (_) {
+      return true;
+    }
+  }
 
   Future<RfidTagRecord> fetchAndIdentify({
     required String epc,
     required int rssi,
     required String pc,
     required List<Product> catalog,
-    String password = '00000000',
+    String password = '',
   }) async {
+    if (!_tagHasUserMemory(pc)) {
+      _log('Tag $epc PC=$pc has UMI=0 — no USER memory bank; skipping read');
+      return RfidTagRecord(
+        epc: epc,
+        rawHex: '',
+        timestamp: DateTime.now(),
+        rssi: rssi,
+        pc: pc,
+        memoryReadOk: false,
+      );
+    }
     final read = await readTag(epc: epc, password: password);
     final hex = read.hexData ?? '';
     final sku = Product.hexToSku(hex);
@@ -291,7 +313,7 @@ class RfidService {
   Future<OperationResult> clearTag({
     required String epc,
     int wordCount = 16,
-    String password = '00000000',
+    String password = '',
   }) {
     final zeros = '00' * (wordCount * 2);
     return writeTag(epc: epc, hexData: zeros, password: password);

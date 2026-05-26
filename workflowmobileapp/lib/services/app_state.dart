@@ -209,7 +209,7 @@ class AppState extends ChangeNotifier {
       return;
     }
     // Resolve product names from user memory (default access password).
-    await identifyAllTags(password: '00000000');
+    await identifyAllTags(password: '');
     final assigned = assignedTagCount;
     _setStatus(
       ReaderStatus.ready,
@@ -223,7 +223,7 @@ class AppState extends ChangeNotifier {
 
   Future<OperationResult> writeProductToTag({
     required String epc,
-    String password = '00000000',
+    String password = '',
   }) async {
     final product = _selectedProduct;
     if (product == null) {
@@ -266,7 +266,7 @@ class AppState extends ChangeNotifier {
     required String epc,
     required String godownId,
     required String productId,
-    String password = '00000000',
+    String password = '',
   }) async {
     final product = _selectedProduct;
     if (product == null) {
@@ -320,7 +320,7 @@ class AppState extends ChangeNotifier {
 
   Future<OperationResult> readTag({
     required String epc,
-    String password = '00000000',
+    String password = '',
   }) async {
     if (isScanning) await stopScan();
     _setStatus(ReaderStatus.busy, 'Reading tag…');
@@ -336,7 +336,7 @@ class AppState extends ChangeNotifier {
 
   Future<RfidTagRecord> fetchAndIdentify({
     required ScanResult scan,
-    String password = '00000000',
+    String password = '',
   }) async {
     _setStatus(ReaderStatus.busy, 'Identifying ${scan.epc.substring(0, 8)}…');
     final record = await _rfid.fetchAndIdentify(
@@ -480,7 +480,7 @@ class AppState extends ChangeNotifier {
 
   Future<OperationResult> clearTag({
     required String epc,
-    String password = '00000000',
+    String password = '',
   }) async {
     _setStatus(ReaderStatus.busy, 'Clearing tag memory…');
     final result = await _rfid.clearTag(epc: epc, password: password);

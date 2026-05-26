@@ -11,7 +11,7 @@ import '../widgets/shared_widgets.dart';
 import 'bulk_results_screen.dart';
 
 Future<String?> _bulkAccessPasswordDialog(BuildContext context) async {
-  final ctrl = TextEditingController(text: '00000000');
+  final ctrl = TextEditingController();
   final pwd = await showDialog<String>(
     context: context,
     builder: (dialogCtx) => AlertDialog(
@@ -26,7 +26,8 @@ Future<String?> _bulkAccessPasswordDialog(BuildContext context) async {
         controller: ctrl,
         maxLength: 8,
         decoration: InputDecoration(
-          labelText: 'Hex (8 characters)',
+          labelText: 'Hex (8 chars), or leave empty',
+          hintText: 'Factory default = empty',
           labelStyle: GoogleFonts.inter(color: AppColors.subtext, fontSize: 12),
           counterText: '',
         ),

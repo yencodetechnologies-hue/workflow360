@@ -27,7 +27,7 @@ class OperationsScreen extends StatefulWidget {
 class _OperationsScreenState extends State<OperationsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
-  final _pwdCtrl = TextEditingController(text: '00000000');
+  final _pwdCtrl = TextEditingController();
 
   OperationResult? _readResult;
   OperationResult? _writeResult;
@@ -167,6 +167,7 @@ class _OperationsScreenState extends State<OperationsScreen>
                 maxLength: 8,
                 decoration: InputDecoration(
                   labelText: 'Access / Kill Password (hex)',
+                  hintText: 'Leave empty for factory default',
                   labelStyle: GoogleFonts.inter(
                       color: AppColors.subtext, fontSize: 12),
                   counterText: '',
