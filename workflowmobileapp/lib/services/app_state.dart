@@ -208,8 +208,7 @@ class AppState extends ChangeNotifier {
       _setStatus(ReaderStatus.ready, 'No tags found');
       return;
     }
-    // Resolve product names from user memory (default access password).
-    await identifyAllTags(password: '');
+    await _resolveTagsFromDb(tags);
     final assigned = assignedTagCount;
     _setStatus(
       ReaderStatus.ready,
@@ -217,6 +216,40 @@ class AppState extends ChangeNotifier {
           ? '$assigned assigned product tag(s)'
           : 'No assigned products in scan',
     );
+  }
+
+  Future<void> _resolveTagsFromDb(List<ScanResult> tags) async {
+    _setStatus(ReaderStatus.busy, 'Looking up ${tags.length} tag(s)…');
+    notifyListeners();
+    try {
+      final epcs = tags.map((t) => t.epc).toList();
+      final matches = await lookupTagsByEpc(tagIds: epcs);
+      final byEpc = <String, TagScanResult>{};
+      for (final m in matches) {
+        byEpc[m.tagId] = m;
+      }
+      for (final scan in tags) {
+        final match = byEpc[scan.epc];
+        if (match == null) continue; // unassigned tag — skip
+        final skuKey = match.sku.isNotEmpty ? match.sku : match.productId;
+        final product = match.sku.isNotEmpty ? findProductBySku(_products, match.sku) : null;
+        final record = RfidTagRecord(
+          epc: scan.epc,
+          assignedSku: skuKey,
+          assignedProductName: product?.name ?? match.productName,
+          rawHex: '',
+          timestamp: DateTime.now(),
+          rssi: scan.rssi,
+          pc: scan.pc,
+          memoryReadOk: true,
+        );
+        _tagRecords.removeWhere((r) => r.epc == record.epc);
+        _tagRecords.insert(0, record);
+      }
+    } catch (_) {
+      // DB lookup failed — tags still visible, product names unavailable
+    }
+    notifyListeners();
   }
 
   // ── Write product to tag ────────────────────────────────────

@@ -55,6 +55,44 @@ Future<List<Product>> fetchProducts() async {
   }
 }
 
+class TagScanResult {
+  final String tagId;
+  final String productId;
+  final String productName;
+  final String sku;
+  final String source;
+
+  TagScanResult({
+    required this.tagId,
+    required this.productId,
+    required this.productName,
+    required this.sku,
+    required this.source,
+  });
+
+  factory TagScanResult.fromJson(Map<String, dynamic> json) => TagScanResult(
+        tagId: json['tagId'] as String? ?? '',
+        productId: json['productId'] as String? ?? '',
+        productName: json['productName'] as String? ?? '',
+        sku: json['sku'] as String? ?? '',
+        source: json['source'] as String? ?? '',
+      );
+}
+
+Future<List<TagScanResult>> lookupTagsByEpc({required List<String> tagIds}) async {
+  if (tagIds.isEmpty) return [];
+  try {
+    final data = await ApiClient.post('/products/tags/lookup', body: {'tagIds': tagIds});
+    if (data is! List) return [];
+    return data
+        .whereType<Map>()
+        .map((m) => TagScanResult.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  } on ApiException catch (e) {
+    throw ProductApiException(e.message);
+  }
+}
+
 class ProductAdminApi {
   static Future<Product> createProduct(Map<String, dynamic> body) async {
     final data = await ApiClient.post('/products', body: body);

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "WebFetch(domain:www.scribd.com)"
+      "WebFetch(domain:www.scribd.com)",
+      "Bash(dir \"j:\\\\Yencode\\\\workflow360\" /b)"
     ]
   }
 }

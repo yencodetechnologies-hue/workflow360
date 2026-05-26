@@ -10,7 +10,8 @@ const {
     scanProduct,
     getScanHistory,
     unassignTag,
-    bulkAssignTags
+    bulkAssignTags,
+    lookupByTagIds,
 } = require('../controllers/productController');
 const { uploadImage } = require('../controllers/uploadController');
 const { requireAuth, requireRole } = require('../middleware/auth')
@@ -27,6 +28,7 @@ router.post('/unassign-tag', requireAuth, requireRole(['ADMIN', 'GODOWN']), unas
 router.post('/scan', scanProduct);
 router.get('/scan-history', requireAuth, requireRole(['ADMIN', 'GODOWN']), getScanHistory);
 router.post('/bulk-assign', requireAuth, requireRole(['ADMIN', 'GODOWN']), bulkAssignTags);
+router.post('/tags/lookup', lookupByTagIds);
 
 router.route('/:id')
     .get(getProductById)

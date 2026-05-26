@@ -219,7 +219,7 @@ class ScanScreen extends StatelessWidget {
                 )
               else if (state.isBusy)
                 Text(
-                  'Reading tag memory…',
+                  state.statusMessage ?? 'Looking up products…',
                   style: GoogleFonts.inter(
                     color: AppColors.subtext,
                     fontSize: 12,
@@ -255,7 +255,7 @@ class ScanScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'Only tags with a product in memory are listed.',
+                    'Only tags assigned to a product are listed.',
                     style: GoogleFonts.inter(
                       color: AppColors.subtext.withOpacity(0.85),
                       fontSize: 10,

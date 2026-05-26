@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const ScannedProduct = require('../models/ScannedProduct');
+const AssetTag = require('../models/AssetTag');
 const { findProductByRouteId } = require('../utils/resolveProduct');
 
 // @desc    Get all products
@@ -253,6 +254,62 @@ const unassignTag = async (req, res) => {
     }
 };
 
+// @desc    Bulk lookup: given EPCs, return assigned product for each (checks both AssetTag and Product.tagId)
+// @route   POST /api/products/tags/lookup
+// @access  Public (same auth level as /products/scan — used by RFID scanner)
+const lookupByTagIds = async (req, res) => {
+    try {
+        const { tagIds } = req.body;
+        if (!Array.isArray(tagIds) || tagIds.length === 0) return res.json([]);
+
+        const ids = [...new Set(tagIds.map(t => String(t || '').trim()).filter(Boolean))];
+
+        // AssetTag collection (new godown-based enrollment)
+        const assetTags = await AssetTag.find({ tagId: { $in: ids } }).lean();
+        const assetProductIds = [...new Set(assetTags.map(a => String(a.productId)))];
+        const assetProducts = await Product.find({ _id: { $in: assetProductIds } })
+            .select('particulars sku productId')
+            .lean();
+        const productById = new Map(assetProducts.map(p => [String(p._id), p]));
+
+        const result = [];
+        const covered = new Set();
+
+        for (const at of assetTags) {
+            const p = productById.get(String(at.productId));
+            result.push({
+                tagId: at.tagId,
+                productId: String(at.productId),
+                productName: p?.particulars || p?.sku || String(at.productId),
+                sku: p?.sku || '',
+                source: 'asset',
+            });
+            covered.add(at.tagId);
+        }
+
+        // Product.tagId field (old direct-assign style) — for any tags not already covered
+        const uncovered = ids.filter(id => !covered.has(id));
+        if (uncovered.length > 0) {
+            const products = await Product.find({ tagId: { $in: uncovered } })
+                .select('tagId particulars sku productId')
+                .lean();
+            for (const p of products) {
+                result.push({
+                    tagId: p.tagId,
+                    productId: String(p.productId || p._id),
+                    productName: p.particulars || p.sku || String(p._id),
+                    sku: p.sku || '',
+                    source: 'product',
+                });
+            }
+        }
+
+        return res.json(result);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getProducts,
     getProductById,
@@ -263,5 +320,6 @@ module.exports = {
     scanProduct,
     getScanHistory,
     bulkAssignTags,
-    unassignTag
+    unassignTag,
+    lookupByTagIds,
 };
