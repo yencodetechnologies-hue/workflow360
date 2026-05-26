@@ -88,6 +88,16 @@ export function logout() {
   writeState({ status: 'anonymous' })
 }
 
+export function patchAuthUser(patch: Partial<AuthUser>) {
+  const s = readState()
+  if (s.status !== 'authenticated') return
+  writeState({
+    status: 'authenticated',
+    token: s.token,
+    user: { ...s.user, ...patch },
+  })
+}
+
 export function getToken(): string | null {
   const s = readState()
   return s.status === 'authenticated' ? s.token : null

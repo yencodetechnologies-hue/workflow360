@@ -86,6 +86,18 @@ export function topbarMetaFromPath(pathname: string): TopbarMeta {
     }
   }
 
+  if (pathname.startsWith('/editprofile')) {
+    return {
+      title: 'Profile',
+      subtitle: 'Update your account details and password',
+      icon: <DashboardIcon />,
+      breadcrumbs: [
+        { label: 'Home', to: '/' },
+        { label: 'Profile', to: '/editprofile' },
+      ],
+    }
+  }
+
   if (pathname.startsWith('/queue')) {
     return {
       title: 'Queue',
