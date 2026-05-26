@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
 const User = require('../models/User')
 const Godown = require('../models/Godown')
 const { normalizePhone } = require('../utils/phone')
@@ -12,21 +13,31 @@ function signToken(user) {
   return jwt.sign({ sub: String(user._id), role: user.role }, secret, { expiresIn })
 }
 
+function isValidGodownObjectId(id) {
+  return id != null && mongoose.Types.ObjectId.isValid(String(id))
+}
+
 async function mapUser(user) {
+  const rawGodownId = user.godownId ? String(user.godownId) : undefined
+  const godownId =
+    user.role === 'GODOWN' && rawGodownId && isValidGodownObjectId(rawGodownId)
+      ? rawGodownId
+      : undefined
+
   const base = {
     id: String(user._id),
     email: user.email,
     loginId: user.loginId,
     role: user.role,
-    godownId: user.godownId ? String(user.godownId) : undefined,
+    godownId,
     siteName: user.siteName,
     siteAddress: user.siteAddress,
     contactPhone: user.contactPhone,
     contactName: user.contactName,
   }
 
-  if (user.godownId) {
-    const g = await Godown.findById(user.godownId).select('name').lean()
+  if (godownId) {
+    const g = await Godown.findById(godownId).select('name').lean()
     if (g?.name) {
       base.godownName = g.name
       if (!base.siteName) base.siteName = g.name

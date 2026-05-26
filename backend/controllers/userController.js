@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs')
+const mongoose = require('mongoose')
 const User = require('../models/User')
 
 function mapUser(u) {
@@ -276,7 +277,18 @@ async function updateMyProfile(req, res) {
     ============================== */
 
     if (godownId !== undefined) {
-      user.godownId = godownId || undefined
+      if (user.role !== 'GODOWN') {
+        user.godownId = undefined
+      } else {
+        const trimmed = godownId != null ? String(godownId).trim() : ''
+        if (!trimmed) {
+          user.godownId = undefined
+        } else if (!mongoose.Types.ObjectId.isValid(trimmed)) {
+          return res.status(400).json({ message: 'godownId must be a valid MongoDB id' })
+        } else {
+          user.godownId = trimmed
+        }
+      }
     }
 
     if (siteName !== undefined) {

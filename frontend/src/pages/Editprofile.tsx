@@ -118,20 +118,21 @@ export function AdminEditProfilePage() {
 
       setSaving(true)
 
-      const payload = {
+      const payload: Record<string, string> = {
         email: form.email.trim(),
         loginId: form.loginId.trim(),
-        godownId: form.godownId.trim(),
         siteName: form.siteName.trim(),
         siteAddress: form.siteAddress.trim(),
         contactPhone: form.contactPhone.trim(),
         contactName: form.contactName.trim(),
+      }
 
-        ...(form.password
-          ? {
-              password: form.password,
-            }
-          : {}),
+      if (form.role === 'GODOWN') {
+        payload.godownId = form.godownId.trim()
+      }
+
+      if (form.password) {
+        payload.password = form.password
       }
 
       await apiFetch('/users/me', {
@@ -324,7 +325,7 @@ export function AdminEditProfilePage() {
 
               <Input
                 label="Login ID"
-                value={form.email}
+                value={form.loginId}
                 onChange={(e) => updateField('loginId', e.target.value)}
                 className="h-12 rounded-2xl"
               />
@@ -352,12 +353,14 @@ export function AdminEditProfilePage() {
                 className="h-12 rounded-2xl bg-slate-100"
               />
 
-              <Input
-                label="Godown ID"
-                value={form.godownId}
-                onChange={(e) => updateField('godownId', e.target.value)}
-                className="h-12 rounded-2xl"
-              />
+              {form.role === 'GODOWN' ? (
+                <Input
+                  label="Godown ID"
+                  value={form.godownId}
+                  onChange={(e) => updateField('godownId', e.target.value)}
+                  className="h-12 rounded-2xl"
+                />
+              ) : null}
 
               <Input
                 label="Site Name"

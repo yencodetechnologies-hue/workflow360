@@ -3,19 +3,24 @@
  * Usage: node scripts/sync-godown-users.js
  * Requires MONGODB_URI (or same env as backend).
  */
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') })
+const { getMongoUri, printMongoConnectHelp } = require('./script-bootstrap')
 const mongoose = require('mongoose')
 const Godown = require('../models/Godown')
 const User = require('../models/User')
 const { syncGodownLoginUser } = require('../utils/syncGodownUser')
 
 async function main() {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI
+  const uri = getMongoUri()
   if (!uri) {
     console.error('Set MONGODB_URI')
     process.exit(1)
   }
-  await mongoose.connect(uri)
+  try {
+    await mongoose.connect(uri)
+  } catch (err) {
+    printMongoConnectHelp(err)
+    throw err
+  }
 
   const godowns = await Godown.find({ active: true }).select('+passwordHash').lean()
   let created = 0
