@@ -14,6 +14,7 @@ import '../screens/godown_detail_screen.dart';
 import '../screens/godowns_list_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/products_admin_screen.dart';
+import '../screens/orders_list_screen.dart';
 import '../screens/queue_screen.dart';
 import '../screens/reports_screen.dart';
 import '../screens/rfid_shell_screen.dart';
@@ -41,7 +42,12 @@ class AppRouter {
         }
         if (path == '/splash' || path == '/roles' || path.startsWith('/login')) {
           if (user.role == 'DELIVERY') return '/deliveries';
-          if (user.role == 'GODOWN') return '/queue';
+          if (user.role == 'GODOWN') {
+            if (user.godownId != null && user.godownId!.isNotEmpty) {
+              return '/dashboard';
+            }
+            return '/queue';
+          }
           return '/dashboard';
         }
         if (user.role == 'DELIVERY') {
@@ -50,7 +56,20 @@ class AppRouter {
               path.startsWith('/scan/');
           if (!ok) return '/deliveries';
         }
-        if (user.role == 'GODOWN' && path == '/dashboard') return '/queue';
+        if (user.role == 'GODOWN') {
+          const allowed = [
+            '/dashboard',
+            '/queue',
+            '/deliveries',
+            '/orders',
+            '/reports',
+            '/godowns',
+            '/rfid',
+          ];
+          final ok = allowed.any((p) => path == p || path.startsWith('$p/')) ||
+              path.startsWith('/scan/');
+          if (!ok) return '/dashboard';
+        }
         return null;
       },
       routes: [
@@ -106,6 +125,7 @@ class AppRouter {
           routes: [
             GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
             GoRoute(path: '/queue', builder: (_, __) => const QueueScreen()),
+            GoRoute(path: '/orders', builder: (_, __) => const OrdersListScreen()),
             GoRoute(
               path: '/godowns',
               builder: (_, __) => const GodownsListScreen(),

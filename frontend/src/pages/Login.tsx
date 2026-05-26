@@ -154,7 +154,7 @@ export function LoginPage() {
                       u.role === 'DELIVERY'
                         ? '/deliveries'
                         : u.role === 'GODOWN'
-                          ? '/queue'
+                          ? '/'
                           : '/'
 
                     navigate(next, { replace: true })

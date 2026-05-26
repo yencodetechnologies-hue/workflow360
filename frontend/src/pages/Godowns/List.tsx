@@ -289,7 +289,7 @@
 // ✔ NO function removed
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 
 import { formatNumber } from '../../lib/format'
 import { Button } from '../../components/ui/Button'
@@ -328,6 +328,14 @@ export type GodownRow = {
 
 export function GodownsListPage() {
   const auth = useAuth()
+
+  if (
+    auth.status === 'authenticated' &&
+    auth.user.role === 'GODOWN' &&
+    auth.user.godownId
+  ) {
+    return <Navigate to={`/godowns/${auth.user.godownId}`} replace />
+  }
 
   const isAdmin =
     auth.status === 'authenticated' &&

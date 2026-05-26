@@ -11,6 +11,7 @@ type Props = {
   showDate?: boolean
   date?: string
   onDateChange?: (date: string) => void
+  hideGodownFilter?: boolean
 }
 
 export function ReportFiltersBar({
@@ -23,6 +24,7 @@ export function ReportFiltersBar({
   showDate,
   date,
   onDateChange,
+  hideGodownFilter,
 }: Props) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -31,6 +33,7 @@ export function ReportFiltersBar({
           <Input type="date" label="Date" value={date} onChange={(e) => onDateChange(e.target.value)} />
         </div>
       ) : null}
+      {!hideGodownFilter ? (
       <div className="w-48">
         <label className="mb-1 block text-sm font-medium text-slate-800">Godown</label>
         <select
@@ -46,6 +49,7 @@ export function ReportFiltersBar({
           ))}
         </select>
       </div>
+      ) : null}
       <div className="min-w-[12rem] flex-1">
         <Input
           label="Site"

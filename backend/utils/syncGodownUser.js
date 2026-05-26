@@ -36,12 +36,15 @@ async function syncGodownLoginUser(godown, opts = {}) {
 
   const email = makeGodownEmail(godownId)
 
+  const siteName = godown.name ? String(godown.name).trim() : undefined
+
   if (user) {
     user.email = email
     user.passwordHash = passwordHash
     user.contactPhone = phone
     user.role = 'GODOWN'
     user.godownId = godownId
+    if (siteName) user.siteName = siteName
     user.active = true
     await user.save()
     return user
@@ -53,6 +56,7 @@ async function syncGodownLoginUser(godown, opts = {}) {
     role: 'GODOWN',
     godownId,
     contactPhone: phone,
+    siteName,
     active: true,
   })
 }

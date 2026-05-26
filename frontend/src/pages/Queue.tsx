@@ -6,6 +6,7 @@ import { EmptyState, Table, Td, Th } from '../components/ui/Table'
 import { Badge } from '../components/ui/Badge'
 import { apiFetch } from '../lib/api'
 import { getToken, useAuth } from '../auth/store'
+import { useGodownScope } from '../hooks/useGodownScope'
 import { formatDateTime } from '../lib/format'
 
 type QueueRow = {
@@ -39,6 +40,7 @@ function badgeVariant(status: string) {
 
 export function QueuePage() {
   const auth = useAuth()
+  const { godownName } = useGodownScope()
   const [date, setDate] = useState(todayKey)
   const [rows, setRows] = useState<QueueRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -57,9 +59,13 @@ export function QueuePage() {
 
   const subtitle = useMemo(() => {
     if (auth.status !== 'authenticated') return '—'
-    if (auth.user.role === 'GODOWN') return 'Godown dispatch queue for selected date.'
+    if (auth.user.role === 'GODOWN') {
+      return godownName
+        ? `${godownName} — dispatch queue for selected date.`
+        : 'Godown dispatch queue for selected date.'
+    }
     return 'Date-wise delivery queue.'
-  }, [auth])
+  }, [auth, godownName])
 
   return (
     <div className="fade-in">

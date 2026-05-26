@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const orderLineSchema = mongoose.Schema(
   {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    godownId: { type: mongoose.Schema.Types.ObjectId, ref: 'Godown' },
     qty: { type: Number, required: true, min: 1 },
   },
   { _id: false },
@@ -16,6 +17,7 @@ const orderSchema = mongoose.Schema(
     contactPhone: { type: String, trim: true },
     deliveryAt: { type: Date, required: true },
     returnExpectedAt: { type: Date },
+    fromGodownId: { type: mongoose.Schema.Types.ObjectId, ref: 'Godown' },
     lines: { type: [orderLineSchema], default: [] },
     status: {
       type: String,
@@ -30,6 +32,7 @@ const orderSchema = mongoose.Schema(
 
 orderSchema.index({ deliveryAt: 1 })
 orderSchema.index({ status: 1, deliveryAt: 1 })
+orderSchema.index({ fromGodownId: 1, deliveryAt: -1 })
 
 module.exports = mongoose.model('Order', orderSchema)
 

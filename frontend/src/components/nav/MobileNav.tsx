@@ -2,11 +2,13 @@ import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/cn'
 import { navItemsForRole } from './navItems'
 import { useAuth } from '../../auth/store'
+import { useGodownScope } from '../../hooks/useGodownScope'
 
 export function MobileNav() {
   const auth = useAuth()
+  const { godownId } = useGodownScope()
   const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
-  const navItems = navItemsForRole(role)
+  const navItems = navItemsForRole(role, godownId).slice(0, 5)
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur lg:hidden">
       <div className="grid grid-cols-5">

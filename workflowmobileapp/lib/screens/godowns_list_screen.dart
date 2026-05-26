@@ -1,6 +1,7 @@
 // lib/screens/godowns_list_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/godown_api.dart';
 import '../services/report_api.dart';
@@ -82,6 +83,11 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
         _godowns = godowns;
         _stockByGodown = map;
       });
+      if (_role == 'GODOWN' && godowns.length == 1 && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/godowns/${godowns.first.id}');
+        });
+      }
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('ApiException: ', '').replaceFirst('Exception: ', ''));
     } finally {

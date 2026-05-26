@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (widget.role == 'DELIVERY') {
         context.go('/deliveries');
       } else if (widget.role == 'GODOWN') {
-        context.go('/queue');
+        context.go('/dashboard');
       } else {
         context.go('/dashboard');
       }

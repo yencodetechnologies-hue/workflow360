@@ -9,6 +9,7 @@ export type AuthUser = {
   loginId?: string
   role: Role
   godownId?: string
+  godownName?: string
   siteName?: string
   siteAddress?: string
   contactPhone?: string
@@ -30,7 +31,7 @@ function notify() {
 
 let cachedState: AuthState | null = null
 
-function readState(): AuthState {
+export function readState(): AuthState {
   if (cachedState) return cachedState
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) {

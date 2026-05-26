@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -38,8 +38,12 @@ type Tab = 'catalog' | 'stock' | 'update'
 
 export function GodownsDetailsPage() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const auth = useAuth()
-  const [tab, setTab] = useState<Tab>('catalog')
+  const initialTab = (searchParams.get('tab') as Tab | null) || 'catalog'
+  const [tab, setTab] = useState<Tab>(
+    initialTab === 'stock' || initialTab === 'update' || initialTab === 'catalog' ? initialTab : 'catalog',
+  )
   const [godown, setGodown] = useState<Godown | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({

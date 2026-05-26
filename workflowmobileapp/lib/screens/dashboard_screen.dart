@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/auth_service.dart';
 import '../services/delivery_api.dart';
 import '../services/report_api.dart';
 import '../utils/app_theme.dart';
@@ -19,6 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _daily;
   int _stockUnits = 0;
   int _deliveryCount = 0;
+  String? _godownLabel;
 
   @override
   void initState() {
@@ -32,10 +34,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _error = null;
     });
     try {
+      final user = await AuthService.getUser();
+      final godownId = user?.godownId;
+      setState(() => _godownLabel = user?.godownName ?? user?.siteName);
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final results = await Future.wait([
         ReportApi.dailyReport(today),
-        ReportApi.stockReport(),
+        ReportApi.stockReport(godownId: godownId),
         DeliveryApi.listDeliveries(limit: 50),
       ]);
       final stock = results[1] as List<StockRow>;
@@ -77,6 +82,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text('Dashboard', style: Theme.of(context).textTheme.headlineSmall),
+          if (_godownLabel != null) ...[
+            const SizedBox(height: 4),
+            Text(_godownLabel!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.subtext)),
+          ],
           const SizedBox(height: 4),
           Text('Live KPIs from reports API', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),

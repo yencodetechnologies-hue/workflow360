@@ -12,6 +12,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { cn } from '../../lib/cn'
 import { logout, useAuth } from '../../auth/store'
+import { useGodownScope } from '../../hooks/useGodownScope'
 
 import {
   topbarMetaFromPath,
@@ -84,6 +85,7 @@ export function Topbar() {
   const navigate = useNavigate()
 
   const auth = useAuth()
+  const { isGodown, godownName } = useGodownScope()
 
   const role =
     auth.status === 'authenticated'
@@ -106,14 +108,18 @@ export function Topbar() {
 
   const userLabel =
     auth.status === 'authenticated'
-      ? auth.user.role
+      ? isGodown && godownName
+        ? godownName
+        : auth.user.role
       : 'Admin'
 
   const userSub =
     auth.status === 'authenticated'
-      ? auth.user.email ||
-        auth.user.loginId ||
-        'Signed in'
+      ? isGodown
+        ? auth.user.contactPhone || auth.user.email || 'Godown operator'
+        : auth.user.email ||
+          auth.user.loginId ||
+          'Signed in'
       : 'Not signed in'
 
   return (

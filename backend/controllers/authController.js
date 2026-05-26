@@ -12,18 +12,28 @@ function signToken(user) {
   return jwt.sign({ sub: String(user._id), role: user.role }, secret, { expiresIn })
 }
 
-function mapUser(user) {
-  return {
+async function mapUser(user) {
+  const base = {
     id: String(user._id),
     email: user.email,
     loginId: user.loginId,
     role: user.role,
-    godownId: user.godownId,
+    godownId: user.godownId ? String(user.godownId) : undefined,
     siteName: user.siteName,
     siteAddress: user.siteAddress,
     contactPhone: user.contactPhone,
     contactName: user.contactName,
   }
+
+  if (user.godownId) {
+    const g = await Godown.findById(user.godownId).select('name').lean()
+    if (g?.name) {
+      base.godownName = g.name
+      if (!base.siteName) base.siteName = g.name
+    }
+  }
+
+  return base
 }
 
 async function findUserByLoginId(loginId) {
@@ -104,14 +114,16 @@ async function login(req, res) {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = signToken(user)
-    return res.json({ token, user: mapUser(user) })
+    return res.json({ token, user: await mapUser(user) })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Login failed' })
   }
 }
 
 async function me(req, res) {
-  return res.json({ user: req.user })
+  const user = await User.findById(req.user.id).lean()
+  if (!user || !user.active) return res.status(401).json({ message: 'Invalid token' })
+  return res.json({ user: await mapUser(user) })
 }
 
 module.exports = { login, me }

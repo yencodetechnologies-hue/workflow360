@@ -130,6 +130,7 @@ export function CalendarPage() {
     sites,
     filterQuery,
     setFilters,
+    lockGodownFilter,
   } = useReportFilters()
 
   const [data, setData] = useState<CalendarResponse | null>(null)
@@ -252,6 +253,7 @@ export function CalendarPage() {
             onSiteChange={(s) =>
               setFilters({ site: s })
             }
+            hideGodownFilter={lockGodownFilter}
           />
         </CardContent>
       </Card>

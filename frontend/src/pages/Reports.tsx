@@ -36,7 +36,8 @@ function badgeVariant(status: string) {
 
 export function ReportsPage() {
   const auth = useAuth()
-  const { date, godownId, site, tab, godowns, sites, filterQuery, setFilters } = useReportFilters()
+  const { date, godownId, site, tab, godowns, sites, filterQuery, setFilters, lockGodownFilter } =
+    useReportFilters()
   const activeTab = (TABS.some((t) => t.id === tab) ? tab : 'daily') as ReportTab
 
   const [loading, setLoading] = useState(false)
@@ -158,6 +159,7 @@ export function ReportsPage() {
             onGodownChange={(id) => setFilters({ godownId: id })}
             onSiteChange={(s) => setFilters({ site: s })}
             onDateChange={(d) => setFilters({ date: d })}
+            hideGodownFilter={lockGodownFilter}
           />
         </CardContent>
       </Card>

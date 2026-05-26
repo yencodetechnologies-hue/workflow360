@@ -12,6 +12,7 @@ class AuthUser {
   final String? email;
   final String? loginId;
   final String? godownId;
+  final String? godownName;
   final String? siteName;
 
   AuthUser({
@@ -20,6 +21,7 @@ class AuthUser {
     this.email,
     this.loginId,
     this.godownId,
+    this.godownName,
     this.siteName,
   });
 
@@ -29,6 +31,7 @@ class AuthUser {
         email: j['email'] as String?,
         loginId: j['loginId'] as String?,
         godownId: j['godownId'] as String?,
+        godownName: j['godownName'] as String?,
         siteName: j['siteName'] as String?,
       );
 }
@@ -64,6 +67,7 @@ class AuthService {
       'email': user.email,
       'loginId': user.loginId,
       'godownId': user.godownId,
+      'godownName': user.godownName,
       'siteName': user.siteName,
     }));
     await p.setString(_roleKey, role);

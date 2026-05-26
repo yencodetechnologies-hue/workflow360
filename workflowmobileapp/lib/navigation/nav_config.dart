@@ -10,8 +10,7 @@ class NavItem {
   const NavItem({required this.label, required this.path, required this.icon});
 }
 
-/// Core items shown in the bottom navigation bar (max 3–4).
-List<NavItem> navItemsForRole(String role) {
+List<NavItem> navItemsForRole(String role, {String? godownId}) {
   switch (role) {
     case 'DELIVERY':
       return const [
@@ -19,34 +18,39 @@ List<NavItem> navItemsForRole(String role) {
       ];
     case 'GODOWN':
       return const [
-        NavItem(label: 'Queue',      path: '/queue',       icon: Icons.schedule_outlined),
-        NavItem(label: 'Deliveries', path: '/deliveries',  icon: Icons.local_shipping_outlined),
-        NavItem(label: 'Reports',    path: '/reports',     icon: Icons.assessment_outlined),
+        NavItem(label: 'Dashboard', path: '/dashboard', icon: Icons.dashboard_outlined),
+        NavItem(label: 'Queue', path: '/queue', icon: Icons.schedule_outlined),
+        NavItem(label: 'Deliveries', path: '/deliveries', icon: Icons.local_shipping_outlined),
+        NavItem(label: 'Orders', path: '/orders', icon: Icons.receipt_long_outlined),
       ];
-    default: // ADMIN
+    default:
       return const [
-        NavItem(label: 'Dashboard',  path: '/dashboard',   icon: Icons.dashboard_outlined),
-        NavItem(label: 'Deliveries', path: '/deliveries',  icon: Icons.local_shipping_outlined),
-        NavItem(label: 'Reports',    path: '/reports',     icon: Icons.assessment_outlined),
+        NavItem(label: 'Dashboard', path: '/dashboard', icon: Icons.dashboard_outlined),
+        NavItem(label: 'Deliveries', path: '/deliveries', icon: Icons.local_shipping_outlined),
+        NavItem(label: 'Reports', path: '/reports', icon: Icons.assessment_outlined),
       ];
   }
 }
 
-/// Extra items surfaced in the side drawer (masters / secondary screens).
-List<NavItem> drawerItemsForRole(String role) {
+List<NavItem> drawerItemsForRole(String role, {String? godownId}) {
   switch (role) {
     case 'DELIVERY':
       return const [];
     case 'GODOWN':
-      return const [
-        NavItem(label: 'Godowns',  path: '/godowns',  icon: Icons.warehouse_outlined),
-        NavItem(label: 'Products', path: '/products', icon: Icons.inventory_2_outlined),
+      return [
+        if (godownId != null && godownId.isNotEmpty)
+          NavItem(
+            label: 'My godown',
+            path: '/godowns/$godownId',
+            icon: Icons.warehouse_outlined,
+          ),
+        const NavItem(label: 'Reports', path: '/reports', icon: Icons.assessment_outlined),
       ];
-    default: // ADMIN
+    default:
       return const [
-        NavItem(label: 'Godowns',  path: '/godowns',         icon: Icons.warehouse_outlined),
-        NavItem(label: 'Products', path: '/products',        icon: Icons.inventory_2_outlined),
-        NavItem(label: 'Billers',  path: '/masters/billers', icon: Icons.people_outline),
+        NavItem(label: 'Godowns', path: '/godowns', icon: Icons.warehouse_outlined),
+        NavItem(label: 'Products', path: '/products', icon: Icons.inventory_2_outlined),
+        NavItem(label: 'Billers', path: '/masters/billers', icon: Icons.people_outline),
       ];
   }
 }

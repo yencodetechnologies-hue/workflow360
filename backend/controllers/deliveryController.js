@@ -7,6 +7,7 @@ const Godown = require('../models/Godown')
 const GodownProduct = require('../models/GodownProduct')
 const InventoryLedger = require('../models/InventoryLedger')
 const User = require('../models/User')
+const Order = require('../models/Order')
 const PDFDocument = require('pdfkit')
 const { populateLineDetails, populateBillerReturnLines } = require('../utils/deliveryLineDetails')
 
@@ -263,6 +264,14 @@ async function createDelivery(req, res) {
       billerReturnVerifyToken: makeVerifyToken(),
       createdByUserId: req.user?.id,
     })
+
+    if (orderId) {
+      const order = await Order.findById(orderId)
+      if (order && !order.fromGodownId) {
+        order.fromGodownId = primaryGodownId
+        await order.save()
+      }
+    }
 
     const urls = shareUrls(delivery)
     return res.status(201).json({
@@ -596,6 +605,7 @@ async function returnScan(req, res) {
 async function closeReturn(req, res) {
   const delivery = await Delivery.findById(req.params.id)
   if (!delivery) return res.status(404).json({ message: 'Not found' })
+  if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
 
   const dispatched = new Set(delivery.dispatchedTagIds)
   const returned = new Set(delivery.returnedTagIds)
@@ -654,6 +664,7 @@ async function enrollTag(req, res) {
 async function challanPdf(req, res) {
   const delivery = await Delivery.findById(req.params.id).populate('lines.productId').lean()
   if (!delivery) return res.status(404).json({ message: 'Not found' })
+  if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
 
   const doc = new PDFDocument({ size: 'A4', margin: 40 })
   res.setHeader('Content-Type', 'application/pdf')

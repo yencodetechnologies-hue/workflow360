@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../lib/api'
-import { getToken } from '../auth/store'
+import { getToken, readState } from '../auth/store'
 import type {
   DailyReport,
   DashboardAlert,
@@ -91,19 +91,24 @@ export function useDashboardData() {
     setError(null)
 
     const dates = lastNDates(7)
+    const auth = readState()
+    const godownId =
+      auth.status === 'authenticated' && auth.user.role === 'GODOWN' ? auth.user.godownId : undefined
+    const godownQ = godownId ? `&godownId=${encodeURIComponent(godownId)}` : ''
 
     try {
       const [dailyResults, missingRows, godownRows, stockRows, deliveryRows] = await Promise.all([
         Promise.all(
           dates.map((date) =>
-            apiFetch<DailyReport>(`/reports/daily?date=${encodeURIComponent(date)}`, { token }),
+            apiFetch<DailyReport>(`/reports/daily?date=${encodeURIComponent(date)}${godownQ}`, { token }),
           ),
         ),
-        apiFetch<MissingRow[]>('/reports/missing?limit=100', { token }).catch(() => [] as MissingRow[]),
+        apiFetch<MissingRow[]>(`/reports/missing?limit=100${godownQ}`, { token }).catch(() => [] as MissingRow[]),
         apiFetch<GodownRow[]>('/godowns', { token }),
-        apiFetch<Array<{ godownId: string; productId: string; qty: number }>>('/reports/stock', { token }).catch(
-          () => [] as Array<{ godownId: string; productId: string; qty: number }>,
-        ),
+        apiFetch<Array<{ godownId: string; productId: string; qty: number }>>(
+          `/reports/stock${godownId ? `?godownId=${encodeURIComponent(godownId)}` : ''}`,
+          { token },
+        ).catch(() => [] as Array<{ godownId: string; productId: string; qty: number }>),
         apiFetch<DeliveryRow[]>('/deliveries?limit=30', { token }),
       ])
 

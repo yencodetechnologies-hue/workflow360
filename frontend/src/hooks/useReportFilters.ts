@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api'
-import { getToken } from '../auth/store'
+import { getToken, readState } from '../auth/store'
 import type { GodownRow } from '../pages/Godowns/List'
 
 function todayKey() {
@@ -19,10 +19,13 @@ function currentMonthKey() {
 
 export function useReportFilters() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const auth = readState()
+  const lockedGodownId =
+    auth.status === 'authenticated' && auth.user.role === 'GODOWN' ? auth.user.godownId || '' : ''
 
   const date = searchParams.get('date') || todayKey()
   const month = searchParams.get('month') || currentMonthKey()
-  const godownId = searchParams.get('godownId') || ''
+  const godownId = lockedGodownId || searchParams.get('godownId') || ''
   const site = searchParams.get('site') || ''
   const tab = searchParams.get('tab') || 'daily'
 
@@ -78,5 +81,6 @@ export function useReportFilters() {
     queryString,
     filterQuery,
     setFilters,
+    lockGodownFilter: Boolean(lockedGodownId),
   }
 }

@@ -14,8 +14,42 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = navItemsForRole(role);
-    final drawerItems = drawerItemsForRole(role);
+    return FutureBuilder<AuthUser?>(
+      future: AuthService.getUser(),
+      builder: (context, snap) {
+        final user = snap.data;
+        final godownId = user?.godownId;
+        final items = navItemsForRole(role, godownId: godownId);
+        final drawerItems = drawerItemsForRole(role, godownId: godownId);
+        return _AppShellBody(
+          role: role,
+          user: user,
+          items: items,
+          drawerItems: drawerItems,
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class _AppShellBody extends StatelessWidget {
+  final String role;
+  final AuthUser? user;
+  final List<NavItem> items;
+  final List<NavItem> drawerItems;
+  final Widget child;
+
+  const _AppShellBody({
+    required this.role,
+    required this.user,
+    required this.items,
+    required this.drawerItems,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
 
     int selected = 0;
@@ -50,7 +84,21 @@ class AppShell extends StatelessWidget {
               child: const Icon(Icons.bolt, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 10),
-            const Text('Workflow 360'),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Workflow 360', overflow: TextOverflow.ellipsis),
+                  if (role == 'GODOWN' && (user?.godownName ?? user?.siteName) != null)
+                    Text(
+                      user!.godownName ?? user.siteName!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.subtext),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [

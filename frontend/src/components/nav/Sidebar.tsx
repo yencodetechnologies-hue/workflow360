@@ -2,9 +2,11 @@ import { NavLink } from 'react-router-dom'
 import { cn } from '../../lib/cn'
 import { navItemsForRole } from './navItems'
 import { logout, useAuth } from '../../auth/store'
+import { useGodownScope } from '../../hooks/useGodownScope'
 
 export function Sidebar() {
   const auth = useAuth()
+  const { isGodown, godownId, godownName } = useGodownScope()
   // console.log("authh",auth?.user?.email);
 
   const userInitial = auth.status === 'authenticated' && auth.user?.email
@@ -13,7 +15,8 @@ export function Sidebar() {
   
   const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
 
-  const navItems = navItemsForRole(role)
+  const navItems = navItemsForRole(role, godownId)
+  const showMasters = role === 'ADMIN' || role === 'BILLER'
 
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-72 lg:flex-col fade-in">
@@ -27,7 +30,9 @@ export function Sidebar() {
               <div className="text-sm font-bold gradient-text-primary">
                 Godown Manager
               </div>
-              <div className="text-xs text-slate-500 font-medium">Admin Console</div>
+              <div className="text-xs text-slate-500 font-medium">
+                {isGodown && godownName ? godownName : 'Admin Console'}
+              </div>
             </div>
           </div>
         </div>
@@ -56,6 +61,8 @@ export function Sidebar() {
             ))}
           </div>
 
+          {showMasters ? (
+          <>
           <div className="mt-8 px-4 text-xs font-bold uppercase tracking-wider text-slate-400 gradient-text">
             Masters
           </div>
@@ -83,6 +90,8 @@ export function Sidebar() {
               </NavLink>
             ))}
           </div>
+          </>
+          ) : null}
         </nav>
 
         <div className="border-t border-white/10 px-6 py-4">

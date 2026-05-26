@@ -24,7 +24,10 @@ function escapeRegex(s) {
 
 function applyRoleScope(req, q) {
   if (req.user.role === 'DELIVERY') q.assignedDeliveryUserId = req.user.id
-  if (req.user.role === 'GODOWN' && req.user.godownId) q.fromGodownId = req.user.godownId
+  if (req.user.role === 'GODOWN' && req.user.godownId) {
+    const gid = new mongoose.Types.ObjectId(String(req.user.godownId))
+    q.$or = [{ fromGodownId: gid }, { 'lines.godownId': gid }]
+  }
 }
 
 function applyAdminFilters(req, q) {

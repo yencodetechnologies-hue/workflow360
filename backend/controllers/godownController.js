@@ -151,9 +151,10 @@ async function queueByDate(req, res) {
     status: { $in: ['UPCOMING', 'DISPATCHED', 'DELIVERED', 'PENDING_RETURN'] },
   }
 
-  // GODOWN role can only see their own godown queue if user.godownId set
   if (req.user.role === 'GODOWN' && req.user.godownId) {
-    q.fromGodownId = req.user.godownId
+    const gid = new mongoose.Types.ObjectId(String(req.user.godownId))
+    q.$or = [{ fromGodownId: gid }, { 'lines.godownId': gid }]
+    delete q.fromGodownId
   }
 
   const deliveries = await Delivery.find(q).sort({ deliveryAt: 1 }).lean()

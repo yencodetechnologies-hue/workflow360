@@ -189,7 +189,7 @@
 // }
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -198,6 +198,7 @@ import { Input } from '../../components/ui/Input'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
+import { scanPathForDelivery } from '../../lib/scanMode'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
 
 type Tab =
@@ -230,10 +231,17 @@ type DeliveryRow = {
 export function DeliveriesListPage() {
   const auth = useAuth()
   const nav = useNavigate()
+  const [searchParams] = useSearchParams()
+  const statusFromUrl = searchParams.get('status') as Tab | null
 
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('all')
+  const [tab, setTab] = useState<Tab>(
+    statusFromUrl &&
+      ['all', 'UPCOMING', 'DISPATCHED', 'DELIVERED', 'PENDING_RETURN', 'COMPLETED'].includes(statusFromUrl)
+      ? statusFromUrl
+      : 'all',
+  )
   const [q, setQ] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -629,17 +637,13 @@ export function DeliveriesListPage() {
                                 onClick={() => {
                                   if (auth.status !== 'authenticated') return
 
-                                  if (auth.user.role === 'DELIVERY') {
-                                    if (d.status === 'DISPATCHED') {
-                                      nav(`/scan/pickup/${d.id}`)
-                                    } else {
-                                      nav(`/scan/deliver/${d.id}`)
-                                    }
-                                  } else if (auth.user.role === 'GODOWN') {
-                                    nav(`/scan/dispatch/${d.id}`)
-                                  } else {
-                                    nav(`/scan/dispatch/${d.id}`)
-                                  }
+                                  nav(
+                                    scanPathForDelivery(
+                                      auth.user.role,
+                                      d.status,
+                                      d.id,
+                                    ),
+                                  )
                                 }}
                               >
                                 Scan
