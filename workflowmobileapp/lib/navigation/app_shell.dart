@@ -90,11 +90,17 @@ class _AppShellBody extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('Workflow 360', overflow: TextOverflow.ellipsis),
-                  if (role == 'GODOWN' && (user?.godownName ?? user?.siteName) != null)
-                    Text(
-                      user!.godownName ?? user.siteName!,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.subtext),
-                      overflow: TextOverflow.ellipsis,
+                  if (role == 'GODOWN')
+                    Builder(
+                      builder: (context) {
+                        final label = user?.godownName ?? user?.siteName;
+                        if (label == null) return const SizedBox.shrink();
+                        return Text(
+                          label,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.subtext),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                 ],
               ),

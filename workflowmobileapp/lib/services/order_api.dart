@@ -44,13 +44,16 @@ class OrderApi {
     required String fromGodownId,
     String? siteName,
   }) async {
-    final data = await ApiClient.post('/orders', {
-      'customerName': customerName,
-      'deliveryAt': deliveryAt,
-      'fromGodownId': fromGodownId,
-      if (siteName != null) 'siteName': siteName,
-      'lines': <dynamic>[],
-    });
+    final data = await ApiClient.post(
+      '/orders',
+      body: {
+        'customerName': customerName,
+        'deliveryAt': deliveryAt,
+        'fromGodownId': fromGodownId,
+        if (siteName != null) 'siteName': siteName,
+        'lines': <dynamic>[],
+      },
+    );
     return (data as Map<String, dynamic>)['id'] as String;
   }
 }

@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _idCtrl = TextEditingController();
   final _passCtrl = TextEditingController(text: '123456');
   bool _busy = false;
+  bool _obscurePassword = true;
   String? _error;
 
   bool get _isDelivery => widget.role == 'DELIVERY';
@@ -103,10 +104,20 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _passCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
                 labelText: 'Password',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                ),
               ),
             ),
             if (_error != null) ...[
