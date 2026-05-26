@@ -7,7 +7,7 @@ const deliveryScanEventSchema = mongoose.Schema(
     action: {
       type: String,
       required: true,
-      enum: ['DISPATCH', 'PICKUP', 'DELIVER', 'RETURN'],
+      enum: ['DISPATCH', 'PICKUP', 'DELIVER', 'RETURN', 'RETURN_PICKUP'],
     },
     byUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     at: { type: Date, default: Date.now },

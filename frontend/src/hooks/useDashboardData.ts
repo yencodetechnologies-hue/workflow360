@@ -44,15 +44,15 @@ function mapSummary(report: DailyReport | null): TodayKpis {
   const by = s?.byStatus ?? {}
   return {
     today: s?.total ?? 0,
-    running: by.DISPATCHED ?? 0,
+    running: (by.OUT_FOR_DELIVERY ?? 0) + (by.DISPATCHED ?? 0),
     pendingReturn: by.PENDING_RETURN ?? 0,
     completed: by.COMPLETED ?? 0,
     damaged: s?.damaged ?? 0,
     lost: s?.lost ?? 0,
     totalStock: 0,
     byStatus: {
-      upcoming: by.UPCOMING ?? 0,
-      dispatched: by.DISPATCHED ?? 0,
+      upcoming: (by.PROCESSED ?? 0) + (by.UPCOMING ?? 0),
+      dispatched: (by.OUT_FOR_DELIVERY ?? 0) + (by.PACKED ?? 0) + (by.DISPATCHED ?? 0),
       pendingReturn: by.PENDING_RETURN ?? 0,
       completed: by.COMPLETED ?? 0,
       delivered: by.DELIVERED ?? 0,

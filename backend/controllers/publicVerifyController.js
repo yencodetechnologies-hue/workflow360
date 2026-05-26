@@ -15,7 +15,7 @@ async function getDeliveryVerify(req, res) {
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
     const lines = await populateLineDetails(delivery)
-    const allowedStatuses = ['UPCOMING', 'DISPATCHED']
+    const allowedStatuses = ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY']
     const canSubmit = allowedStatuses.includes(delivery.status) && !delivery.deliveryVerifiedAt
 
     return res.json({
@@ -47,7 +47,7 @@ async function postDeliveryVerify(req, res) {
     const delivery = await Delivery.findOne({ deliveryVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
-    if (!['UPCOMING', 'DISPATCHED'].includes(delivery.status)) {
+    if (!['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY'].includes(delivery.status)) {
       return res.status(409).json({ message: 'Delivery cannot be verified in current status' })
     }
     if (delivery.deliveryVerifiedAt) return res.status(409).json({ message: 'Already verified' })

@@ -241,15 +241,20 @@ class DeliveryApi {
       'pickup' => 'pickup-scan',
       'deliver' => 'deliver-scan',
       'return' => 'return-scan',
+      'return-pickup' => 'return-pickup-scan',
       _ => 'dispatch-scan',
     };
     await ApiClient.post('/deliveries/$deliveryId/$path', body: {'tagId': tagId.trim()});
   }
 
-  static Future<void> vehicleVerify(String deliveryId, String vehicleNumber) async {
-    await ApiClient.post('/deliveries/$deliveryId/vehicle-verify', body: {
+  static Future<void> outForDelivery(String deliveryId, String vehicleNumber) async {
+    await ApiClient.post('/deliveries/$deliveryId/out-for-delivery', body: {
       'vehicleNumber': vehicleNumber.trim(),
     });
+  }
+
+  static Future<void> vehicleVerify(String deliveryId, String vehicleNumber) async {
+    await outForDelivery(deliveryId, vehicleNumber);
   }
 
   static Future<void> closeReturn(String deliveryId) async {

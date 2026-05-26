@@ -28,8 +28,10 @@ const TABS: { id: ReportTab; label: string }[] = [
 ]
 
 function badgeVariant(status: string) {
-  if (status === 'UPCOMING') return 'blue'
-  if (status === 'DISPATCHED') return 'green'
+  if (status === 'PROCESSED' || status === 'UPCOMING') return 'blue'
+  if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return 'green'
+  if (status === 'PACKED') return 'slate'
+  if (status === 'RETURN_PICKUP') return 'amber'
   if (status === 'COMPLETED') return 'slate'
   return 'amber'
 }
@@ -112,8 +114,8 @@ export function ReportsPage() {
     return {
       total: s?.total ?? 0,
       pending: (s?.byStatus?.PENDING_RETURN ?? 0) + (s?.byStatus?.DELIVERED ?? 0),
-      dispatched: s?.byStatus?.DISPATCHED ?? 0,
-      upcoming: s?.byStatus?.UPCOMING ?? 0,
+      dispatched: (s?.byStatus?.OUT_FOR_DELIVERY ?? 0) + (s?.byStatus?.DISPATCHED ?? 0),
+      upcoming: (s?.byStatus?.PROCESSED ?? 0) + (s?.byStatus?.UPCOMING ?? 0),
       completed: s?.byStatus?.COMPLETED ?? 0,
       damaged: s?.damaged ?? 0,
       lost: s?.lost ?? 0,

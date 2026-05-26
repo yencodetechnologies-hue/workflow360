@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CreateDeliveryModal, type CreateDeliveryPrefill } from '../Deliveries/CreateDeliveryModal'
 import { formatDateTime } from '../../lib/format'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -51,6 +52,8 @@ export function OrdersListPage() {
     deliveryAt: '',
     fromGodownId: '',
   })
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
+  const [deliveryPrefill, setDeliveryPrefill] = useState<CreateDeliveryPrefill | null>(null)
 
   const canCreate =
     auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
@@ -227,6 +230,7 @@ export function OrdersListPage() {
                   <Th>Site</Th>
                   <Th>Status</Th>
                   <Th>Scheduled</Th>
+                  {canCreate ? <Th className="text-right">Actions</Th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -238,6 +242,32 @@ export function OrdersListPage() {
                       <Badge variant={badgeVariant(o.status)}>{o.status}</Badge>
                     </Td>
                     <Td className="text-slate-600">{formatDateTime(o.deliveryAt)}</Td>
+                    {canCreate ? (
+                      <Td className="text-right">
+                        {['CREATED', 'ALLOCATED'].includes(o.status) ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setDeliveryPrefill({
+                                orderId: o.id,
+                                customerName: o.customerName,
+                                siteName: o.siteName,
+                                siteAddress: o.siteAddress,
+                                deliveryAt: o.deliveryAt,
+                                returnExpectedAt: o.returnExpectedAt,
+                                fromGodownId: o.fromGodownId,
+                              })
+                              setDeliveryModalOpen(true)
+                            }}
+                          >
+                            Create delivery
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </Td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -253,6 +283,20 @@ export function OrdersListPage() {
           </p>
         </CardContent>
       </Card>
+
+      <CreateDeliveryModal
+        open={deliveryModalOpen}
+        prefill={deliveryPrefill}
+        onClose={() => {
+          setDeliveryModalOpen(false)
+          setDeliveryPrefill(null)
+        }}
+        onCreated={() => {
+          loadOrders()
+          setDeliveryModalOpen(false)
+          setDeliveryPrefill(null)
+        }}
+      />
     </div>
   )
 }

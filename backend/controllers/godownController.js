@@ -194,7 +194,9 @@ async function queueByDate(req, res) {
   const { start, end } = dayRange(date)
   const q = {
     deliveryAt: { $gte: start, $lt: end },
-    status: { $in: ['UPCOMING', 'DISPATCHED', 'DELIVERED', 'PENDING_RETURN'] },
+    status: {
+      $in: ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'],
+    },
   }
 
   if (req.user.role === 'GODOWN' && req.user.godownId) {

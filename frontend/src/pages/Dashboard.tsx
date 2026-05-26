@@ -11,8 +11,10 @@ import { useDashboardData } from '../hooks/useDashboardData'
 import { CreateDeliveryModal } from './Deliveries/CreateDeliveryModal'
 
 function badgeVariant(status: string) {
-  if (status === 'DISPATCHED') return 'green'
-  if (status === 'UPCOMING') return 'blue'
+  if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return 'green'
+  if (status === 'PROCESSED' || status === 'UPCOMING') return 'blue'
+  if (status === 'PACKED') return 'slate'
+  if (status === 'RETURN_PICKUP') return 'amber'
   if (status === 'PENDING_RETURN' || status === 'DELIVERED') return 'amber'
   if (status === 'COMPLETED') return 'slate'
   return 'slate'
@@ -20,8 +22,12 @@ function badgeVariant(status: string) {
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
-    UPCOMING: 'Upcoming',
-    DISPATCHED: 'Dispatched',
+    PROCESSED: 'Processed',
+    PACKED: 'Packed',
+    OUT_FOR_DELIVERY: 'Out for delivery',
+    RETURN_PICKUP: 'Return pickup',
+    UPCOMING: 'Processed',
+    DISPATCHED: 'Out for delivery',
     DELIVERED: 'Delivered',
     PENDING_RETURN: 'Pending return',
     COMPLETED: 'Completed',

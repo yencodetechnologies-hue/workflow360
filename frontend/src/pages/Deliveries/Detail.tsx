@@ -1,13 +1,17 @@
 ﻿import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
+import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
+import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
+import { scanPathForDelivery } from '../../lib/scanMode'
 
 type DeliveryLine = {
   productId: string
@@ -41,8 +45,13 @@ type DeliveryDetail = {
   deliveryAt: string
   returnExpectedAt?: string
   vehicleLabel?: string
+  returnPickupVehicleLabel?: string
   status: string
   lines: DeliveryLine[]
+  scanProgress?: {
+    dispatchComplete?: boolean
+    returnPickupComplete?: boolean
+  }
   deliveryVerifierName?: string
   deliveryVerifiedAt?: string
   billerReturnSubmittedAt?: string
@@ -56,9 +65,15 @@ type DeliveryDetail = {
 
 export function DeliveryDetailPage() {
   const { id } = useParams()
+  const nav = useNavigate()
   const auth = useAuth()
   const [d, setD] = useState<DeliveryDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false)
+  const [vehicleNumber, setVehicleNumber] = useState('')
+  const [returnVehicle, setReturnVehicle] = useState('')
+  const [actionBusy, setActionBusy] = useState(false)
 
   const load = () => {
     const token = getToken()
@@ -66,17 +81,82 @@ export function DeliveryDetailPage() {
     setError(null)
     apiFetch<DeliveryDetail>(`/deliveries/${id}`, { token })
       .then(setD)
-      .catch((e: any) => setError(e?.message || 'Failed to load'))
+      .catch((e: unknown) =>
+        setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to load'),
+      )
   }
 
   useEffect(() => {
     load()
   }, [id])
 
-  const canRegen = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
+  const role = auth.status === 'authenticated' ? auth.user.role : ''
+  const canRegen = role === 'ADMIN'
+  const isGodown = role === 'GODOWN' || role === 'ADMIN'
+  const isAdmin = role === 'ADMIN'
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {})
+  }
+
+  const markPacked = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    setActionBusy(true)
+    try {
+      await apiFetch(`/deliveries/${id}/mark-packed`, { token, method: 'POST' })
+      load()
+    } catch (e: unknown) {
+      setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Mark packed failed')
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  const outForDelivery = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    const v = vehicleNumber.trim()
+    if (!v) return
+    setActionBusy(true)
+    try {
+      await apiFetch(`/deliveries/${id}/out-for-delivery`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify({ vehicleNumber: v }),
+      })
+      setVehicleModalOpen(false)
+      setVehicleNumber('')
+      load()
+    } catch (e: unknown) {
+      setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Out for delivery failed')
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  const assignReturnPickup = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    const v = returnVehicle.trim()
+    if (!v) return
+    setActionBusy(true)
+    try {
+      await apiFetch(`/deliveries/${id}/assign-return-pickup`, {
+        token,
+        method: 'POST',
+        body: JSON.stringify({ vehicleNumber: v }),
+      })
+      setReturnModalOpen(false)
+      setReturnVehicle('')
+      load()
+    } catch (e: unknown) {
+      setError(
+        e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Assign return pickup failed',
+      )
+    } finally {
+      setActionBusy(false)
+    }
   }
 
   if (!id) return null
@@ -93,7 +173,7 @@ export function DeliveryDetailPage() {
   if (!d) {
     return (
       <div>
-        <PageHeader title="Delivery" subtitle="Loadingâ€¦" />
+        <PageHeader title="Delivery" subtitle="Loading…" />
       </div>
     )
   }
@@ -102,7 +182,7 @@ export function DeliveryDetailPage() {
     <div>
       <PageHeader
         title={d.deliveryNo}
-        subtitle={`${d.customerName} â€¢ ${d.siteName || d.siteAddress || 'â€”'}`}
+        subtitle={`${d.customerName} • ${d.siteName || d.siteAddress || '—'}`}
         right={
           <Link to="/deliveries" className="text-sm font-semibold text-slate-900 hover:text-slate-700">
             Back to list
@@ -112,6 +192,63 @@ export function DeliveryDetailPage() {
 
       {error ? <div className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
+      <Modal open={vehicleModalOpen} title="Out for delivery" onClose={() => setVehicleModalOpen(false)}>
+        <p className="mb-3 text-sm text-slate-600">
+          Enter vehicle number. Driver logs in with this number; default password <span className="font-mono">123456</span>{' '}
+          for auto-created accounts.
+        </p>
+        <Input label="Vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+        <div className="mt-4 flex gap-2">
+          <Button onClick={outForDelivery} disabled={actionBusy || !vehicleNumber.trim()}>
+            Confirm
+          </Button>
+          <Button variant="secondary" onClick={() => setVehicleModalOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={returnModalOpen} title="Assign return pickup" onClose={() => setReturnModalOpen(false)}>
+        <Input label="Vehicle number" value={returnVehicle} onChange={(e) => setReturnVehicle(e.target.value)} />
+        <div className="mt-4 flex gap-2">
+          <Button onClick={assignReturnPickup} disabled={actionBusy || !returnVehicle.trim()}>
+            Assign
+          </Button>
+          <Button variant="secondary" onClick={() => setReturnModalOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
+
+      {isGodown ? (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(d.status === 'PROCESSED' || d.status === 'PACKED') && (
+            <Button variant="secondary" onClick={() => nav(scanPathForDelivery(role, d.status, d.id))}>
+              Dispatch scan
+            </Button>
+          )}
+          {d.status === 'PROCESSED' && d.scanProgress?.dispatchComplete ? (
+            <Button variant="secondary" onClick={markPacked} disabled={actionBusy}>
+              Mark packed
+            </Button>
+          ) : null}
+          {d.status === 'PACKED' ? (
+            <Button onClick={() => setVehicleModalOpen(true)}>Out for delivery</Button>
+          ) : null}
+          {(d.status === 'RETURN_PICKUP' || d.status === 'DELIVERED') && (
+            <Button variant="secondary" onClick={() => nav(`/scan/return/${d.id}`)}>
+              Return scan at godown
+            </Button>
+          )}
+        </div>
+      ) : null}
+
+      {isAdmin && d.status === 'DELIVERED' ? (
+        <div className="mb-4">
+          <Button onClick={() => setReturnModalOpen(true)}>Assign return pickup</Button>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -120,7 +257,7 @@ export function DeliveryDetailPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-600">Status</span>
-              <Badge variant="slate">{d.status}</Badge>
+              <Badge variant={deliveryBadgeVariant(d.status)}>{deliveryStatusLabel(d.status)}</Badge>
             </div>
             <div>
               <span className="text-slate-600">Scheduled: </span>
@@ -138,6 +275,12 @@ export function DeliveryDetailPage() {
                 {d.vehicleLabel}
               </div>
             ) : null}
+            {d.returnPickupVehicleLabel ? (
+              <div>
+                <span className="text-slate-600">Return pickup vehicle: </span>
+                {d.returnPickupVehicleLabel}
+              </div>
+            ) : null}
             {d.contactPhone ? (
               <div>
                 <span className="text-slate-600">Contact: </span>
@@ -148,10 +291,10 @@ export function DeliveryDetailPage() {
               <div className="font-semibold text-slate-900">Delivery handover</div>
               {d.deliveryVerifiedAt ? (
                 <div className="text-slate-700">
-                  Verified by {d.deliveryVerifierName || 'â€”'} ({formatDateTime(d.deliveryVerifiedAt)})
+                  Verified by {d.deliveryVerifierName || '—'} ({formatDateTime(d.deliveryVerifiedAt)})
                 </div>
               ) : (
-                <div className="text-amber-700">Pending â€” share delivery verify link</div>
+                <div className="text-amber-700">Pending — share delivery verify link</div>
               )}
             </div>
             <div className="rounded-xl border border-slate-200 p-3">
@@ -160,11 +303,11 @@ export function DeliveryDetailPage() {
                 <>
                   <div className="text-slate-600">Submitted {formatDateTime(d.billerReturnSubmittedAt)}</div>
                   <div className="mt-1 text-slate-700">
-                    Damage total: {d.damageTotal ?? 'â€”'} Â· Missing total: {d.missingTotal ?? 'â€”'}
+                    Damage total: {d.damageTotal ?? '—'} · Missing total: {d.missingTotal ?? '—'}
                   </div>
                 </>
               ) : (
-                <div className="text-amber-700">Pending â€” share biller return link after delivery</div>
+                <div className="text-amber-700">Pending — share biller return link after delivery</div>
               )}
             </div>
           </CardContent>
@@ -185,7 +328,13 @@ export function DeliveryDetailPage() {
                     method: 'POST',
                   })
                     .then(() => load())
-                    .catch((e: any) => setError(e?.message || 'Regenerate failed'))
+                    .catch((e: unknown) =>
+                      setError(
+                        e && typeof e === 'object' && 'message' in e
+                          ? String((e as { message: string }).message)
+                          : 'Regenerate failed',
+                      ),
+                    )
                 }}
               >
                 Regenerate links
@@ -195,7 +344,7 @@ export function DeliveryDetailPage() {
           <CardContent className="space-y-3 text-xs">
             <div>
               <div className="font-semibold text-slate-800">Delivery verify</div>
-              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || 'â€”'}</div>
+              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || '—'}</div>
               {d.deliveryVerifyUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.deliveryVerifyUrl || '')}>
                   Copy
@@ -204,7 +353,7 @@ export function DeliveryDetailPage() {
             </div>
             <div>
               <div className="font-semibold text-slate-800">Biller return</div>
-              <div className="break-all text-slate-600">{d.billerReturnUrl || 'â€”'}</div>
+              <div className="break-all text-slate-600">{d.billerReturnUrl || '—'}</div>
               {d.billerReturnUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.billerReturnUrl || '')}>
                   Copy
@@ -277,25 +426,20 @@ export function DeliveryDetailPage() {
                 {d.lines.map((l) => (
                   <tr key={`${l.productId}-${l.godownId ?? ''}`} className="hover:bg-slate-50">
                     <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
-                    <Td className="font-mono text-xs text-slate-600">{l.sku || 'â€”'}</Td>
-                    <Td className="text-slate-700">{l.godownName || 'â€”'}</Td>
+                    <Td className="font-mono text-xs text-slate-600">{l.sku || '—'}</Td>
+                    <Td className="text-slate-700">{l.godownName || '—'}</Td>
                     <Td className="text-right font-semibold text-slate-900">
                       {l.qty}
                       {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
                     </Td>
-                    <Td className="text-right text-slate-700">{l.rate ?? 'â€”'}</Td>
+                    <Td className="text-right text-slate-700">{l.rate ?? '—'}</Td>
                   </tr>
                 ))}
               </tbody>
             </Table>
           )}
-          <p className="mt-3 text-xs text-slate-500">
-            {d.lines.length} line{d.lines.length === 1 ? '' : 's'} Â·{' '}
-            {d.lines.reduce((sum, l) => sum + l.qty, 0)} total units
-          </p>
         </CardContent>
       </Card>
     </div>
   )
 }
-

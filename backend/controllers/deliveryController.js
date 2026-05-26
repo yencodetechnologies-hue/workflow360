@@ -10,6 +10,15 @@ const User = require('../models/User')
 const Order = require('../models/Order')
 const PDFDocument = require('pdfkit')
 const { populateLineDetails, populateBillerReturnLines } = require('../utils/deliveryLineDetails')
+const {
+  deliveryGodownIds,
+  ensureDeliveryDriver,
+  syncOrderStatus,
+  notifyDeliveryProcessed,
+  notifyDeliveryPacked,
+  notifyOutForDelivery,
+  notifyReturnPickupAssigned,
+} = require('../utils/deliveryWorkflow')
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
@@ -97,27 +106,27 @@ function scanProgress(delivery, tagIds) {
   }
 }
 
-function deliveryGodownIds(delivery) {
-  const ids = new Set()
-  if (delivery.fromGodownId) ids.add(String(delivery.fromGodownId))
-  for (const line of delivery.lines || []) {
-    if (line.godownId) ids.add(String(line.godownId))
+function vehicleMatchesUser(delivery, user) {
+  if (!user?.loginId) return false
+  const login = String(user.loginId).toUpperCase()
+  if (delivery.vehicleLabel && String(delivery.vehicleLabel).toUpperCase() === login) return true
+  if (
+    delivery.returnPickupVehicleLabel &&
+    String(delivery.returnPickupVehicleLabel).toUpperCase() === login
+  ) {
+    return true
   }
-  return ids
+  return false
 }
 
 function deliveryAccessOk(req, delivery) {
   if (req.user.role === 'ADMIN') return true
   if (req.user.role === 'DELIVERY') {
     const assigned = String(delivery.assignedDeliveryUserId || '') === String(req.user.id)
-    const vehicle =
-      req.user.loginId &&
-      delivery.vehicleLabel &&
-      String(delivery.vehicleLabel).toUpperCase() === String(req.user.loginId).toUpperCase()
-    return assigned || vehicle
+    return assigned || vehicleMatchesUser(delivery, req.user)
   }
   if (req.user.role === 'GODOWN' && req.user.godownId) {
-    return deliveryGodownIds(delivery).has(String(req.user.godownId))
+    return deliveryGodownIds(delivery).includes(String(req.user.godownId))
   }
   if (req.user.role === 'BILLER') {
     return String(delivery.billerUserId || '') === String(req.user.id)
@@ -129,6 +138,7 @@ function mapListRow(d) {
   return {
     id: String(d._id),
     deliveryNo: d.deliveryNo,
+    orderId: d.orderId ? String(d.orderId) : undefined,
     customerName: d.customerName,
     siteName: d.siteName,
     siteAddress: d.siteAddress,
@@ -137,16 +147,22 @@ function mapListRow(d) {
     fromGodownId: String(d.fromGodownId),
     billerUserId: d.billerUserId ? String(d.billerUserId) : undefined,
     vehicleLabel: d.vehicleLabel,
+    returnPickupVehicleLabel: d.returnPickupVehicleLabel,
     status: d.status,
+    phase: d.phase,
     lines: d.lines,
     dispatchedTagIds: d.dispatchedTagIds,
     pickedUpTagIds: d.pickedUpTagIds,
     deliveredTagIds: d.deliveredTagIds,
+    returnPickedUpTagIds: d.returnPickedUpTagIds,
     returnedTagIds: d.returnedTagIds,
     damagedTagIds: d.damagedTagIds,
     lostTagIds: d.lostTagIds,
+    packedAt: d.packedAt,
+    outForDeliveryAt: d.outForDeliveryAt,
     vehicleVerifiedAt: d.vehicleVerifiedAt,
     pickedUpAt: d.pickedUpAt,
+    returnPickupAssignedAt: d.returnPickupAssignedAt,
     challanNo: d.challanNo,
     deliveryVerifiedAt: d.deliveryVerifiedAt,
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
@@ -260,6 +276,8 @@ async function createDelivery(req, res) {
       assignedDeliveryUserId: assignedId,
       vehicleLabel: vehicle,
       lines: normalizedLines,
+      status: 'PROCESSED',
+      phase: 'FORWARD',
       deliveryVerifyToken: makeVerifyToken(),
       billerReturnVerifyToken: makeVerifyToken(),
       createdByUserId: req.user?.id,
@@ -267,16 +285,21 @@ async function createDelivery(req, res) {
 
     if (orderId) {
       const order = await Order.findById(orderId)
-      if (order && !order.fromGodownId) {
-        order.fromGodownId = primaryGodownId
+      if (order) {
+        if (!order.fromGodownId) order.fromGodownId = primaryGodownId
+        order.status = 'ALLOCATED'
         await order.save()
       }
     }
+
+    await syncOrderStatus(delivery, 'PROCESSED')
+    await notifyDeliveryProcessed(delivery)
 
     const urls = shareUrls(delivery)
     return res.status(201).json({
       id: String(delivery._id),
       deliveryNo: delivery.deliveryNo,
+      status: delivery.status,
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
       billerReturnUrl: urls.billerReturnUrl,
     })
@@ -293,8 +316,12 @@ async function listDeliveries(req, res) {
   if (status) q.status = status
 
   if (req.user.role === 'DELIVERY') {
+    const login = req.user.loginId ? String(req.user.loginId).toUpperCase() : null
     const or = [{ assignedDeliveryUserId: req.user.id }]
-    if (req.user.loginId) or.push({ vehicleLabel: String(req.user.loginId).toUpperCase() })
+    if (login) {
+      or.push({ vehicleLabel: login })
+      or.push({ returnPickupVehicleLabel: login })
+    }
     q.$or = or
   }
   if (req.user.role === 'GODOWN' && req.user.godownId) {
@@ -316,6 +343,7 @@ async function getDelivery(req, res) {
   const urls = shareUrls(d)
   const required = requiredQtyByProduct(d)
   const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
+  const returnPickupCounts = await scannedCountsByProduct(d.returnPickedUpTagIds || [])
   const lines = await populateLineDetails(d)
   const [billerMissingLines, billerDamagedLines] = await Promise.all([
     populateBillerReturnLines(d.billerMissingLines),
@@ -324,6 +352,7 @@ async function getDelivery(req, res) {
 
   return res.json({
     id: String(d._id),
+    orderId: d.orderId ? String(d.orderId) : undefined,
     deliveryNo: d.deliveryNo,
     customerName: d.customerName,
     siteName: d.siteName,
@@ -335,16 +364,22 @@ async function getDelivery(req, res) {
     returnExpectedAt: d.returnExpectedAt,
     assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
     vehicleLabel: d.vehicleLabel,
+    returnPickupVehicleLabel: d.returnPickupVehicleLabel,
     status: d.status,
+    phase: d.phase,
     lines,
     dispatchedTagIds: d.dispatchedTagIds,
     pickedUpTagIds: d.pickedUpTagIds,
     deliveredTagIds: d.deliveredTagIds,
+    returnPickedUpTagIds: d.returnPickedUpTagIds || [],
     returnedTagIds: d.returnedTagIds,
     damagedTagIds: d.damagedTagIds,
     lostTagIds: d.lostTagIds,
+    packedAt: d.packedAt,
+    outForDeliveryAt: d.outForDeliveryAt,
     vehicleVerifiedAt: d.vehicleVerifiedAt,
     pickedUpAt: d.pickedUpAt,
+    returnPickupAssignedAt: d.returnPickupAssignedAt,
     challanNo: d.challanNo,
     challanGeneratedAt: d.challanGeneratedAt,
     deliveryVerifierName: d.deliveryVerifierName,
@@ -362,7 +397,9 @@ async function getDelivery(req, res) {
       dispatch: scanProgress(d, d.dispatchedTagIds || []),
       pickup: scanProgress(d, d.pickedUpTagIds || []),
       deliver: scanProgress(d, d.deliveredTagIds || []),
+      returnPickup: scanProgress(d, d.returnPickedUpTagIds || []),
       dispatchComplete: countsMatchRequired(required, dispatchCounts),
+      returnPickupComplete: countsMatchRequired(required, returnPickupCounts),
     },
   })
 }
@@ -384,7 +421,36 @@ async function regenerateDeliveryTokens(req, res) {
   }
 }
 
-async function vehicleVerify(req, res) {
+async function markPacked(req, res) {
+  try {
+    const delivery = await Delivery.findById(req.params.id)
+    if (!delivery) return res.status(404).json({ message: 'Not found' })
+    if (req.user.role === 'GODOWN' && req.user.godownId && !deliveryGodownIds(delivery).includes(String(req.user.godownId))) {
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
+    const required = requiredQtyByProduct(delivery)
+    const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds)
+    if (!countsMatchRequired(required, dispatchCounts)) {
+      return res.status(400).json({
+        message: 'Dispatch scanning must be complete before marking packed',
+        scanProgress: scanProgress(delivery, delivery.dispatchedTagIds),
+      })
+    }
+
+    delivery.status = 'PACKED'
+    delivery.packedAt = new Date()
+    await delivery.save()
+    await syncOrderStatus(delivery, 'PACKED')
+    await notifyDeliveryPacked(delivery)
+
+    return res.json({ ok: true, status: delivery.status, packedAt: delivery.packedAt })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Mark packed failed' })
+  }
+}
+
+async function outForDelivery(req, res) {
   try {
     const { vehicleNumber } = req.body || {}
     if (!vehicleNumber || !String(vehicleNumber).trim()) {
@@ -393,40 +459,92 @@ async function vehicleVerify(req, res) {
 
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery) && req.user.role !== 'GODOWN' && req.user.role !== 'ADMIN') {
+    if (req.user.role === 'GODOWN' && req.user.godownId && !deliveryGodownIds(delivery).includes(String(req.user.godownId))) {
       return res.status(403).json({ message: 'Forbidden' })
     }
-    if (req.user.role === 'GODOWN' && req.user.godownId && !deliveryGodownIds(delivery).has(String(req.user.godownId))) {
-      return res.status(403).json({ message: 'Forbidden' })
+
+    if (delivery.status !== 'PACKED') {
+      return res.status(409).json({ message: 'Delivery must be PACKED before out for delivery' })
     }
 
     const required = requiredQtyByProduct(delivery)
     const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds)
     if (!countsMatchRequired(required, dispatchCounts)) {
       return res.status(400).json({
-        message: 'Dispatch scanning must be complete before vehicle verification',
+        message: 'Dispatch scanning must be complete before out for delivery',
         scanProgress: scanProgress(delivery, delivery.dispatchedTagIds),
       })
     }
 
     const vehicle = String(vehicleNumber).trim().toUpperCase()
+    const driver = await ensureDeliveryDriver(vehicle)
+
     delivery.vehicleLabel = vehicle
     delivery.vehicleVerifiedAt = new Date()
     delivery.vehicleVerifiedByUserId = req.user.id
-
-    const driver = await User.findOne({ role: 'DELIVERY', loginId: vehicle, active: true })
-    if (driver) delivery.assignedDeliveryUserId = driver._id
-
+    delivery.assignedDeliveryUserId = driver._id
+    delivery.status = 'OUT_FOR_DELIVERY'
+    delivery.outForDeliveryAt = new Date()
+    delivery.phase = 'FORWARD'
     await delivery.save()
+
+    await syncOrderStatus(delivery, 'OUT_FOR_DELIVERY')
+    await notifyOutForDelivery(delivery, driver._id)
 
     return res.json({
       ok: true,
+      status: delivery.status,
       vehicleLabel: delivery.vehicleLabel,
       vehicleVerifiedAt: delivery.vehicleVerifiedAt,
-      assignedDeliveryUserId: delivery.assignedDeliveryUserId ? String(delivery.assignedDeliveryUserId) : undefined,
+      outForDeliveryAt: delivery.outForDeliveryAt,
+      assignedDeliveryUserId: String(delivery.assignedDeliveryUserId),
     })
   } catch (err) {
-    return res.status(500).json({ message: err.message || 'Vehicle verify failed' })
+    return res.status(500).json({ message: err.message || 'Out for delivery failed' })
+  }
+}
+
+async function vehicleVerify(req, res) {
+  return outForDelivery(req, res)
+}
+
+async function assignReturnPickup(req, res) {
+  try {
+    const { vehicleNumber, returnPickupAt } = req.body || {}
+    if (!vehicleNumber || !String(vehicleNumber).trim()) {
+      return res.status(400).json({ message: 'vehicleNumber required' })
+    }
+
+    const delivery = await Delivery.findById(req.params.id)
+    if (!delivery) return res.status(404).json({ message: 'Not found' })
+
+    if (delivery.status !== 'DELIVERED') {
+      return res.status(409).json({ message: 'Return pickup can only be assigned for DELIVERED deliveries' })
+    }
+
+    const vehicle = String(vehicleNumber).trim().toUpperCase()
+    const driver = await ensureDeliveryDriver(vehicle)
+
+    delivery.returnPickupVehicleLabel = vehicle
+    delivery.returnPickupAssignedAt = returnPickupAt ? new Date(returnPickupAt) : new Date()
+    delivery.returnPickupAssignedByUserId = req.user.id
+    delivery.assignedDeliveryUserId = driver._id
+    delivery.status = 'RETURN_PICKUP'
+    delivery.phase = 'RETURN'
+    delivery.returnPickedUpTagIds = delivery.returnPickedUpTagIds || []
+    await delivery.save()
+
+    await notifyReturnPickupAssigned(delivery, driver._id)
+
+    return res.json({
+      ok: true,
+      status: delivery.status,
+      returnPickupVehicleLabel: delivery.returnPickupVehicleLabel,
+      returnPickupAssignedAt: delivery.returnPickupAssignedAt,
+      assignedDeliveryUserId: String(delivery.assignedDeliveryUserId),
+    })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Assign return pickup failed' })
   }
 }
 
@@ -453,7 +571,7 @@ async function scan(req, res, action) {
     }
 
     if (action === 'DISPATCH') {
-      if (!['UPCOMING', 'DISPATCHED'].includes(delivery.status)) {
+      if (!['PROCESSED', 'PACKED'].includes(delivery.status)) {
         return res.status(409).json({ message: 'Cannot dispatch in current status' })
       }
       const required = requiredQtyByProduct(delivery)
@@ -462,15 +580,14 @@ async function scan(req, res, action) {
       const current = dispatchCounts.get(pid) || 0
       const max = required.get(pid) || 0
       if (current >= max) {
-        return res.status(400).json({ message: `Required qty already scanned for this product` })
+        return res.status(400).json({ message: 'Required qty already scanned for this product' })
       }
 
       delivery.dispatchedTagIds = uniqPush(delivery.dispatchedTagIds, normalizedTag)
-      delivery.status = 'DISPATCHED'
       asset.status = 'IN_DELIVERY'
       asset.currentDeliveryId = delivery._id
       asset.currentGodownId = undefined
-      const dispatchGodownId = asset.currentGodownId || delivery.fromGodownId
+      const dispatchGodownId = delivery.fromGodownId
       await InventoryLedger.create({
         godownId: dispatchGodownId,
         productId: asset.productId,
@@ -480,9 +597,17 @@ async function scan(req, res, action) {
         refId: String(delivery._id),
         byUserId: req.user.id,
       })
+
+      const dispatchCountsAfter = await scannedCountsByProduct(delivery.dispatchedTagIds)
+      if (countsMatchRequired(required, dispatchCountsAfter)) {
+        delivery.status = 'PACKED'
+        delivery.packedAt = new Date()
+        await syncOrderStatus(delivery, 'PACKED')
+        await notifyDeliveryPacked(delivery)
+      }
     } else if (action === 'PICKUP') {
-      if (!delivery.vehicleVerifiedAt) {
-        return res.status(400).json({ message: 'Vehicle must be verified before pickup scan' })
+      if (delivery.status !== 'OUT_FOR_DELIVERY') {
+        return res.status(409).json({ message: 'Pickup scan only allowed when out for delivery' })
       }
       if (!delivery.dispatchedTagIds.includes(normalizedTag)) {
         return res.status(400).json({ message: 'Tag must be dispatched before pickup' })
@@ -496,8 +621,8 @@ async function scan(req, res, action) {
         delivery.pickedUpByUserId = req.user.id
       }
     } else if (action === 'DELIVER') {
-      if (!delivery.vehicleVerifiedAt) {
-        return res.status(400).json({ message: 'Vehicle must be verified before delivery scan' })
+      if (delivery.status !== 'OUT_FOR_DELIVERY') {
+        return res.status(409).json({ message: 'Delivery scan only allowed when out for delivery' })
       }
       if (!delivery.dispatchedTagIds.includes(normalizedTag)) {
         return res.status(400).json({ message: 'Tag must be dispatched for this delivery' })
@@ -522,8 +647,47 @@ async function scan(req, res, action) {
       const deliverCountsAfter = await scannedCountsByProduct(delivery.deliveredTagIds)
       if (countsMatchRequired(required, deliverCountsAfter)) {
         delivery.status = 'DELIVERED'
+        delivery.phase = 'FORWARD'
+        await syncOrderStatus(delivery, 'DELIVERED')
       }
+    } else if (action === 'RETURN_PICKUP') {
+      if (delivery.status !== 'RETURN_PICKUP') {
+        return res.status(409).json({ message: 'Return pickup scan only allowed during return pickup' })
+      }
+      if (!delivery.dispatchedTagIds.includes(normalizedTag)) {
+        return res.status(400).json({ message: 'Tag was not part of this delivery dispatch' })
+      }
+      if ((delivery.returnPickedUpTagIds || []).includes(normalizedTag)) {
+        return res.status(400).json({ message: 'Tag already scanned for return pickup' })
+      }
+
+      const required = requiredQtyByProduct(delivery)
+      const returnPickupCounts = await scannedCountsByProduct(delivery.returnPickedUpTagIds || [])
+      const pid = String(asset.productId)
+      const current = returnPickupCounts.get(pid) || 0
+      const max = required.get(pid) || 0
+      if (current >= max) {
+        return res.status(400).json({ message: 'Required qty already scanned for return pickup' })
+      }
+
+      delivery.returnPickedUpTagIds = uniqPush(delivery.returnPickedUpTagIds || [], normalizedTag)
     } else if (action === 'RETURN') {
+      if (!['RETURN_PICKUP', 'DELIVERED', 'PENDING_RETURN'].includes(delivery.status)) {
+        return res.status(409).json({ message: 'Cannot return scan in current status' })
+      }
+
+      const required = requiredQtyByProduct(delivery)
+      const returnPickupCounts = await scannedCountsByProduct(delivery.returnPickedUpTagIds || [])
+      if (
+        delivery.status === 'RETURN_PICKUP' &&
+        !countsMatchRequired(required, returnPickupCounts)
+      ) {
+        return res.status(400).json({
+          message: 'Driver must complete return pickup scans at site before godown return scan',
+          scanProgress: scanProgress(delivery, delivery.returnPickedUpTagIds || []),
+        })
+      }
+
       if (!delivery.dispatchedTagIds.includes(normalizedTag)) {
         return res.status(400).json({ message: 'Tag was not part of this delivery dispatch' })
       }
@@ -559,6 +723,7 @@ async function scan(req, res, action) {
     const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds)
     const pickupCounts = await scannedCountsByProduct(delivery.pickedUpTagIds)
     const deliverCounts = await scannedCountsByProduct(delivery.deliveredTagIds)
+    const returnPickupCounts = await scannedCountsByProduct(delivery.returnPickedUpTagIds || [])
     const dispatched = new Set(delivery.dispatchedTagIds)
     const returned = new Set(delivery.returnedTagIds)
     const missing = Array.from(dispatched).filter((t) => !returned.has(t))
@@ -571,6 +736,7 @@ async function scan(req, res, action) {
         dispatched: delivery.dispatchedTagIds.length,
         pickedUp: delivery.pickedUpTagIds.length,
         delivered: delivery.deliveredTagIds.length,
+        returnPickedUp: (delivery.returnPickedUpTagIds || []).length,
         returned: delivery.returnedTagIds.length,
         missing: missing.length,
       },
@@ -578,6 +744,7 @@ async function scan(req, res, action) {
         dispatchComplete: countsMatchRequired(required, dispatchCounts),
         pickupComplete: countsMatchRequired(required, pickupCounts),
         deliverComplete: countsMatchRequired(required, deliverCounts),
+        returnPickupComplete: countsMatchRequired(required, returnPickupCounts),
       },
       missingTagIds: missing,
     })
@@ -598,6 +765,10 @@ async function deliverScan(req, res) {
   return scan(req, res, 'DELIVER')
 }
 
+async function returnPickupScan(req, res) {
+  return scan(req, res, 'RETURN_PICKUP')
+}
+
 async function returnScan(req, res) {
   return scan(req, res, 'RETURN')
 }
@@ -614,6 +785,7 @@ async function closeReturn(req, res) {
   delivery.lostTagIds = uniqPushMany(delivery.lostTagIds, missing)
   delivery.status = 'COMPLETED'
   await delivery.save()
+  await syncOrderStatus(delivery, 'COMPLETED')
 
   return res.json({ status: 'ok', missingTagIds: missing })
 }
@@ -721,10 +893,14 @@ module.exports = {
   listDeliveries,
   getDelivery,
   regenerateDeliveryTokens,
+  markPacked,
+  outForDelivery,
   vehicleVerify,
+  assignReturnPickup,
   dispatchScan,
   pickupScan,
   deliverScan,
+  returnPickupScan,
   returnScan,
   closeReturn,
   enrollTag,

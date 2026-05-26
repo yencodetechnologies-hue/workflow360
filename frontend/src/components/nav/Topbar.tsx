@@ -18,6 +18,7 @@ import {
   topbarMetaFromPath,
   type Breadcrumb,
 } from './topbarMeta'
+import { NotificationBell } from './NotificationBell'
 
 function BreadcrumbTrail({
   items,
@@ -212,6 +213,9 @@ export function Topbar() {
 
           {/* PROFILE & LOGOUT */}
           <div className="flex shrink-0 items-center gap-2">
+          {auth.status === 'authenticated' && (role === 'GODOWN' || role === 'ADMIN' || role === 'DELIVERY') ? (
+            <NotificationBell />
+          ) : null}
           <button
             type="button"
             onClick={() => navigate('/editprofile')}

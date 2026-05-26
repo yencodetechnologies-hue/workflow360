@@ -55,28 +55,48 @@ List<NavItem> drawerItemsForRole(String role, {String? godownId}) {
   }
 }
 
-const scanModes = ['dispatch', 'pickup', 'deliver', 'return'];
+const scanModes = ['dispatch', 'pickup', 'deliver', 'return', 'return-pickup'];
 
 bool canScanAction(String role, String action) {
   if (role == 'ADMIN') return true;
-  if (action == 'pickup' || action == 'deliver') return role == 'DELIVERY';
+  if (action == 'pickup' || action == 'deliver' || action == 'return-pickup') {
+    return role == 'DELIVERY';
+  }
   return role == 'GODOWN';
 }
 
 String scanModeForDelivery(String role, String status) {
   if (role == 'ADMIN') {
-    if (status == 'UPCOMING') return 'dispatch';
-    if (status == 'DISPATCHED') return 'pickup';
+    if (status == 'PROCESSED' || status == 'PACKED' || status == 'UPCOMING') return 'dispatch';
+    if (status == 'OUT_FOR_DELIVERY' || status == 'DISPATCHED') return 'pickup';
+    if (status == 'RETURN_PICKUP') return 'return-pickup';
     if (status == 'PENDING_RETURN' || status == 'DELIVERED') return 'return';
     return 'deliver';
   }
   if (role == 'GODOWN') {
-    if (status == 'PENDING_RETURN' || status == 'DELIVERED') return 'return';
+    if (status == 'RETURN_PICKUP' || status == 'DELIVERED' || status == 'PENDING_RETURN') {
+      return 'return';
+    }
     return 'dispatch';
   }
-  if (status == 'DISPATCHED') return 'pickup';
-  if (status == 'PENDING_RETURN') return 'return';
+  if (status == 'OUT_FOR_DELIVERY' || status == 'DISPATCHED') return 'pickup';
+  if (status == 'RETURN_PICKUP') return 'return-pickup';
   return 'deliver';
+}
+
+String deliveryStatusLabel(String status) {
+  const map = {
+    'PROCESSED': 'Processed',
+    'PACKED': 'Packed',
+    'OUT_FOR_DELIVERY': 'Out for delivery',
+    'DELIVERED': 'Delivered',
+    'RETURN_PICKUP': 'Return pickup',
+    'PENDING_RETURN': 'Pending return',
+    'COMPLETED': 'Completed',
+    'UPCOMING': 'Processed',
+    'DISPATCHED': 'Out for delivery',
+  };
+  return map[status] ?? status;
 }
 
 bool canCreateDelivery(String role) => role == 'ADMIN';

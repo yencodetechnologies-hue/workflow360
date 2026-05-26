@@ -158,7 +158,9 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
       case 'deliver':
         return 'Deliver at site';
       case 'return':
-        return 'Return scan';
+        return 'Return scan (godown)';
+      case 'return-pickup':
+        return 'Return pickup (site)';
       default:
         return 'Scan';
     }
@@ -168,7 +170,14 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
   Widget build(BuildContext context) {
     final d = _detail;
     final dispatchComplete = d != null && d.dispatched >= d.totalRequired && d.totalRequired > 0;
-    final canPickup = _mode != 'pickup' || (d?.vehicleVerified ?? false);
+    final outForDelivery = d != null &&
+        (d.status == 'OUT_FOR_DELIVERY' || (d.status == 'DISPATCHED' && d.vehicleVerified));
+    var canScan = true;
+    if (_mode == 'pickup' || _mode == 'deliver') {
+      canScan = outForDelivery;
+    } else if (_mode == 'return-pickup') {
+      canScan = d?.status == 'RETURN_PICKUP';
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -212,21 +221,24 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ],
-            if (_mode == 'dispatch' && d != null && !d.vehicleVerified) ...[
+            if (_mode == 'dispatch' && d != null && d.status == 'PACKED' && widget.role == 'GODOWN') ...[
               const SizedBox(height: 16),
               TextField(
                 controller: _vehicleCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Vehicle number (verify after dispatch)',
+                  labelText: 'Vehicle number (out for delivery)',
                   border: OutlineInputBorder(),
                 ),
                 textCapitalization: TextCapitalization.characters,
-                enabled: dispatchComplete,
               ),
               const SizedBox(height: 8),
               FilledButton(
-                onPressed: _loading || !dispatchComplete ? null : _verifyVehicle,
-                child: const Text('Verify vehicle'),
+                onPressed: _loading ? null : _verifyVehicle,
+                child: const Text('Out for delivery'),
+              ),
+              const Text(
+                'Driver login: vehicle number + password 123456 (auto-created)',
+                style: TextStyle(fontSize: 11, color: AppColors.subtext),
               ),
             ],
             const SizedBox(height: 16),
@@ -241,14 +253,14 @@ class _DeliveryScanScreenState extends State<DeliveryScanScreen> {
               decoration: InputDecoration(
                 labelText: 'Tag ID (RFID / barcode)',
                 border: const OutlineInputBorder(),
-                suffixIcon: IconButton(icon: const Icon(Icons.send), onPressed: _loading || !canPickup ? null : () => _scan()),
+                suffixIcon: IconButton(icon: const Icon(Icons.send), onPressed: _loading || !canScan ? null : () => _scan()),
               ),
               onSubmitted: (_) => _scan(),
-              enabled: canPickup && !_loading,
+              enabled: canScan && !_loading,
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: _loading || !canPickup ? null : () => _scan(),
+              onPressed: _loading || !canScan ? null : () => _scan(),
               child: Text(_loading ? 'Saving…' : 'Submit scan'),
             ),
             if (_mode == 'return') ...[

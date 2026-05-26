@@ -618,9 +618,9 @@ export function GodownsDetailsPage() {
                     </div>
                     <Badge
                       variant={
-                        d.status === 'DISPATCHED'
+                        d.status === 'OUT_FOR_DELIVERY' || d.status === 'DISPATCHED'
                           ? 'green'
-                          : d.status === 'UPCOMING'
+                          : d.status === 'PROCESSED' || d.status === 'UPCOMING'
                             ? 'blue'
                             : d.status === 'PENDING_RETURN'
                               ? 'amber'

@@ -9,6 +9,7 @@ import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 import { formatDateTime } from '../../lib/format'
 import { API_BASE } from '../../lib/api'
+import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
 
 type Delivery = {
   id: string
@@ -35,26 +36,20 @@ type Delivery = {
     dispatch: { scanned: number; totalRequired: number; complete: boolean }
     pickup: { scanned: number; totalRequired: number; complete: boolean }
     deliver: { scanned: number; totalRequired: number; complete: boolean }
+    returnPickup?: { scanned: number; totalRequired: number; complete: boolean }
     dispatchComplete?: boolean
+    returnPickupComplete?: boolean
   }
 }
 
-type ScanAction = 'dispatch' | 'pickup' | 'deliver' | 'return'
+type ScanAction = 'dispatch' | 'pickup' | 'deliver' | 'return' | 'return-pickup'
 
 function endpoint(action: ScanAction) {
   if (action === 'dispatch') return 'dispatch-scan'
   if (action === 'pickup') return 'pickup-scan'
   if (action === 'deliver') return 'deliver-scan'
+  if (action === 'return-pickup') return 'return-pickup-scan'
   return 'return-scan'
-}
-
-function badgeVariant(status: string) {
-  if (status === 'UPCOMING') return 'blue'
-  if (status === 'DISPATCHED') return 'green'
-  if (status === 'DELIVERED') return 'amber'
-  if (status === 'PENDING_RETURN') return 'amber'
-  if (status === 'COMPLETED') return 'slate'
-  return 'slate'
 }
 
 export function ScanDeliveryPage({ action }: { action: ScanAction }) {
@@ -70,15 +65,18 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
 
   const title = useMemo(() => {
     if (action === 'dispatch') return 'Dispatch scan (Godown)'
-    if (action === 'pickup') return 'Pickup scan (Godown)'
-    if (action === 'deliver') return 'Delivery scan (Biller site)'
-    return 'Return scan'
+    if (action === 'pickup') return 'Pickup scan (Driver)'
+    if (action === 'deliver') return 'Delivery scan (Site)'
+    if (action === 'return-pickup') return 'Return pickup scan (Site)'
+    return 'Return scan (Godown)'
   }, [action])
 
   const allowed = useMemo(() => {
     if (auth.status !== 'authenticated') return false
     if (auth.user.role === 'ADMIN') return true
-    if (action === 'pickup' || action === 'deliver') return auth.user.role === 'DELIVERY'
+    if (action === 'pickup' || action === 'deliver' || action === 'return-pickup') {
+      return auth.user.role === 'DELIVERY'
+    }
     return auth.user.role === 'GODOWN'
   }, [auth, action])
 
@@ -122,27 +120,6 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     } catch (e: any) {
       setError(e?.message || 'Scan failed')
       inputRef.current?.focus()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const verifyVehicle = async () => {
-    const token = getToken()
-    if (!token || !id) return
-    const v = vehicleNumber.trim()
-    if (!v) return
-    setLoading(true)
-    setError(null)
-    try {
-      await apiFetch(`/deliveries/${id}/vehicle-verify`, {
-        method: 'POST',
-        token,
-        body: JSON.stringify({ vehicleNumber: v }),
-      })
-      load()
-    } catch (e: any) {
-      setError(e?.message || 'Vehicle verify failed')
     } finally {
       setLoading(false)
     }
@@ -214,28 +191,15 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
         <Card className="lg:col-span-2">
           <CardHeader className="flex items-center justify-between">
             <CardTitle>Scan items</CardTitle>
-            {delivery ? <Badge variant={badgeVariant(delivery.status)}>{delivery.status}</Badge> : null}
+            {delivery ? (
+              <Badge variant={deliveryBadgeVariant(delivery.status)}>{deliveryStatusLabel(delivery.status)}</Badge>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-3">
-            {action === 'dispatch' && delivery && !delivery.vehicleVerifiedAt ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
-                <div className="text-sm font-semibold text-amber-900">Vehicle verification (after dispatch complete)</div>
-                <Input
-                  label="Vehicle number"
-                  value={vehicleNumber}
-                  onChange={(e) => setVehicleNumber(e.target.value)}
-                  disabled={!dispatchDone || !!delivery.vehicleVerifiedAt}
-                />
-                <Button
-                  onClick={verifyVehicle}
-                  disabled={loading || !dispatchDone || !vehicleNumber.trim() || !!delivery.vehicleVerifiedAt}
-                >
-                  {delivery.vehicleVerifiedAt ? 'Verified' : 'Verify vehicle'}
-                </Button>
-                {!dispatchDone ? (
-                  <p className="text-xs text-amber-800">Complete all dispatch scans before verifying vehicle.</p>
-                ) : null}
-              </div>
+            {action === 'dispatch' && delivery?.status === 'PACKED' ? (
+              <p className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+                Dispatch complete. Use &quot;Out for delivery&quot; on the delivery detail or queue to assign a vehicle.
+              </p>
             ) : null}
 
             <Input
@@ -250,8 +214,10 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
                 inputRef.current = el
               }}
               disabled={
-                (action === 'pickup' && !delivery?.vehicleVerifiedAt) ||
-                (action === 'deliver' && (!delivery?.vehicleVerifiedAt || !pickupDone))
+                (action === 'pickup' && delivery?.status !== 'OUT_FOR_DELIVERY') ||
+                (action === 'deliver' &&
+                  (delivery?.status !== 'OUT_FOR_DELIVERY' || !pickupDone)) ||
+                (action === 'return-pickup' && delivery?.status !== 'RETURN_PICKUP')
               }
             />
             <div className="flex gap-2">
@@ -303,6 +269,12 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
                       Deliver: {progress.deliver.scanned}/{progress.deliver.totalRequired}
                       {deliverDone ? ' ✓' : ''}
                     </div>
+                    {progress.returnPickup ? (
+                      <div>
+                        Return pickup: {progress.returnPickup.scanned}/{progress.returnPickup.totalRequired}
+                        {progress.returnPickupComplete ? ' ✓' : ''}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="pt-2 text-xs text-slate-500">

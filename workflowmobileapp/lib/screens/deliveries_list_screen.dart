@@ -24,10 +24,10 @@ class _DeliveriesListScreenState extends State<DeliveriesListScreen> {
 
   static const _tabs = [
     ('all', 'All'),
-    ('UPCOMING', 'Upcoming'),
-    ('DISPATCHED', 'Dispatched'),
+    ('OUT_FOR_DELIVERY', 'Out for delivery'),
     ('DELIVERED', 'Delivered'),
-    ('PENDING_RETURN', 'Returns'),
+    ('RETURN_PICKUP', 'Return pickup'),
+    ('PENDING_RETURN', 'Pending return'),
     ('COMPLETED', 'Done'),
   ];
 
@@ -138,7 +138,11 @@ class _DeliveriesListScreenState extends State<DeliveriesListScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(d.deliveryNo, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text('${d.customerName}\n${d.status}'),
+                              subtitle: Text(
+                                '${d.customerName}\n'
+                                '${deliveryStatusLabel(d.status)}\n'
+                                '${d.siteAddress ?? d.siteName ?? ''}',
+                              ),
                               isThreeLine: true,
                               trailing: IconButton(
                                 icon: const Icon(Icons.qr_code_scanner, color: AppColors.cyan),

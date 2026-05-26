@@ -51,13 +51,36 @@ const deliverySchema = mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['UPCOMING', 'DISPATCHED', 'DELIVERED', 'PENDING_RETURN', 'COMPLETED', 'CANCELLED'],
-      default: 'UPCOMING',
+      enum: [
+        'PROCESSED',
+        'PACKED',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'RETURN_PICKUP',
+        'PENDING_RETURN',
+        'COMPLETED',
+        'CANCELLED',
+      ],
+      default: 'PROCESSED',
     },
+
+    phase: {
+      type: String,
+      enum: ['FORWARD', 'RETURN'],
+      default: 'FORWARD',
+    },
+
+    packedAt: { type: Date },
+    outForDeliveryAt: { type: Date },
+
+    returnPickupVehicleLabel: { type: String, trim: true },
+    returnPickupAssignedAt: { type: Date },
+    returnPickupAssignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     dispatchedTagIds: { type: [String], default: [] },
     pickedUpTagIds: { type: [String], default: [] },
     deliveredTagIds: { type: [String], default: [] },
+    returnPickedUpTagIds: { type: [String], default: [] },
     returnedTagIds: { type: [String], default: [] },
 
     damagedTagIds: { type: [String], default: [] },

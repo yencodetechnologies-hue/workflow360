@@ -199,23 +199,18 @@ import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 import { scanPathForDelivery } from '../../lib/scanMode'
+import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
 
 type Tab =
   | 'all'
-  | 'UPCOMING'
-  | 'DISPATCHED'
+  | 'PROCESSED'
+  | 'PACKED'
+  | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
+  | 'RETURN_PICKUP'
   | 'PENDING_RETURN'
   | 'COMPLETED'
-
-function badgeVariant(status: string) {
-  if (status === 'DISPATCHED') return 'green'
-  if (status === 'UPCOMING') return 'blue'
-  if (status === 'PENDING_RETURN') return 'amber'
-  if (status === 'DELIVERED') return 'amber'
-  return 'slate'
-}
 
 type DeliveryRow = {
   id: string
@@ -238,7 +233,16 @@ export function DeliveriesListPage() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>(
     statusFromUrl &&
-      ['all', 'UPCOMING', 'DISPATCHED', 'DELIVERED', 'PENDING_RETURN', 'COMPLETED'].includes(statusFromUrl)
+      [
+        'all',
+        'PROCESSED',
+        'PACKED',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'RETURN_PICKUP',
+        'PENDING_RETURN',
+        'COMPLETED',
+      ].includes(statusFromUrl)
       ? statusFromUrl
       : 'all',
   )
@@ -293,10 +297,12 @@ export function DeliveriesListPage() {
 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'all', label: 'All' },
-    { id: 'UPCOMING', label: 'Upcoming' },
-    { id: 'DISPATCHED', label: 'Dispatched' },
+    { id: 'PROCESSED', label: 'Processed' },
+    { id: 'PACKED', label: 'Packed' },
+    { id: 'OUT_FOR_DELIVERY', label: 'Out for delivery' },
     { id: 'DELIVERED', label: 'Delivered' },
-    { id: 'PENDING_RETURN', label: 'Pending Returns' },
+    { id: 'RETURN_PICKUP', label: 'Return pickup' },
+    { id: 'PENDING_RETURN', label: 'Pending return' },
     { id: 'COMPLETED', label: 'Completed' },
   ]
 
@@ -598,8 +604,8 @@ export function DeliveriesListPage() {
 
                           {/* STATUS */}
                           <Td className="py-5">
-                            <Badge variant={badgeVariant(d.status)}>
-                              {d.status.replace('_', ' ')}
+                            <Badge variant={deliveryBadgeVariant(d.status)}>
+                              {deliveryStatusLabel(d.status)}
                             </Badge>
                           </Td>
 

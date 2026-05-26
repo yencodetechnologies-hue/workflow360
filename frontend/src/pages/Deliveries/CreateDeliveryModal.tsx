@@ -47,10 +47,22 @@ const STEPS = [
   { id: 4, title: 'Schedule', subtitle: 'Delivery details' },
 ] as const
 
+export type CreateDeliveryPrefill = {
+  orderId?: string
+  customerName?: string
+  siteName?: string
+  siteAddress?: string
+  contactPhone?: string
+  deliveryAt?: string
+  returnExpectedAt?: string
+  fromGodownId?: string
+}
+
 type Props = {
   open: boolean
   onClose: () => void
   onCreated: () => void
+  prefill?: CreateDeliveryPrefill | null
 }
 
 function StepIcon({ step }: { step: number }) {
@@ -244,7 +256,7 @@ function SummaryChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function CreateDeliveryModal({ open, onClose, onCreated }: Props) {
+export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props) {
   const auth = useAuth()
   const nav = useNavigate()
 
@@ -293,6 +305,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated }: Props) {
   })
   const [godownCreateBusy, setGodownCreateBusy] = useState(false)
   const [wizardError, setWizardError] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<string | undefined>()
 
   const canCreate = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
   const canCreateBiller = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
@@ -321,7 +334,33 @@ export function CreateDeliveryModal({ open, onClose, onCreated }: Props) {
     setCreateGodownOpen(false)
     setNewGodown({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
     setWizardError(null)
+    setOrderId(undefined)
   }
+
+  useEffect(() => {
+    if (!open || !prefill) return
+    if (prefill.orderId) setOrderId(prefill.orderId)
+    if (prefill.customerName) setCustomerName(prefill.customerName)
+    if (prefill.siteName) setSiteName(prefill.siteName)
+    if (prefill.siteAddress) setSiteAddress(prefill.siteAddress)
+    if (prefill.contactPhone) setContactPhone(prefill.contactPhone)
+    if (prefill.deliveryAt) {
+      const d = new Date(prefill.deliveryAt)
+      if (!Number.isNaN(d.getTime())) {
+        setDeliveryAt(d.toISOString().slice(0, 16))
+      }
+    }
+    if (prefill.returnExpectedAt) {
+      const d = new Date(prefill.returnExpectedAt)
+      if (!Number.isNaN(d.getTime())) {
+        setReturnExpectedAt(d.toISOString().slice(0, 16))
+      }
+    }
+    if (prefill.fromGodownId) {
+      setSelectedGodownIds([prefill.fromGodownId])
+      setActiveGodownId(prefill.fromGodownId)
+    }
+  }, [open, prefill])
 
   const createGodownInline = async () => {
     const token = getToken()
@@ -606,6 +645,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated }: Props) {
         token,
         method: 'POST',
         body: JSON.stringify({
+          orderId: orderId || undefined,
           billerUserId: billerId,
           fromGodownId: selectedGodownIds[0],
           customerName: customerName.trim(),

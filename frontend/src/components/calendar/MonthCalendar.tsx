@@ -20,8 +20,9 @@ function dateKey(year: number, monthIndex: number, day: number) {
 }
 
 function cellTone(byStatus: Record<string, number>) {
-  const upcoming = byStatus.UPCOMING || 0
-  const dispatched = (byStatus.DISPATCHED || 0) + (byStatus.DELIVERED || 0)
+  const upcoming = (byStatus.PROCESSED || 0) + (byStatus.UPCOMING || 0)
+  const dispatched =
+    (byStatus.OUT_FOR_DELIVERY || 0) + (byStatus.PACKED || 0) + (byStatus.DISPATCHED || 0) + (byStatus.DELIVERED || 0)
   const pending = byStatus.PENDING_RETURN || 0
   const completed = byStatus.COMPLETED || 0
   if (pending > 0) return 'border-amber-200 bg-amber-50'

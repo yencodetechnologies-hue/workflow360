@@ -15,6 +15,7 @@ const orderRoutes = require('./routes/orderRoutes')
 const deliveryRoutes = require('./routes/deliveryRoutes')
 const reportRoutes = require('./routes/reportRoutes')
 const publicRoutes = require('./routes/publicRoutes')
+const notificationRoutes = require('./routes/notificationRoutes')
 const Product = require('./models/Product');
 const fs = require('fs');
 const path = require('path');
@@ -44,6 +45,7 @@ app.use('/workflow360/api/orders', orderRoutes)
 app.use('/workflow360/api/deliveries', deliveryRoutes)
 app.use('/workflow360/api/reports', reportRoutes)
 app.use('/workflow360/api/public', publicRoutes)
+app.use('/workflow360/api/notifications', notificationRoutes)
 
 app.get('/', (req, res) => {
     res.send('API is running...');

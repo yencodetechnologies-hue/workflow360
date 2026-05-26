@@ -113,9 +113,14 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
                         padding: const EdgeInsets.all(16),
                         children: [
                           Text(_d!.customerName, style: Theme.of(context).textTheme.titleLarge),
-                          if (_d!.siteName != null) Text(_d!.siteName!),
+                          if (_d!.siteName != null) Text(_d!.siteName!, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          if (_d!.siteAddress != null && _d!.siteAddress!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(_d!.siteAddress!, style: const TextStyle(color: AppColors.subtext)),
+                            ),
                           const SizedBox(height: 8),
-                          Chip(label: Text(_d!.status)),
+                          Chip(label: Text(deliveryStatusLabel(_d!.status))),
                           _statusCard('Scheduled', _fmt(_d!.deliveryAt)),
                           if (_d!.returnExpectedAt != null)
                             _statusCard('Return expected', _fmt(_d!.returnExpectedAt)),
