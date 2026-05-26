@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     debugPrint('[Login] Sign in tapped — role=${widget.role}');
     debugPrint(
-      '[Login] ${_isDelivery ? 'loginId' : 'email'}=${_idCtrl.text.trim().isEmpty ? '(empty)' : _idCtrl.text.trim()}',
+      '[Login] ${_isDelivery ? 'loginId' : 'identifier'}=${_idCtrl.text.trim().isEmpty ? '(empty)' : _idCtrl.text.trim()}',
     );
     setState(() {
       _busy = true;
@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService.login(
         role: widget.role,
         loginId: _isDelivery ? _idCtrl.text : null,
-        email: _isDelivery ? null : _idCtrl.text,
+        identifier: _isDelivery ? null : _idCtrl.text,
         password: _passCtrl.text,
       );
       debugPrint('[Login] Success — role=${widget.role}');
@@ -94,8 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: _idCtrl,
               decoration: InputDecoration(
-                labelText: _isDelivery ? 'Vehicle number' : 'Email',
-                hintText: _isDelivery ? 'TN09AB1234' : 'user@example.com',
+                labelText: _isDelivery ? 'Vehicle number' : 'Email or mobile',
+                hintText: _isDelivery ? 'TN09AB1234' : 'user@company.com or 9876543210',
                 border: const OutlineInputBorder(),
               ),
               textCapitalization: _isDelivery ? TextCapitalization.characters : TextCapitalization.none,

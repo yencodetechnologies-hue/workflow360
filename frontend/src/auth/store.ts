@@ -68,9 +68,13 @@ export function useAuth() {
 }
 
 export async function login(identifier: string, password: string, opts?: { useLoginId?: boolean }) {
+  const trimmed = identifier.trim()
   const body = opts?.useLoginId
-    ? { loginId: identifier.trim(), password }
-    : { email: identifier.trim(), password }
+    ? { loginId: trimmed, password }
+    : {
+        identifier: trimmed.includes('@') ? trimmed.toLowerCase() : trimmed,
+        password,
+      }
   const res = await apiFetch<{ token: string; user: AuthUser }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(body),

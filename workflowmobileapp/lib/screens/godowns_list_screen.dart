@@ -1,13 +1,13 @@
 // lib/screens/godowns_list_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/godown_api.dart';
 import '../services/report_api.dart';
 import '../utils/app_theme.dart';
 import '../utils/delivery_wizard.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/godown_sheets.dart';
 
 class GodownsListScreen extends StatefulWidget {
   const GodownsListScreen({super.key});
@@ -90,57 +90,8 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
   }
 
   Future<void> _showAdd() async {
-    final nameCtrl = TextEditingController();
-    final codeCtrl = TextEditingController();
-    final mobileCtrl = TextEditingController();
-    final addressCtrl = TextEditingController();
-    final locationCtrl = TextEditingController();
-    final cityCtrl = TextEditingController();
-    final passCtrl = TextEditingController(text: '123456');
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add godown'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name *')),
-              TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Code *')),
-              TextField(controller: mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile *'), keyboardType: TextInputType.phone),
-              TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address')),
-              TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Location')),
-              TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'City / branch')),
-              TextField(controller: passCtrl, decoration: const InputDecoration(labelText: 'Password *'), obscureText: true),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    try {
-      await GodownApi.createGodown({
-        'name': nameCtrl.text.trim(),
-        'code': codeCtrl.text.trim(),
-        'mobile': mobileCtrl.text.trim(),
-        'address': addressCtrl.text.trim().isEmpty ? null : addressCtrl.text.trim(),
-        'location': locationCtrl.text.trim().isEmpty ? null : locationCtrl.text.trim(),
-        'city': cityCtrl.text.trim().isEmpty ? null : cityCtrl.text.trim(),
-        'password': passCtrl.text,
-      });
-      _load();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
+    final created = await showGodownCreateSheet(context);
+    if (created != null && mounted) _load();
   }
 
   List<GodownRow> get _filtered {
@@ -215,7 +166,11 @@ class _GodownsListScreenState extends State<GodownsListScreen> {
                             margin: const EdgeInsets.only(bottom: 10),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () => context.push('/godowns/${g.id}'),
+                              onTap: () => showGodownPreviewSheet(
+                                    context,
+                                    godown: g,
+                                    stock: stock,
+                                  ),
                               child: Padding(
                                 padding: const EdgeInsets.all(14),
                                 child: Row(

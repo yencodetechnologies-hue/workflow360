@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
+const Godown = require('../models/Godown')
+const { normalizePhone } = require('../utils/phone')
+const { syncGodownLoginUser } = require('../utils/syncGodownUser')
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev_jwt_secret_change_me')
@@ -28,20 +31,73 @@ async function findUserByLoginId(loginId) {
   return User.findOne({ loginId: normalized })
 }
 
+async function findUserByEmail(email) {
+  return User.findOne({ email: String(email).toLowerCase().trim() })
+}
+
+async function findUserByPhone(normalizedPhone) {
+  if (!normalizedPhone) return null
+  const direct = await User.findOne({ contactPhone: normalizedPhone })
+  if (direct) return direct
+  const users = await User.find({
+    contactPhone: { $exists: true, $nin: [null, ''] },
+  })
+  return users.find((u) => normalizePhone(u.contactPhone) === normalizedPhone) || null
+}
+
+async function loginViaGodownFallback(normalizedPhone, password) {
+  const godowns = await Godown.find({ active: true }).select('+passwordHash').lean()
+  const g = godowns.find((gd) => normalizePhone(gd.mobile) === normalizedPhone)
+  if (!g || !g.passwordHash) return null
+
+  const ok = await bcrypt.compare(String(password), g.passwordHash)
+  if (!ok) return null
+
+  return syncGodownLoginUser(g, { passwordHash: g.passwordHash })
+}
+
+async function resolveUser({ identifier, email, loginId }) {
+  if (loginId) {
+    return findUserByLoginId(loginId)
+  }
+
+  const raw = identifier != null ? String(identifier).trim() : email != null ? String(email).trim() : ''
+  if (!raw) return null
+
+  if (raw.includes('@')) {
+    return findUserByEmail(raw)
+  }
+
+  const phone = normalizePhone(raw)
+  if (phone) {
+    const byPhone = await findUserByPhone(phone)
+    if (byPhone) return byPhone
+  }
+
+  return findUserByLoginId(raw)
+}
+
 async function login(req, res) {
   try {
-    const { email, loginId, password } = req.body || {}
-    const id = loginId || email
-    if (!id || !password) {
-      return res.status(400).json({ message: 'loginId (or email) and password are required' })
+    const { identifier, email, loginId, password } = req.body || {}
+    if (!password) {
+      return res.status(400).json({ message: 'password is required' })
     }
 
-    let user
-    if (loginId) {
-      user = await findUserByLoginId(loginId)
-    } else {
-      user = await User.findOne({ email: String(email).toLowerCase().trim() })
+    const id = loginId || identifier || email
+    if (!id) {
+      return res.status(400).json({ message: 'identifier (email, mobile, or loginId) and password are required' })
     }
+
+    let user = await resolveUser({ identifier: identifier || email, email, loginId })
+
+    if (!user && !loginId && !(String(identifier || email || '').includes('@'))) {
+      const phone = normalizePhone(identifier || email)
+      if (phone) {
+        user = await loginViaGodownFallback(phone, password)
+      }
+    }
+
     if (!user || !user.active) return res.status(401).json({ message: 'Invalid credentials' })
 
     const ok = await bcrypt.compare(String(password), user.passwordHash)

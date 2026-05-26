@@ -10,6 +10,7 @@ import '../services/user_api.dart';
 import '../utils/app_theme.dart';
 import '../utils/delivery_wizard.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/godown_sheets.dart';
 
 class CreateDeliveryScreen extends StatefulWidget {
   const CreateDeliveryScreen({super.key});
@@ -36,14 +37,6 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
   List<GodownRow> _godowns = [];
   final Set<String> _selectedGodowns = {};
   String? _branchFilter;
-  bool _createGodownOpen = false;
-  final _newGodownName = TextEditingController();
-  final _newGodownCode = TextEditingController();
-  final _newGodownMobile = TextEditingController();
-  final _newGodownPassword = TextEditingController(text: '123456');
-  final _newGodownAddress = TextEditingController();
-  final _newGodownLocation = TextEditingController();
-  final _newGodownCity = TextEditingController();
 
   final Map<String, int> _lineQty = {};
   String? _activeGodown;
@@ -73,13 +66,6 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
     _newBillerPhone.dispose();
     _newBillerAddress.dispose();
     _newBillerEmail.dispose();
-    _newGodownName.dispose();
-    _newGodownCode.dispose();
-    _newGodownMobile.dispose();
-    _newGodownPassword.dispose();
-    _newGodownAddress.dispose();
-    _newGodownLocation.dispose();
-    _newGodownCity.dispose();
     _customerName.dispose();
     _siteName.dispose();
     _siteAddress.dispose();
@@ -158,65 +144,37 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
     }
   }
 
-  void _toggleGodown(String id, bool? selected) {
+  void _onGodownsSelected(Set<String> ids) {
+    final added = ids.difference(_selectedGodowns);
+    final removed = _selectedGodowns.difference(ids);
     setState(() {
-      if (selected == true) {
-        _selectedGodowns.add(id);
-        _activeGodown = id;
-        _loadGodownProducts(id);
-      } else {
-        _selectedGodowns.remove(id);
+      _selectedGodowns
+        ..clear()
+        ..addAll(ids);
+      for (final id in removed) {
         _lineQty.removeWhere((k, _) => k.startsWith('$id:'));
         _godownProducts.remove(id);
-        if (_activeGodown == id) {
-          _activeGodown = _selectedGodowns.isEmpty ? null : _selectedGodowns.first;
-        }
       }
+      if (removed.contains(_activeGodown)) {
+        _activeGodown = ids.isEmpty ? null : ids.first;
+      }
+      _activeGodown ??= ids.isEmpty ? null : ids.first;
     });
+    for (final id in added) {
+      _loadGodownProducts(id);
+    }
   }
 
-  Future<void> _createGodownInline() async {
-    if (_newGodownName.text.trim().isEmpty ||
-        _newGodownCode.text.trim().isEmpty ||
-        _newGodownMobile.text.trim().isEmpty ||
-        _newGodownPassword.text.length < 6) {
-      setState(() => _error = 'Godown name, code, mobile, and password (min 6) are required');
-      return;
-    }
+  Future<void> _addGodownFromSheet() async {
+    final created = await showGodownCreateSheet(context);
+    if (created == null || !mounted) return;
     setState(() {
-      _busy = true;
-      _error = null;
+      _godowns = [..._godowns, created]..sort((a, b) => a.name.compareTo(b.name));
+      _branchFilter = godownBranch(created);
+      _selectedGodowns.add(created.id);
+      _activeGodown = created.id;
     });
-    try {
-      final created = await GodownApi.createGodown({
-        'name': _newGodownName.text.trim(),
-        'code': _newGodownCode.text.trim(),
-        'address': _newGodownAddress.text.trim().isEmpty ? null : _newGodownAddress.text.trim(),
-        'mobile': _newGodownMobile.text.trim(),
-        'location': _newGodownLocation.text.trim().isEmpty ? null : _newGodownLocation.text.trim(),
-        'city': _newGodownCity.text.trim().isEmpty ? null : _newGodownCity.text.trim(),
-        'password': _newGodownPassword.text,
-      });
-      setState(() {
-        _godowns = [..._godowns, created]..sort((a, b) => a.name.compareTo(b.name));
-        _branchFilter = godownBranch(created);
-        _selectedGodowns.add(created.id);
-        _activeGodown = created.id;
-        _createGodownOpen = false;
-        _newGodownName.clear();
-        _newGodownCode.clear();
-        _newGodownMobile.clear();
-        _newGodownPassword.text = '123456';
-        _newGodownAddress.clear();
-        _newGodownLocation.clear();
-        _newGodownCity.clear();
-      });
-      await _loadGodownProducts(created.id);
-    } catch (e) {
-      setState(() => _error = '$e');
-    } finally {
-      setState(() => _busy = false);
-    }
+    await _loadGodownProducts(created.id);
   }
 
   List<Map<String, dynamic>> get _linesPayload {
@@ -468,34 +426,18 @@ class _CreateDeliveryScreenState extends State<CreateDeliveryScreen> {
               onChanged: (v) => setState(() => _branchFilter = v),
             ),
             const SizedBox(height: 8),
-            ..._godownsInBranch.map((g) {
-              final sel = _selectedGodowns.contains(g.id);
-              return CheckboxListTile(
-                title: Text(g.name),
-                subtitle: Text('${g.code ?? ''} · ${godownBranch(g)}'),
-                value: sel,
-                onChanged: (v) => _toggleGodown(g.id, v),
-              );
-            }),
-            const Divider(),
-            TextButton.icon(
-              onPressed: () => setState(() => _createGodownOpen = !_createGodownOpen),
-              icon: Icon(_createGodownOpen ? Icons.expand_less : Icons.add),
-              label: Text(_createGodownOpen ? 'Hide new godown form' : 'Add new godown'),
+            GodownMultiSelectPicker(
+              label: 'Godown sources',
+              godowns: _godownsInBranch,
+              selectedIds: _selectedGodowns,
+              onChanged: _onGodownsSelected,
             ),
-            if (_createGodownOpen) ...[
-              TextField(controller: _newGodownName, decoration: const InputDecoration(labelText: 'Name *')),
-              TextField(controller: _newGodownCode, decoration: const InputDecoration(labelText: 'Code *')),
-              TextField(controller: _newGodownMobile, decoration: const InputDecoration(labelText: 'Mobile *'), keyboardType: TextInputType.phone),
-              TextField(controller: _newGodownPassword, decoration: const InputDecoration(labelText: 'Password *'), obscureText: true),
-              TextField(controller: _newGodownAddress, decoration: const InputDecoration(labelText: 'Address')),
-              TextField(controller: _newGodownLocation, decoration: const InputDecoration(labelText: 'Location')),
-              TextField(controller: _newGodownCity, decoration: const InputDecoration(labelText: 'City / branch')),
-              FilledButton(
-                onPressed: _busy ? null : _createGodownInline,
-                child: Text(_busy ? 'Creating…' : 'Create godown'),
-              ),
-            ],
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _addGodownFromSheet,
+              icon: const Icon(Icons.add),
+              label: const Text('Add new godown'),
+            ),
           ],
         );
       case 3:

@@ -78,6 +78,7 @@ class AuthService {
 
   static Future<AuthUser> login({
     required String role,
+    String? identifier,
     String? email,
     String? loginId,
     required String password,
@@ -86,7 +87,11 @@ class AuthService {
     if (loginId != null && loginId.trim().isNotEmpty) {
       body['loginId'] = loginId.trim();
     } else {
-      body['email'] = email!.trim().toLowerCase();
+      final raw = (identifier ?? email ?? '').trim();
+      if (raw.isEmpty) {
+        throw Exception('Email or mobile number is required');
+      }
+      body['identifier'] = raw.contains('@') ? raw.toLowerCase() : raw;
     }
 
     final uri = apiUri('/auth/login');

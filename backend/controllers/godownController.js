@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const Godown = require('../models/Godown')
 const Delivery = require('../models/Delivery')
+const { normalizePhone } = require('../utils/phone')
+const { syncGodownLoginUser } = require('../utils/syncGodownUser')
 
 const saltRounds = () => Number(process.env.BCRYPT_ROUNDS || 10)
 
@@ -19,7 +21,14 @@ function mapGodown(g) {
 }
 
 async function listGodowns(req, res) {
-  const list = await Godown.find({ active: true }).sort({ name: 1 }).lean()
+  const filter = { active: true }
+  if (req.user.role === 'GODOWN' && req.user.godownId) {
+    if (!mongoose.Types.ObjectId.isValid(req.user.godownId)) {
+      return res.json([])
+    }
+    filter._id = req.user.godownId
+  }
+  const list = await Godown.find(filter).sort({ name: 1 }).lean()
   return res.json(list.map(mapGodown))
 }
 
@@ -35,17 +44,20 @@ async function createGodown(req, res) {
     }
 
     const passwordHash = await bcrypt.hash(String(password), saltRounds())
+    const mobileNormalized = normalizePhone(mobileTrim) || mobileTrim
 
     const g = await Godown.create({
       name: String(name).trim(),
       code: String(code).trim().toUpperCase(),
       address: address ? String(address).trim() : '',
-      mobile: mobileTrim,
+      mobile: mobileNormalized,
       location: location ? String(location).trim() : '',
       city: city ? String(city).trim() : '',
       manager: manager ? String(manager).trim() : '',
       passwordHash,
     })
+
+    await syncGodownLoginUser(g, { passwordHash })
 
     return res.status(201).json(mapGodown(g.toObject()))
   } catch (err) {
@@ -75,7 +87,10 @@ async function updateGodown(req, res) {
     if (name !== undefined) g.name = String(name).trim()
     if (code !== undefined) g.code = String(code).trim() ? String(code).trim().toUpperCase() : undefined
     if (address !== undefined) g.address = address ? String(address).trim() : ''
-    if (mobile !== undefined) g.mobile = mobile ? String(mobile).trim() : ''
+    if (mobile !== undefined) {
+      const m = mobile ? String(mobile).trim() : ''
+      g.mobile = m ? normalizePhone(m) || m : ''
+    }
     if (location !== undefined) g.location = location ? String(location).trim() : ''
     if (city !== undefined) g.city = city ? String(city).trim() : ''
     if (manager !== undefined) g.manager = manager ? String(manager).trim() : ''
@@ -91,6 +106,14 @@ async function updateGodown(req, res) {
     if (!g.code || !String(g.code).trim()) return res.status(400).json({ message: 'code required' })
 
     await g.save()
+
+    const passwordUpdated = password !== undefined && String(password).trim()
+    if (passwordUpdated || mobile !== undefined) {
+      await syncGodownLoginUser(g, {
+        passwordHash: passwordUpdated ? g.passwordHash : undefined,
+      })
+    }
+
     return res.json(mapGodown(g.toObject()))
   } catch (err) {
     if (err && err.code === 11000) {

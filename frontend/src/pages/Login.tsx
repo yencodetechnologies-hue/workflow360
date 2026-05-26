@@ -9,7 +9,7 @@ import workflow from '../assets/workflowlogo.jpeg'
 export function LoginPage() {
   const navigate = useNavigate()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [touched, setTouched] = useState(false)
@@ -20,15 +20,18 @@ export function LoginPage() {
     if (!touched) return {}
 
     return {
-      email: email.trim().length < 3 ? 'Enter a valid email.' : undefined,
+      identifier:
+        identifier.trim().length < 1
+          ? 'Enter your email or mobile number.'
+          : undefined,
       password:
-        password.trim().length < 3
-          ? 'Enter a valid password.'
+        password.trim().length < 6
+          ? 'Password must be at least 6 characters.'
           : undefined,
     }
-  }, [email, password, touched])
+  }, [identifier, password, touched])
 
-  const hasError = Boolean(errors.email || errors.password)
+  const hasError = Boolean(errors.identifier || errors.password)
 
   return (
     <div className="h-screen overflow-hidden bg-[#101010] p-3">
@@ -145,7 +148,7 @@ export function LoginPage() {
 
                 setLoading(true)
 
-                login(email, password)
+                login(identifier, password)
                   .then((u) => {
                     const next =
                       u.role === 'DELIVERY'
@@ -163,14 +166,14 @@ export function LoginPage() {
               }}
             >
 
-              {/* EMAIL */}
+              {/* EMAIL OR MOBILE */}
               <Input
-                label="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                label="Email or mobile number"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 onBlur={() => setTouched(true)}
-                placeholder="name@company.com"
-                error={errors.email}
+                placeholder="name@company.com or 9876543210"
+                error={errors.identifier}
               />
 
               {/* PASSWORD */}
