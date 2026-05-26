@@ -61,4 +61,17 @@ async function syncGodownLoginUser(godown, opts = {}) {
   })
 }
 
-module.exports = { syncGodownLoginUser, makeGodownEmail }
+/**
+ * Deactivate the GODOWN User linked to a godown (on soft-delete).
+ * @param {string} godownId
+ */
+async function deactivateGodownLoginUser(godownId) {
+  const id = String(godownId)
+  const user = await User.findOne({ role: 'GODOWN', godownId: id })
+  if (!user) return null
+  user.active = false
+  await user.save()
+  return user
+}
+
+module.exports = { syncGodownLoginUser, deactivateGodownLoginUser, makeGodownEmail }

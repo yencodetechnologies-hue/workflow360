@@ -288,7 +288,7 @@
 // ✔ All YOUR existing logic preserved
 // ✔ NO function removed
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 
 import { formatNumber } from '../../lib/format'
@@ -325,6 +325,57 @@ export type GodownRow = {
   city?: string
   manager?: string
 }
+
+function ActionIcon({ children }: { children: ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+      {children}
+    </svg>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <ActionIcon>
+      <path
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+    </ActionIcon>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <ActionIcon>
+      <path
+        d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" strokeWidth="1.7" />
+    </ActionIcon>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <ActionIcon>
+      <path
+        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </ActionIcon>
+  )
+}
+
+const actionBtnClass =
+  'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700'
 
 export function GodownsListPage() {
   const auth = useAuth()
@@ -393,6 +444,31 @@ export function GodownsListPage() {
 
   const [editSaving, setEditSaving] =
     useState(false)
+
+  /* ======================================================
+     DELETE MODAL
+  ====================================================== */
+
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const [deletingGodown, setDeletingGodown] =
+    useState<GodownRow | null>(null)
+
+  const [deleteSaving, setDeleteSaving] =
+    useState(false)
+
+  const openEdit = (g: GodownRow) => {
+    setEditingGodownId(g.id)
+    setEditForm({
+      name: g.name || '',
+      code: g.code || '',
+      address: g.address || '',
+      mobile: g.mobile || '',
+      location: g.location || '',
+      newPassword: '',
+    })
+    setEditOpen(true)
+  }
 
   /* ======================================================
      LOAD
@@ -835,6 +911,66 @@ export function GodownsListPage() {
         </div>
       </Modal>
 
+      {/* ======================================================
+          DELETE MODAL
+      ====================================================== */}
+
+      <Modal
+        open={deleteOpen}
+        title="Delete godown"
+        onClose={() => {
+          if (deleteSaving) return
+          setDeleteOpen(false)
+          setDeletingGodown(null)
+        }}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              disabled={deleteSaving}
+              onClick={() => {
+                setDeleteOpen(false)
+                setDeletingGodown(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteSaving || !deletingGodown}
+              onClick={() => {
+                const token = getToken()
+                if (!token || !deletingGodown) return
+                setDeleteSaving(true)
+                apiFetch(`/godowns/${deletingGodown.id}`, {
+                  token,
+                  method: 'DELETE',
+                })
+                  .then(() => {
+                    setDeleteOpen(false)
+                    setDeletingGodown(null)
+                    load()
+                  })
+                  .catch((e: any) =>
+                    setError(e?.message || 'Delete failed'),
+                  )
+                  .finally(() => setDeleteSaving(false))
+              }}
+            >
+              {deleteSaving ? 'Deleting…' : 'Delete'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-600">
+          Are you sure you want to delete{' '}
+          <span className="font-semibold text-slate-900">
+            {deletingGodown?.name || 'this godown'}
+          </span>
+          ? This cannot be undone.
+        </p>
+      </Modal>
+
       {/* STATS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="rounded-3xl border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl shadow-violet-300/30">
@@ -949,13 +1085,8 @@ export function GodownsListPage() {
                     <Th className="text-right">
                       Stock
                     </Th>
-                    {isAdmin ? (
-                      <Th className="text-right">
-                        Edit
-                      </Th>
-                    ) : null}
                     <Th className="text-right">
-                      Open
+                      Actions
                     </Th>
                   </tr>
                 </thead>
@@ -1014,61 +1145,42 @@ export function GodownsListPage() {
                         )}
                       </Td>
 
-                      {isAdmin ? (
-                        <Td className="py-5 text-right">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              setEditingGodownId(
-                                g.id,
-                              )
-
-                              setEditForm({
-                                name:
-                                  g.name || '',
-                                code:
-                                  g.code || '',
-                                address:
-                                  g.address ||
-                                  '',
-                                mobile:
-                                  g.mobile ||
-                                  '',
-                                location:
-                                  g.location ||
-                                  '',
-                                newPassword:
-                                  '',
-                              })
-
-                              setEditOpen(
-                                true,
-                              )
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </Td>
-                      ) : null}
-
                       <Td className="py-5 text-right">
-                        <Link
-                          className="
-                            inline-flex items-center
-                            rounded-xl
-                            bg-violet-100
-                            px-4 py-2
-                            text-sm font-semibold
-                            text-violet-700
-                            transition-all
-                            hover:bg-violet-600
-                            hover:text-white
-                          "
-                          to={`/godowns/${g.id}`}
-                        >
-                          View
-                        </Link>
+                        <div className="inline-flex items-center justify-end gap-2">
+                          <Link
+                            to={`/godowns/${g.id}`}
+                            className={actionBtnClass}
+                            title="View godown"
+                            aria-label="View godown"
+                          >
+                            <EyeIcon />
+                          </Link>
+                          {isAdmin ? (
+                            <>
+                              <button
+                                type="button"
+                                className={actionBtnClass}
+                                title="Edit godown"
+                                aria-label="Edit godown"
+                                onClick={() => openEdit(g)}
+                              >
+                                <PencilIcon />
+                              </button>
+                              <button
+                                type="button"
+                                className={`${actionBtnClass} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700`}
+                                title="Delete godown"
+                                aria-label="Delete godown"
+                                onClick={() => {
+                                  setDeletingGodown(g)
+                                  setDeleteOpen(true)
+                                }}
+                              >
+                                <TrashIcon />
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
                       </Td>
                     </tr>
                   ))}

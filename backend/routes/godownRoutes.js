@@ -1,6 +1,6 @@
 const express = require('express')
 const { requireAuth, requireRole } = require('../middleware/auth')
-const { listGodowns, createGodown, updateGodown, getGodown, queueByDate } = require('../controllers/godownController')
+const { listGodowns, createGodown, updateGodown, deleteGodown, getGodown, queueByDate } = require('../controllers/godownController')
 const { listGodownProducts, patchGodownProduct } = require('../controllers/godownProductController')
 const {
   postGodownAdjustment,
@@ -28,6 +28,7 @@ router.get('/:godownId/products/:productId/asset-tags', requireRole(['ADMIN', 'G
 router.post('/:godownId/asset-tags/lookup', requireRole(['ADMIN', 'GODOWN']), lookupAssetTags)
 
 router.patch('/:godownId', requireRole(['ADMIN', 'GODOWN']), updateGodown)
+router.delete('/:godownId', requireRole(['ADMIN']), deleteGodown)
 
 router.get('/:godownId', requireRole(['ADMIN', 'GODOWN', 'BILLER', 'DELIVERY']), getGodown)
 

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs')
 const Godown = require('../models/Godown')
 const Delivery = require('../models/Delivery')
 const { normalizePhone } = require('../utils/phone')
-const { syncGodownLoginUser } = require('../utils/syncGodownUser')
+const { syncGodownLoginUser, deactivateGodownLoginUser } = require('../utils/syncGodownUser')
 
 const saltRounds = () => Number(process.env.BCRYPT_ROUNDS || 10)
 
@@ -123,6 +123,26 @@ async function updateGodown(req, res) {
   }
 }
 
+async function deleteGodown(req, res) {
+  try {
+    const { godownId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(godownId)) {
+      return res.status(400).json({ message: 'Invalid godown id' })
+    }
+
+    const g = await Godown.findById(godownId)
+    if (!g || !g.active) return res.status(404).json({ message: 'Not found' })
+
+    g.active = false
+    await g.save()
+    await deactivateGodownLoginUser(godownId)
+
+    return res.json({ message: 'Godown deleted' })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Delete failed' })
+  }
+}
+
 async function getGodown(req, res) {
   const { godownId } = req.params
   if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godown id' })
@@ -174,5 +194,5 @@ async function queueByDate(req, res) {
   )
 }
 
-module.exports = { listGodowns, createGodown, updateGodown, getGodown, queueByDate }
+module.exports = { listGodowns, createGodown, updateGodown, deleteGodown, getGodown, queueByDate }
 
