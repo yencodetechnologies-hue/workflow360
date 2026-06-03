@@ -12,7 +12,6 @@ import { GodownRouteGuard } from './pages/GodownRouteGuard'
 import { LoginPage } from './pages/Login'
 import { BillersPage } from './pages/Masters/Billers'
 import { DeliveryPersonsPage } from './pages/Masters/DeliveryPersons'
-import { VehiclesPage } from './pages/Masters/Vehicles'
 import { ProductsGodownRedirect } from './pages/ProductsGodownRedirect'
 import { CalendarPage } from './pages/Calendar'
 import { ReportsPage } from './pages/Reports'
@@ -33,12 +32,28 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="/editprofile" element={<AdminEditProfilePage />} />
 
-          <Route path="/queue" element={<QueuePage />} />
-          <Route path="/orders" element={<OrdersListPage />} />
+          <Route
+            path="/queue"
+            element={
+              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+                <QueuePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+                <OrdersListPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route element={<GodownRouteGuard />}>
-            <Route path="/godowns" element={<GodownsListPage />} />
-            <Route path="/godowns/:id" element={<GodownsDetailsPage />} />
+          <Route element={<ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']} />}>
+            <Route element={<GodownRouteGuard />}>
+              <Route path="/godowns" element={<GodownsListPage />} />
+              <Route path="/godowns/:id" element={<GodownsDetailsPage />} />
+            </Route>
           </Route>
 
           <Route
@@ -56,8 +71,22 @@ export default function App() {
           <Route path="/scan/deliver/:id" element={<ScanDeliveryPage action="deliver" />} />
           <Route path="/scan/return/:id" element={<ScanDeliveryPage action="return" />} />
           <Route path="/scan/return-pickup/:id" element={<ScanDeliveryPage action="return-pickup" />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/masters/billers"
@@ -72,14 +101,6 @@ export default function App() {
             element={
               <ProtectedRoute roles={['ADMIN']}>
                 <DeliveryPersonsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/masters/vehicles"
-            element={
-              <ProtectedRoute roles={['ADMIN']}>
-                <VehiclesPage />
               </ProtectedRoute>
             }
           />

@@ -6,6 +6,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Select } from '../../components/ui/Select'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
+import { isDeliveryDeletable } from '../../lib/deliveryStatus'
 import type { GodownRow } from '../Godowns/List'
 
 type UserRow = {
@@ -58,10 +59,34 @@ export type CreateDeliveryPrefill = {
   fromGodownId?: string
 }
 
+type DeliveryDetailForEdit = {
+  id: string
+  billerUserId?: string
+  customerName: string
+  siteName?: string
+  siteAddress?: string
+  contactPhone?: string
+  fromGodownId: string
+  deliveryAt: string
+  returnExpectedAt?: string
+  vehicleLabel?: string
+  status: string
+  dispatchedTagIds?: string[]
+  pickedUpTagIds?: string[]
+  deliveredTagIds?: string[]
+  returnPickedUpTagIds?: string[]
+  returnedTagIds?: string[]
+  damagedTagIds?: string[]
+  lostTagIds?: string[]
+  lines: Array<{ productId: string; godownId?: string; qty: number }>
+}
+
 type Props = {
   open: boolean
   onClose: () => void
   onCreated: () => void
+  onUpdated?: () => void
+  deliveryId?: string | null
   prefill?: CreateDeliveryPrefill | null
 }
 
@@ -256,11 +281,24 @@ function SummaryChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props) {
+function toDatetimeLocalValue(iso: string | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 16)
+}
+
+export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliveryId, prefill }: Props) {
   const auth = useAuth()
   const nav = useNavigate()
 
+  const [continueEditId, setContinueEditId] = useState<string | null>(null)
+  const effectiveEditId = deliveryId ?? continueEditId
+  const isEditMode = !!effectiveEditId
+
   const [step, setStep] = useState(1)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editMetadataOnly, setEditMetadataOnly] = useState(false)
   const [billers, setBillers] = useState<UserRow[]>([])
   const [godowns, setGodowns] = useState<GodownRow[]>([])
   const [productSearch, setProductSearch] = useState('')
@@ -403,13 +441,80 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
 
   const handleClose = () => {
     onClose()
+    setContinueEditId(null)
     if (createLinks) resetWizard()
+  }
+
+  const loadDeliveryForEdit = async (id: string) => {
+    const token = getToken()
+    if (!token) return
+    setEditLoading(true)
+    setWizardError(null)
+    try {
+      const d = await apiFetch<DeliveryDetailForEdit>(`/deliveries/${id}`, { token })
+      setBillerId(d.billerUserId || '')
+      setCustomerName(d.customerName)
+      setSiteName(d.siteName || '')
+      setSiteAddress(d.siteAddress || '')
+      setContactPhone(d.contactPhone || '')
+      setVehicleLabel(d.vehicleLabel || '')
+      setDeliveryAt(toDatetimeLocalValue(d.deliveryAt))
+      setReturnExpectedAt(toDatetimeLocalValue(d.returnExpectedAt))
+      const godownIds = [
+        ...new Set(
+          d.lines.map((l) => l.godownId || d.fromGodownId).filter((gid): gid is string => !!gid),
+        ),
+      ]
+      if (godownIds.length === 0 && d.fromGodownId) godownIds.push(d.fromGodownId)
+      setSelectedGodownIds(godownIds)
+      setActiveGodownId(godownIds[0] || '')
+      const qty: Record<string, number> = {}
+      for (const line of d.lines) {
+        const gid = line.godownId || d.fromGodownId
+        if (!gid) continue
+        const key = lineKey(gid, line.productId)
+        qty[key] = (qty[key] || 0) + line.qty
+      }
+      setLineQty(qty)
+      setGodownProducts({})
+      setStep(1)
+      setCreateLinks(null)
+      const role = auth.status === 'authenticated' ? auth.user.role : ''
+      setEditMetadataOnly(
+        role === 'ADMIN' &&
+          !isDeliveryDeletable({
+            status: d.status,
+            dispatchedTagIds: d.dispatchedTagIds,
+            pickedUpTagIds: d.pickedUpTagIds,
+            deliveredTagIds: d.deliveredTagIds,
+            returnPickedUpTagIds: d.returnPickedUpTagIds,
+            returnedTagIds: d.returnedTagIds,
+            damagedTagIds: d.damagedTagIds,
+            lostTagIds: d.lostTagIds,
+          }),
+      )
+    } catch (e: unknown) {
+      const msg =
+        e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to load delivery'
+      setWizardError(msg)
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   useEffect(() => {
     if (!open) return
-    resetWizard()
-  }, [open])
+    if (!deliveryId) {
+      resetWizard()
+      setContinueEditId(null)
+      setEditMetadataOnly(false)
+    }
+  }, [open, deliveryId])
+
+  useEffect(() => {
+    if (!open || !effectiveEditId) return
+    void loadDeliveryForEdit(effectiveEditId)
+  }, [open, effectiveEditId])
 
   useEffect(() => {
     if (!open || !canCreate) return
@@ -635,37 +740,46 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
     const token = getToken()
     if (!token) return
     setCreateBusy(true)
+    const body = {
+      orderId: orderId || undefined,
+      billerUserId: billerId,
+      fromGodownId: selectedGodownIds[0],
+      customerName: customerName.trim(),
+      siteName: siteName.trim() || undefined,
+      siteAddress: siteAddress.trim() || undefined,
+      contactPhone: contactPhone.trim() || undefined,
+      deliveryAt: new Date(deliveryAt).toISOString(),
+      returnExpectedAt: returnExpectedAt ? new Date(returnExpectedAt).toISOString() : undefined,
+      vehicleLabel: vehicleLabel.trim() || undefined,
+      lines: linesPayload,
+    }
     try {
       const res = await apiFetch<{
         id: string
         deliveryNo: string
         deliveryVerifyUrl: string
         billerReturnUrl: string
-      }>('/deliveries', {
+      }>(isEditMode ? `/deliveries/${effectiveEditId}` : '/deliveries', {
         token,
-        method: 'POST',
-        body: JSON.stringify({
-          orderId: orderId || undefined,
-          billerUserId: billerId,
-          fromGodownId: selectedGodownIds[0],
-          customerName: customerName.trim(),
-          siteName: siteName.trim() || undefined,
-          siteAddress: siteAddress.trim() || undefined,
-          contactPhone: contactPhone.trim() || undefined,
-          deliveryAt: new Date(deliveryAt).toISOString(),
-          returnExpectedAt: returnExpectedAt ? new Date(returnExpectedAt).toISOString() : undefined,
-          vehicleLabel: vehicleLabel.trim() || undefined,
-          lines: linesPayload,
-        }),
+        method: isEditMode ? 'PATCH' : 'POST',
+        body: JSON.stringify(body),
       })
       setCreateLinks({
         id: res.id,
         deliveryVerifyUrl: res.deliveryVerifyUrl,
         billerReturnUrl: res.billerReturnUrl,
       })
-      onCreated()
+      window.dispatchEvent(new CustomEvent('godown-stock-changed'))
+      setGodownProducts({})
+      if (isEditMode) onUpdated?.()
+      else onCreated()
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Create failed'
+      const msg =
+        e && typeof e === 'object' && 'message' in e
+          ? String((e as { message: string }).message)
+          : isEditMode
+            ? 'Update failed'
+            : 'Create failed'
       setWizardError(msg)
     } finally {
       setCreateBusy(false)
@@ -673,10 +787,23 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
   }
 
   const footer = createLinks ? (
-    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
       <Button variant="secondary" onClick={handleClose}>
         Close
       </Button>
+      {!isEditMode && auth.status === 'authenticated' && auth.user.role === 'ADMIN' ? (
+        <Button
+          variant="secondary"
+          onClick={() => {
+            const id = createLinks.id
+            setCreateLinks(null)
+            setContinueEditId(id)
+            void loadDeliveryForEdit(id)
+          }}
+        >
+          Edit delivery
+        </Button>
+      ) : null}
       <Button
         onClick={() => {
           nav(`/deliveries/${createLinks.id}`)
@@ -702,7 +829,13 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
         loading={step === 4 ? createBusy : step === 1 && billerCreateBusy}
         onClick={() => void handleNext()}
       >
-        {step === 4 ? 'Create delivery' : step === 1 && billerCreateBusy ? 'Saving biller…' : 'Continue'}
+        {step === 4
+          ? isEditMode
+            ? 'Update delivery'
+            : 'Create delivery'
+          : step === 1 && billerCreateBusy
+            ? 'Saving biller…'
+            : 'Continue'}
       </Button>
     </div>
   )
@@ -715,14 +848,18 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
       title={undefined}
       footer={footer}
     >
-      {createLinks ? (
+      {editLoading ? (
+        <p className="py-16 text-center text-sm text-slate-500">Loading delivery…</p>
+      ) : createLinks ? (
         <div className="text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200">
             <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Delivery created</h2>
+          <h2 className="text-xl font-bold text-slate-900">
+            {isEditMode ? 'Delivery updated' : 'Delivery created'}
+          </h2>
           <p className="mt-1 text-sm text-slate-500">
             Share the links below with your delivery person and biller.
           </p>
@@ -742,8 +879,14 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
       ) : (
         <div>
           <div className="-mx-5 -mt-4 mb-0 bg-gradient-to-r from-violet-600 via-purple-600 to-violet-700 px-5 py-5 text-white">
-            <h2 className="text-lg font-bold">New delivery</h2>
-            <p className="mt-0.5 text-sm text-violet-100">Select godowns first, then pick in-stock products from each.</p>
+            <h2 className="text-lg font-bold">{isEditMode ? 'Edit delivery' : 'New delivery'}</h2>
+            <p className="mt-0.5 text-sm text-violet-100">
+              {isEditMode
+                ? editMetadataOnly
+                  ? 'Update schedule and customer details. Line changes are limited while scans are in progress.'
+                  : 'Update biller, godowns, products, and schedule.'
+                : 'Select godowns first, then pick in-stock products from each.'}
+            </p>
           </div>
 
           <div className="mt-5">
@@ -836,7 +979,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
                         ) : null}
                       </div>
                     ) : null}
-                    {canCreateBiller ? (
+                    {canCreateBiller && !isEditMode ? (
                       <Button variant="secondary" size="sm" onClick={() => setCreateBillerMode(true)}>
                         + Register new biller
                       </Button>
@@ -915,7 +1058,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
                     No godowns in this branch. Try another branch or add a new godown below.
                   </p>
                 ) : null}
-                {canCreateGodown ? (
+                {canCreateGodown && !isEditMode ? (
                   <div className="mt-4 space-y-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 p-4">
                     {!createGodownOpen ? (
                       <Button variant="secondary" size="sm" onClick={() => setCreateGodownOpen(true)}>
@@ -954,6 +1097,11 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
                   title="Select products"
                   description="Choose branch, switch godown on the left, pick products on the right. Add godown if missing."
                 />
+                {editMetadataOnly ? (
+                  <div className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
+                    This delivery has scan activity. You can adjust quantities only within dispatched and scanned limits.
+                  </div>
+                ) : null}
                 {selectedGodownIds.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-8 text-center text-sm text-amber-900">
                     Go back and select at least one godown first.
@@ -1029,7 +1177,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
                           </>
                         ) : null}
                       </div>
-                      {canCreateGodown ? (
+                      {canCreateGodown && !isEditMode ? (
                         <div className="mt-auto border-t border-slate-200 p-2">
                           {!createGodownOpen ? (
                             <Button variant="secondary" size="sm" className="w-full" onClick={() => setCreateGodownOpen(true)}>
@@ -1107,7 +1255,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, prefill }: Props
                                       </div>
                                       <QtyStepper
                                         value={qty}
-                                        max={c.stockQty}
+                                        max={c.stockQty + qty}
                                         onChange={(n) => setLineQty((m) => ({ ...m, [key]: n }))}
                                       />
                                     </div>

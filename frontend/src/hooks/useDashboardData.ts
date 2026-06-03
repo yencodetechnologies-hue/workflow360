@@ -174,6 +174,14 @@ export function useDashboardData() {
     void refresh()
   }, [refresh])
 
+  useEffect(() => {
+    const onStockChanged = () => {
+      void refresh()
+    }
+    window.addEventListener('godown-stock-changed', onStockChanged)
+    return () => window.removeEventListener('godown-stock-changed', onStockChanged)
+  }, [refresh])
+
   const kpis = useMemo(() => {
     const k = mapSummary(todayReport)
     return { ...k, totalStock }

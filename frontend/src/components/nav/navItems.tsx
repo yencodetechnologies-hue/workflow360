@@ -30,7 +30,7 @@ function ordersIcon() {
 
 export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
   if (role === 'DELIVERY') {
-    return [{ label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> }]
+    return [{ label: 'My deliveries', to: '/deliveries', icon: <DeliveryIcon /> }]
   }
   if (role === 'GODOWN') {
     const myGodown = godownId ? `/godowns/${godownId}` : '/godowns'

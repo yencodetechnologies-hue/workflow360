@@ -3,6 +3,10 @@ import { getToken } from '../auth/store'
 import { apiFetch, API_BASE } from '../lib/api'
 import { mapApiProduct, type Product } from '../types/catalog'
 
+function compareSNo(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+}
+
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -14,7 +18,9 @@ export function useProducts() {
     setLoading(true)
     try {
       const data = await apiFetch<Record<string, unknown>[]>('/products', { token: token ?? undefined })
-      setProducts(Array.isArray(data) ? data.map(mapApiProduct) : [])
+      const mapped = Array.isArray(data) ? data.map(mapApiProduct) : []
+      mapped.sort((a, b) => compareSNo(a.sNo, b.sNo))
+      setProducts(mapped)
     } catch (e: unknown) {
       const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to load products'
       setError(msg)

@@ -18,6 +18,10 @@ function monthRange(monthStr) {
   return { start, end }
 }
 
+function isValidDateStr(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(s))
+}
+
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -31,7 +35,10 @@ function applyRoleScope(req, q) {
 }
 
 function applyAdminFilters(req, q) {
-  if (req.user.role !== 'ADMIN' && req.user.role !== 'BILLER') return
+  const canFilter =
+    req.user.role === 'ADMIN' || req.user.role === 'BILLER' || req.user.role === 'GODOWN'
+
+  if (!canFilter && req.user.role !== 'DELIVERY') return null
 
   const godownId = String(req.query.godownId || '').trim()
   if (godownId) {
@@ -44,6 +51,34 @@ function applyAdminFilters(req, q) {
     const rx = { $regex: escapeRegex(site), $options: 'i' }
     q.$and = q.$and || []
     q.$and.push({ $or: [{ siteName: rx }, { siteAddress: rx }] })
+  }
+
+  const customerName = String(req.query.customerName || '').trim()
+  if (customerName) {
+    q.customerName = customerName
+  }
+
+  return null
+}
+
+function applyDeliveryDateFilter(req, q) {
+  const dateFrom = String(req.query.dateFrom || req.query.date || '').trim()
+  const dateTo = String(req.query.dateTo || '').trim()
+
+  if (dateTo && !dateFrom) return { error: 'date or dateFrom required when dateTo is set' }
+  if (dateFrom && !isValidDateStr(dateFrom)) return { error: 'Invalid date' }
+  if (dateTo && !isValidDateStr(dateTo)) return { error: 'Invalid dateTo' }
+  if (dateFrom && dateTo && dateFrom > dateTo) return { error: 'dateFrom must be <= dateTo' }
+
+  if (dateFrom) {
+    const { start } = dayRange(dateFrom)
+    if (dateTo) {
+      const { end } = dayRange(dateTo)
+      q.deliveryAt = { $gte: start, $lt: end }
+    } else {
+      const { start: s, end } = dayRange(dateFrom)
+      q.deliveryAt = { $gte: s, $lt: end }
+    }
   }
 
   return null
@@ -59,6 +94,35 @@ function tagMissingIds(d) {
   const dispatched = new Set(d.dispatchedTagIds || [])
   const returned = new Set(d.returnedTagIds || [])
   return Array.from(dispatched).filter((t) => !returned.has(t))
+}
+
+function sumLineQty(lines) {
+  return (lines || []).reduce((s, l) => s + (Number(l.qty) || 0), 0)
+}
+
+function deliveryHasIssue(d) {
+  if (d.status === 'PENDING_RETURN') return true
+  if ((d.missingTotal || 0) > 0 || (d.damageTotal || 0) > 0) return true
+  if (sumLineQty(d.billerMissingLines) > 0 || sumLineQty(d.billerDamagedLines) > 0) return true
+  if (tagMissingCount(d) > 0) return true
+  if ((d.damagedTagIds || []).length > 0 || (d.lostTagIds || []).length > 0) return true
+  return false
+}
+
+function deliveryHasMissing(d) {
+  return deliveryHasIssue(d)
+}
+
+function issueMetricsFromDelivery(d) {
+  return {
+    missingQty: sumLineQty(d.billerMissingLines),
+    damageQty: sumLineQty(d.billerDamagedLines),
+    missingTotal: Number(d.missingTotal) || 0,
+    damageTotal: Number(d.damageTotal) || 0,
+    missingTagCount: tagMissingCount(d),
+    damagedTagCount: (d.damagedTagIds || []).length,
+    lostTagCount: (d.lostTagIds || []).length,
+  }
 }
 
 async function loadProductMap(productIds) {
@@ -90,38 +154,37 @@ function mapBillerLines(lines, productMap) {
     })
 }
 
-function deliveryHasMissing(d) {
-  const tagMissing = tagMissingCount(d)
-  const billerMissing = (d.billerMissingLines || []).some((l) => (l.qty || 0) > 0)
-  return tagMissing > 0 || billerMissing || d.status === 'PENDING_RETURN'
-}
-
-async function buildMissingQuery(req) {
+async function buildDeliveryQuery(req) {
   const q = {}
   applyRoleScope(req, q)
 
   const filterErr = applyAdminFilters(req, q)
   if (filterErr) return { error: filterErr }
 
-  const date = String(req.query.date || '').trim()
-  if (date) {
-    const { start, end } = dayRange(date)
-    q.deliveryAt = { $gte: start, $lt: end }
-  }
+  const dateErr = applyDeliveryDateFilter(req, q)
+  if (dateErr) return { error: dateErr }
 
   const deliveries = await Delivery.find(q).sort({ deliveryAt: -1, updatedAt: -1 }).limit(500).lean()
-  const filtered = deliveries.filter(deliveryHasMissing)
-  return { deliveries: filtered }
+  return { deliveries, issueDeliveries: deliveries.filter(deliveryHasIssue) }
 }
 
-async function mapMissingRows(deliveries) {
-  const productIds = deliveries.flatMap((d) => (d.billerMissingLines || []).map((l) => String(l.productId)))
+async function buildMissingQuery(req) {
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return result
+  return { deliveries: result.issueDeliveries }
+}
+
+async function mapIssueDeliveryRows(deliveries) {
+  const productIds = deliveries.flatMap((d) => [
+    ...(d.billerMissingLines || []).map((l) => String(l.productId)),
+    ...(d.billerDamagedLines || []).map((l) => String(l.productId)),
+  ])
   const godownIds = deliveries.map((d) => String(d.fromGodownId))
   const [productMap, godownMap] = await Promise.all([loadProductMap(productIds), loadGodownMap(godownIds)])
 
   return deliveries.map((d) => {
     const missing = tagMissingIds(d)
-    const productMissing = mapBillerLines(d.billerMissingLines, productMap)
+    const metrics = issueMetricsFromDelivery(d)
     const g = godownMap.get(String(d.fromGodownId))
     return {
       id: String(d._id),
@@ -135,22 +198,29 @@ async function mapMissingRows(deliveries) {
       godownName: g?.name,
       missingCount: missing.length,
       missingTagIds: missing.slice(0, 50),
-      missingTotal: d.missingTotal,
-      damageTotal: d.damageTotal,
-      productMissing,
+      productMissing: mapBillerLines(d.billerMissingLines, productMap),
+      productDamaged: mapBillerLines(d.billerDamagedLines, productMap),
+      hasIssue: deliveryHasIssue(d),
+      ...metrics,
     }
   })
 }
 
-async function dailyDeliveryReport(req, res) {
-  const date = req.query.date
-  if (!date) return res.status(400).json({ message: 'date=YYYY-MM-DD required' })
-  const { start, end } = dayRange(date)
+async function mapMissingRows(deliveries) {
+  return mapIssueDeliveryRows(deliveries)
+}
 
-  const q = { deliveryAt: { $gte: start, $lt: end } }
+async function dailyDeliveryReport(req, res) {
+  const date = String(req.query.date || req.query.dateFrom || '').trim()
+  if (!date) return res.status(400).json({ message: 'date=YYYY-MM-DD required' })
+
+  const q = {}
   applyRoleScope(req, q)
   const filterErr = applyAdminFilters(req, q)
   if (filterErr) return res.status(400).json({ message: filterErr.error })
+
+  const dateErr = applyDeliveryDateFilter(req, q)
+  if (dateErr) return res.status(400).json({ message: dateErr.error })
 
   const deliveries = await Delivery.find(q).sort({ deliveryAt: 1 }).lean()
   const godownIds = deliveries.map((d) => String(d.fromGodownId))
@@ -167,11 +237,15 @@ async function dailyDeliveryReport(req, res) {
     { total: 0, byStatus: {}, lost: 0, damaged: 0 },
   )
 
+  const dateTo = String(req.query.dateTo || '').trim()
+
   return res.json({
     date,
+    dateTo: dateTo || undefined,
     summary: counts,
     deliveries: deliveries.map((d) => {
       const g = godownMap.get(String(d.fromGodownId))
+      const metrics = issueMetricsFromDelivery(d)
       return {
         id: String(d._id),
         deliveryNo: d.deliveryNo,
@@ -184,9 +258,12 @@ async function dailyDeliveryReport(req, res) {
         status: d.status,
         dispatched: (d.dispatchedTagIds || []).length,
         returned: (d.returnedTagIds || []).length,
-        lost: (d.lostTagIds || []).length,
-        damaged: (d.damagedTagIds || []).length,
+        lost: metrics.lostTagCount,
+        damaged: metrics.damagedTagCount,
         missingTotal: d.missingTotal,
+        damageTotal: d.damageTotal,
+        missingQty: metrics.missingQty,
+        damageQty: metrics.damageQty,
       }
     }),
   })
@@ -235,6 +312,20 @@ async function sitesList(req, res) {
 
   const sites = await Delivery.distinct('siteName', q)
   return res.json(sites.filter(Boolean).sort((a, b) => a.localeCompare(b)).slice(0, 200))
+}
+
+async function customersList(req, res) {
+  const monthsBack = Math.min(24, Math.max(1, Number(req.query.months || 6)))
+  const since = new Date()
+  since.setUTCMonth(since.getUTCMonth() - monthsBack)
+
+  const q = { deliveryAt: { $gte: since }, customerName: { $exists: true, $ne: '' } }
+  applyRoleScope(req, q)
+  const filterErr = applyAdminFilters(req, q)
+  if (filterErr) return res.status(400).json({ message: filterErr.error })
+
+  const names = await Delivery.distinct('customerName', q)
+  return res.json(names.filter(Boolean).sort((a, b) => a.localeCompare(b)).slice(0, 300))
 }
 
 async function missingReport(req, res) {
@@ -290,6 +381,107 @@ async function missingProductsReport(req, res) {
     .sort((a, b) => b.totalQty - a.totalQty)
 
   return res.json(rows)
+}
+
+async function issuesByGodown(req, res) {
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const godownIds = result.deliveries.map((d) => String(d.fromGodownId))
+  const godownMap = await loadGodownMap(godownIds)
+
+  const byGodown = new Map()
+
+  for (const d of result.deliveries) {
+    const gid = String(d.fromGodownId)
+    if (!byGodown.has(gid)) {
+      const g = godownMap.get(gid)
+      byGodown.set(gid, {
+        godownId: gid,
+        godownName: g?.name,
+        totalDeliveries: 0,
+        issueDeliveryCount: 0,
+        missingQty: 0,
+        damageQty: 0,
+        missingTotal: 0,
+        damageTotal: 0,
+        missingTagCount: 0,
+        damagedTagCount: 0,
+        lostTagCount: 0,
+      })
+    }
+    const row = byGodown.get(gid)
+    row.totalDeliveries += 1
+    if (!deliveryHasIssue(d)) continue
+
+    row.issueDeliveryCount += 1
+    const m = issueMetricsFromDelivery(d)
+    row.missingQty += m.missingQty
+    row.damageQty += m.damageQty
+    row.missingTotal += m.missingTotal
+    row.damageTotal += m.damageTotal
+    row.missingTagCount += m.missingTagCount
+    row.damagedTagCount += m.damagedTagCount
+    row.lostTagCount += m.lostTagCount
+  }
+
+  const rows = [...byGodown.values()].sort((a, b) => {
+    if (b.issueDeliveryCount !== a.issueDeliveryCount) return b.issueDeliveryCount - a.issueDeliveryCount
+    return (a.godownName || '').localeCompare(b.godownName || '')
+  })
+
+  return res.json(rows)
+}
+
+async function issuesByDelivery(req, res) {
+  const limit = Math.min(200, Number(req.query.limit || 100))
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const rows = await mapIssueDeliveryRows(result.issueDeliveries.slice(0, limit))
+  return res.json(rows)
+}
+
+async function issuesCustomerReport(req, res) {
+  const customerName = String(req.query.customerName || '').trim()
+  if (!customerName) return res.status(400).json({ message: 'customerName required' })
+
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const all = result.deliveries.filter((d) => d.customerName === customerName)
+  const issues = all.filter(deliveryHasIssue)
+
+  const summary = {
+    deliveryCount: all.length,
+    issueDeliveryCount: issues.length,
+    missingQty: 0,
+    damageQty: 0,
+    missingTotal: 0,
+    damageTotal: 0,
+    missingTagCount: 0,
+    damagedTagCount: 0,
+    lostTagCount: 0,
+  }
+
+  for (const d of all) {
+    const m = issueMetricsFromDelivery(d)
+    summary.missingQty += m.missingQty
+    summary.damageQty += m.damageQty
+    summary.missingTotal += m.missingTotal
+    summary.damageTotal += m.damageTotal
+    summary.missingTagCount += m.missingTagCount
+    summary.damagedTagCount += m.damagedTagCount
+    summary.lostTagCount += m.lostTagCount
+  }
+
+  const deliveries = await mapIssueDeliveryRows(all)
+
+  return res.json({
+    customerName,
+    summary,
+    deliveries,
+  })
 }
 
 async function stockReport(req, res) {
@@ -367,8 +559,12 @@ module.exports = {
   dailyDeliveryReport,
   calendarReport,
   sitesList,
+  customersList,
   missingReport,
   missingProductsReport,
   stockReport,
   customerHistory,
+  issuesByGodown,
+  issuesByDelivery,
+  issuesCustomerReport,
 }

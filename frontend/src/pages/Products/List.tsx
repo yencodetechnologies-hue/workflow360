@@ -428,7 +428,7 @@ export function ProductsListPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[1050px]">
+              <Table className="min-w-[930px]">
                 {/* HEADER */}
                 <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
@@ -450,10 +450,6 @@ export function ProductsListPage() {
 
                     <Th className="min-w-[240px] py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
                       Specification
-                    </Th>
-
-                    <Th className="w-[120px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Rate
                     </Th>
 
                     <Th className="w-[170px] py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -556,22 +552,6 @@ export function ProductsListPage() {
                           "
                         >
                           {p.specification}
-                        </div>
-                      </Td>
-
-                      {/* RATE */}
-                      <Td className="py-3 text-right align-middle">
-                        <div
-                          className="
-                            inline-flex items-center
-                            rounded-xl
-                            bg-emerald-50
-                            px-3 py-1.5
-                            text-sm font-bold
-                            text-emerald-700
-                          "
-                        >
-                          ₹ {p.rate}
                         </div>
                       </Td>
 

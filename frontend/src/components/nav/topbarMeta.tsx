@@ -23,7 +23,6 @@ export type TopbarMeta = {
 const mastersLabels: Record<string, string> = {
   billers: 'Billers',
   'delivery-persons': 'Delivery persons',
-  vehicles: 'Vehicles',
 }
 
 export function topbarMetaFromPath(pathname: string): TopbarMeta {

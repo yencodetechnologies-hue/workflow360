@@ -189,18 +189,21 @@
 // }
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
-import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
-import { scanPathForDelivery } from '../../lib/scanMode'
+import { DeliveryStatusSelect } from '../../components/delivery/DeliveryStatusSelect'
+import { DeliveryRowActions } from '../../components/delivery/DeliveryRowActions'
+import { GodownDeliveryWorkflow } from '../../components/delivery/GodownDeliveryWorkflow'
+import { Badge } from '../../components/ui/Badge'
 import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
+import { DriverDeliveriesDashboard } from '../../components/delivery/DriverDeliveriesDashboard'
 
 type Tab =
   | 'all'
@@ -221,6 +224,20 @@ type DeliveryRow = {
   status: string
   deliveryAt: string
   fromGodownId?: string
+  billerUserId?: string
+  dispatchedTagIds?: string[]
+  pickedUpTagIds?: string[]
+  deliveredTagIds?: string[]
+  returnPickedUpTagIds?: string[]
+  returnedTagIds?: string[]
+  damagedTagIds?: string[]
+  lostTagIds?: string[]
+  lines?: Array<{
+    productId: string
+    qty: number
+    dispatchedQty?: number
+    returnedQty?: number
+  }>
 }
 
 export function DeliveriesListPage() {
@@ -248,11 +265,19 @@ export function DeliveriesListPage() {
   )
   const [q, setQ] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
+  const [editDeliveryId, setEditDeliveryId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const canCreate =
     auth.status === 'authenticated' &&
     (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
+
+  const isGodownUser = auth.status === 'authenticated' && auth.user.role === 'GODOWN'
+
+  const removeFromList = (deliveryId: string) => {
+    setDeliveries((prev) => prev.filter((row) => row.id !== deliveryId))
+  }
 
   const loadDeliveries = () => {
     const token = getToken()
@@ -305,6 +330,10 @@ export function DeliveriesListPage() {
     { id: 'PENDING_RETURN', label: 'Pending return' },
     { id: 'COMPLETED', label: 'Completed' },
   ]
+
+  if (auth.status === 'authenticated' && auth.user.role === 'DELIVERY') {
+    return <DriverDeliveriesDashboard />
+  }
 
   return (
     <div className="space-y-6">
@@ -513,6 +542,21 @@ export function DeliveriesListPage() {
             </div>
           ) : null}
 
+          {/* SUCCESS */}
+          {successMessage ? (
+            <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              <span>{successMessage}</span>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg px-2 py-1 text-emerald-700 hover:bg-emerald-100"
+                onClick={() => setSuccessMessage(null)}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
+
           {/* EMPTY */}
           {!loading && rows.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16">
@@ -604,9 +648,22 @@ export function DeliveriesListPage() {
 
                           {/* STATUS */}
                           <Td className="py-5">
-                            <Badge variant={deliveryBadgeVariant(d.status)}>
-                              {deliveryStatusLabel(d.status)}
-                            </Badge>
+                            {isGodownUser ? (
+                              <Badge variant={deliveryBadgeVariant(d.status)}>
+                                {deliveryStatusLabel(d.status)}
+                              </Badge>
+                            ) : (
+                              <DeliveryStatusSelect
+                                deliveryId={d.id}
+                                status={d.status}
+                                onUpdated={(status) => {
+                                  setDeliveries((prev) =>
+                                    prev.map((row) => (row.id === d.id ? { ...row, status } : row)),
+                                  )
+                                }}
+                                onError={(msg) => setError(msg)}
+                              />
+                            )}
                           </Td>
 
                           {/* DATE */}
@@ -618,42 +675,30 @@ export function DeliveriesListPage() {
 
                           {/* ACTIONS */}
                           <Td className="py-5 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Link
-                                to={`/deliveries/${d.id}`}
-                                className="
-                                  inline-flex h-10 items-center justify-center
-                                  rounded-xl border border-slate-200
-                                  bg-white px-4 text-sm font-semibold text-slate-700
-                                  transition-all
-                                  hover:border-slate-300 hover:bg-slate-50
-                                "
-                              >
-                                Details
-                              </Link>
-
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="
-                                  h-10 rounded-xl border border-violet-200
-                                  bg-violet-50 px-4 font-semibold text-violet-700
-                                  hover:bg-violet-100
-                                "
-                                onClick={() => {
-                                  if (auth.status !== 'authenticated') return
-
-                                  nav(
-                                    scanPathForDelivery(
-                                      auth.user.role,
-                                      d.status,
-                                      d.id,
-                                    ),
-                                  )
+                            <div className="flex flex-col items-end gap-2">
+                              {isGodownUser ? (
+                                <GodownDeliveryWorkflow
+                                  delivery={{
+                                    id: d.id,
+                                    status: d.status,
+                                    lines: d.lines,
+                                  }}
+                                  compact
+                                  onUpdated={loadDeliveries}
+                                  onError={(msg) => setError(msg)}
+                                />
+                              ) : null}
+                              <DeliveryRowActions
+                                delivery={d}
+                                onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
+                                onScan={(path) => nav(path)}
+                                onDeleted={() => {
+                                  removeFromList(d.id)
+                                  setSuccessMessage(`${d.deliveryNo} deleted successfully`)
+                                  setError(null)
                                 }}
-                              >
-                                Scan
-                              </Button>
+                                onError={(msg) => setError(msg)}
+                              />
                             </div>
                           </Td>
                         </tr>
@@ -672,6 +717,14 @@ export function DeliveriesListPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={loadDeliveries}
+      />
+
+      <CreateDeliveryModal
+        open={!!editDeliveryId}
+        deliveryId={editDeliveryId}
+        onClose={() => setEditDeliveryId(null)}
+        onCreated={loadDeliveries}
+        onUpdated={loadDeliveries}
       />
     </div>
   )

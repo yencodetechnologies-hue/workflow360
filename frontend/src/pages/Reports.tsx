@@ -6,26 +6,37 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
-import { Input } from '../components/ui/Input'
 import { EmptyState, Table, Td, Th } from '../components/ui/Table'
 import { apiFetch } from '../lib/api'
 import { getToken, useAuth } from '../auth/store'
 import { useReportFilters } from '../hooks/useReportFilters'
 import type {
+  CustomerIssueReport,
   DailyReport,
-  MissingDeliveryRow,
-  MissingProductRow,
+  GodownIssueRow,
+  IssueDeliveryRow,
   ReportTab,
   StockReportRow,
 } from '../types/reports'
 
-const TABS: { id: ReportTab; label: string }[] = [
+const MAIN_TABS: { id: ReportTab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
-  { id: 'missing', label: 'Missing by delivery' },
-  { id: 'missing-products', label: 'Missing products' },
+  { id: 'issues-godown', label: 'Missing & damage' },
   { id: 'stock', label: 'Stock' },
-  { id: 'customer', label: 'Customer history' },
 ]
+
+const ISSUE_SUB_TABS: { id: ReportTab; label: string }[] = [
+  { id: 'issues-godown', label: 'By godown' },
+  { id: 'issues-delivery', label: 'By delivery' },
+  { id: 'issues-customer', label: 'By customer' },
+]
+
+const ISSUE_TABS = new Set<ReportTab>(['issues-godown', 'issues-delivery', 'issues-customer'])
+
+function formatRupee(n: number | undefined) {
+  if (n == null || Number.isNaN(n)) return '—'
+  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
 
 function badgeVariant(status: string) {
   if (status === 'PROCESSED' || status === 'UPCOMING') return 'blue'
@@ -36,27 +47,152 @@ function badgeVariant(status: string) {
   return 'amber'
 }
 
+function formatDeliveryDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function ProductLinesPanel({ row }: { row: IssueDeliveryRow }) {
+  if (!row.productMissing.length && !row.productDamaged.length) return null
+  return (
+    <div className="grid gap-4 rounded-lg bg-slate-50 p-3 text-sm md:grid-cols-2">
+      <div>
+        <div className="mb-1 font-semibold text-slate-800">Missing products</div>
+        {row.productMissing.length ? (
+          row.productMissing.map((p) => (
+            <div key={p.productId} className="flex justify-between gap-2 py-1">
+              <span>{p.particulars || p.sku || p.productId}</span>
+              <span className="font-semibold">qty {p.qty}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-slate-600">None reported.</p>
+        )}
+      </div>
+      <div>
+        <div className="mb-1 font-semibold text-slate-800">Damaged products</div>
+        {row.productDamaged.length ? (
+          row.productDamaged.map((p) => (
+            <div key={p.productId} className="flex justify-between gap-2 py-1">
+              <span>{p.particulars || p.sku || p.productId}</span>
+              <span className="font-semibold">qty {p.qty}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-slate-600">None reported.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IssueDeliveryTable({
+  rows,
+  expandedId,
+  onToggleExpand,
+}: {
+  rows: IssueDeliveryRow[]
+  expandedId: string | null
+  onToggleExpand: (id: string | null) => void
+}) {
+  if (!rows.length) {
+    return <EmptyState title="No deliveries" subtitle="No deliveries match the selected filters." />
+  }
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Delivery</Th>
+          <Th>Date</Th>
+          <Th>Customer</Th>
+          <Th>Site</Th>
+          <Th>Godown</Th>
+          <Th>Status</Th>
+          <Th className="text-right">Missing qty</Th>
+          <Th className="text-right">Damage qty</Th>
+          <Th className="text-right">₹ missing</Th>
+          <Th className="text-right">₹ damage</Th>
+          <Th className="text-right">Tags missing</Th>
+          <Th />
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((m) => (
+          <Fragment key={m.id}>
+            <tr className="hover:bg-slate-50">
+              <Td>
+                <Link to={`/deliveries/${m.id}`} className="font-semibold text-violet-700 hover:underline">
+                  {m.deliveryNo}
+                </Link>
+              </Td>
+              <Td className="whitespace-nowrap text-sm">{formatDeliveryDate(m.deliveryAt)}</Td>
+              <Td className="max-w-[10rem] truncate">{m.customerName}</Td>
+              <Td className="max-w-[8rem] truncate">{m.siteName || '—'}</Td>
+              <Td className="max-w-[8rem] truncate">{m.godownName || '—'}</Td>
+              <Td>
+                <Badge variant={badgeVariant(m.status)}>{m.status}</Badge>
+              </Td>
+              <Td className="text-right">{formatNumber(m.missingQty)}</Td>
+              <Td className="text-right">{formatNumber(m.damageQty)}</Td>
+              <Td className="text-right">{formatRupee(m.missingTotal)}</Td>
+              <Td className="text-right">{formatRupee(m.damageTotal)}</Td>
+              <Td className="text-right">{formatNumber(m.missingTagCount ?? m.missingCount)}</Td>
+              <Td>
+                {m.productMissing.length || m.productDamaged.length ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onToggleExpand(expandedId === m.id ? null : m.id)}
+                  >
+                    {expandedId === m.id ? 'Hide' : 'Products'}
+                  </Button>
+                ) : null}
+              </Td>
+            </tr>
+            {expandedId === m.id ? (
+              <tr>
+                <Td colSpan={12}>
+                  <ProductLinesPanel row={m} />
+                </Td>
+              </tr>
+            ) : null}
+          </Fragment>
+        ))}
+      </tbody>
+    </Table>
+  )
+}
+
 export function ReportsPage() {
   const auth = useAuth()
-  const { date, godownId, site, tab, godowns, sites, filterQuery, setFilters, lockGodownFilter } =
-    useReportFilters()
-  const activeTab = (TABS.some((t) => t.id === tab) ? tab : 'daily') as ReportTab
+  const {
+    date,
+    dateTo,
+    godownId,
+    site,
+    customerName,
+    tab,
+    godowns,
+    sites,
+    customers,
+    filterQuery,
+    dateQuery,
+    setFilters,
+    lockGodownFilter,
+  } = useReportFilters()
+
+  const resolvedTab = (MAIN_TABS.some((t) => t.id === tab) || ISSUE_TABS.has(tab as ReportTab) ? tab : 'daily') as ReportTab
+  const activeTab = resolvedTab
+  const issueSubTab = ISSUE_TABS.has(activeTab) ? activeTab : 'issues-godown'
+  const showIssueSection = ISSUE_TABS.has(activeTab) || activeTab === 'issues-godown'
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [daily, setDaily] = useState<DailyReport | null>(null)
-  const [missing, setMissing] = useState<MissingDeliveryRow[] | null>(null)
-  const [missingProducts, setMissingProducts] = useState<MissingProductRow[] | null>(null)
+  const [godownIssues, setGodownIssues] = useState<GodownIssueRow[] | null>(null)
+  const [deliveryIssues, setDeliveryIssues] = useState<IssueDeliveryRow[] | null>(null)
+  const [customerReport, setCustomerReport] = useState<CustomerIssueReport | null>(null)
   const [stock, setStock] = useState<StockReportRow[] | null>(null)
-  const [customerQ, setCustomerQ] = useState('')
-  const [customerHistory, setCustomerHistory] = useState<Array<{
-    id: string
-    deliveryNo: string
-    customerName: string
-    deliveryAt: string
-    status: string
-  }> | null>(null)
-  const [expandedMissing, setExpandedMissing] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeTab !== 'daily') return
@@ -64,36 +200,51 @@ export function ReportsPage() {
     if (!token) return
     setLoading(true)
     setError(null)
-    apiFetch<DailyReport>(`/reports/daily?date=${encodeURIComponent(date)}${filterQuery}`, { token })
+    const dateParam = dateTo ? `dateFrom=${encodeURIComponent(date)}&dateTo=${encodeURIComponent(dateTo)}` : `date=${encodeURIComponent(date)}`
+    apiFetch<DailyReport>(`/reports/daily?${dateParam}${filterQuery}`, { token })
       .then(setDaily)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load report'))
       .finally(() => setLoading(false))
-  }, [date, filterQuery, activeTab])
+  }, [date, dateTo, filterQuery, activeTab])
 
   useEffect(() => {
-    if (activeTab !== 'missing' && activeTab !== 'missing-products') return
+    if (!ISSUE_TABS.has(activeTab)) return
     const token = getToken()
     if (!token) return
+
+    if (activeTab === 'issues-customer' && !customerName.trim()) {
+      setCustomerReport(null)
+      return
+    }
+
     setLoading(true)
     setError(null)
-    const dateQ = `date=${encodeURIComponent(date)}&`
+
+    const loadGodown = () =>
+      apiFetch<GodownIssueRow[]>(`/reports/issues/by-godown?${dateQuery}limit=100${filterQuery}`, { token })
+        .then(setGodownIssues)
+        .catch(() => setGodownIssues([]))
+
+    const loadDelivery = () =>
+      apiFetch<IssueDeliveryRow[]>(`/reports/issues/by-delivery?${dateQuery}limit=100${filterQuery}`, { token })
+        .then(setDeliveryIssues)
+        .catch(() => setDeliveryIssues([]))
+
+    const loadCustomer = () => {
+      const cn = encodeURIComponent(customerName.trim())
+      const fq = filterQuery.replace(/&?customerName=[^&]*/g, '')
+      return apiFetch<CustomerIssueReport>(`/reports/issues/customer?${dateQuery}customerName=${cn}${fq}`, { token })
+        .then(setCustomerReport)
+        .catch(() => setCustomerReport(null))
+    }
+
     const promises: Promise<void>[] = []
-    if (activeTab === 'missing') {
-      promises.push(
-        apiFetch<MissingDeliveryRow[]>(`/reports/missing?${dateQ}limit=100${filterQuery}`, { token })
-          .then(setMissing)
-          .catch(() => setMissing([])),
-      )
-    }
-    if (activeTab === 'missing-products') {
-      promises.push(
-        apiFetch<MissingProductRow[]>(`/reports/missing-products?${dateQ}limit=100${filterQuery}`, { token })
-          .then(setMissingProducts)
-          .catch(() => setMissingProducts([])),
-      )
-    }
+    if (activeTab === 'issues-godown') promises.push(loadGodown())
+    if (activeTab === 'issues-delivery') promises.push(loadDelivery())
+    if (activeTab === 'issues-customer') promises.push(loadCustomer())
+
     Promise.all(promises).finally(() => setLoading(false))
-  }, [date, filterQuery, activeTab])
+  }, [date, dateTo, dateQuery, filterQuery, activeTab, customerName, godownId, site])
 
   useEffect(() => {
     if (activeTab !== 'stock') return
@@ -122,31 +273,19 @@ export function ReportsPage() {
     }
   }, [daily])
 
-  const searchCustomer = async () => {
-    const token = getToken()
-    if (!token) return
-    const q = customerQ.trim()
-    if (!q) return
-    setLoading(true)
-    setError(null)
-    try {
-      const rows = await apiFetch<Array<{ id: string; deliveryNo: string; customerName: string; deliveryAt: string; status: string }>>(
-        `/reports/customer-history?q=${encodeURIComponent(q)}`,
-        { token },
-      )
-      setCustomerHistory(rows)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load customer history')
-    } finally {
-      setLoading(false)
+  const onMainTab = (id: ReportTab) => {
+    if (id === 'issues-godown') {
+      setFilters({ tab: ISSUE_TABS.has(activeTab) ? activeTab : 'issues-godown' })
+      return
     }
+    setFilters({ tab: id })
   }
 
   return (
     <div>
       <PageHeader
         title="Reports"
-        subtitle="Daily deliveries, missing products, stock, and customer history."
+        subtitle="Daily deliveries, missing and damage by godown, delivery, or customer, and stock."
       />
 
       <Card className="mb-4">
@@ -154,30 +293,54 @@ export function ReportsPage() {
           <ReportFiltersBar
             godowns={godowns}
             sites={sites}
+            customers={customers}
             godownId={godownId}
             site={site}
-            showDate
-            date={date}
+            customerName={customerName}
             onGodownChange={(id) => setFilters({ godownId: id })}
             onSiteChange={(s) => setFilters({ site: s })}
+            onCustomerChange={(name) => setFilters({ customerName: name })}
+            showDate
+            showDateTo={showIssueSection || activeTab === 'daily'}
+            date={date}
+            dateTo={dateTo}
             onDateChange={(d) => setFilters({ date: d })}
+            onDateToChange={(d) => setFilters({ dateTo: d })}
+            showCustomer={activeTab === 'issues-customer'}
             hideGodownFilter={lockGodownFilter}
           />
         </CardContent>
       </Card>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        {TABS.map((t) => (
+        {MAIN_TABS.map((t) => (
           <Button
             key={t.id}
             size="sm"
-            variant={activeTab === t.id ? 'primary' : 'secondary'}
-            onClick={() => setFilters({ tab: t.id })}
+            variant={
+              activeTab === t.id || (t.id === 'issues-godown' && ISSUE_TABS.has(activeTab)) ? 'primary' : 'secondary'
+            }
+            onClick={() => onMainTab(t.id)}
           >
             {t.label}
           </Button>
         ))}
       </div>
+
+      {showIssueSection ? (
+        <div className="mb-4 flex flex-wrap gap-2 border-l-2 border-violet-200 pl-3">
+          {ISSUE_SUB_TABS.map((t) => (
+            <Button
+              key={t.id}
+              size="sm"
+              variant={issueSubTab === t.id ? 'primary' : 'secondary'}
+              onClick={() => setFilters({ tab: t.id })}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
 
       {error ? <div className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
@@ -186,7 +349,9 @@ export function ReportsPage() {
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Daily delivery report</CardTitle>
-              <div className="text-xs text-slate-500">{loading ? 'Loading...' : date}</div>
+              <div className="text-xs text-slate-500">
+                {loading ? 'Loading...' : dateTo ? `${date} → ${dateTo}` : date}
+              </div>
             </CardHeader>
             <CardContent>
               {daily?.deliveries?.length ? (
@@ -201,6 +366,9 @@ export function ReportsPage() {
                       <Th className="text-right">Dispatch</Th>
                       <Th className="text-right">Return</Th>
                       <Th className="text-right">Lost</Th>
+                      <Th className="text-right">Damaged tags</Th>
+                      <Th className="text-right">₹ missing</Th>
+                      <Th className="text-right">₹ damage</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -220,6 +388,9 @@ export function ReportsPage() {
                         <Td className="text-right">{formatNumber(d.dispatched)}</Td>
                         <Td className="text-right">{formatNumber(d.returned)}</Td>
                         <Td className="text-right">{formatNumber(d.lost)}</Td>
+                        <Td className="text-right">{formatNumber(d.damaged)}</Td>
+                        <Td className="text-right">{formatRupee(d.missingTotal)}</Td>
+                        <Td className="text-right">{formatRupee(d.damageTotal)}</Td>
                       </tr>
                     ))}
                   </tbody>
@@ -253,118 +424,129 @@ export function ReportsPage() {
         </div>
       ) : null}
 
-      {activeTab === 'missing' ? (
+      {activeTab === 'issues-godown' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Missing by delivery</CardTitle>
+            <CardTitle>Missing & damage by godown</CardTitle>
           </CardHeader>
           <CardContent>
-            {missing?.length ? (
+            {godownIssues?.length ? (
               <Table>
                 <thead>
                   <tr>
-                    <Th>Delivery</Th>
-                    <Th>Customer</Th>
-                    <Th>Site</Th>
                     <Th>Godown</Th>
-                    <Th>Status</Th>
+                    <Th className="text-right">Total deliveries</Th>
+                    <Th className="text-right">With issues</Th>
+                    <Th className="text-right">Missing qty</Th>
+                    <Th className="text-right">Damage qty</Th>
+                    <Th className="text-right">₹ missing</Th>
+                    <Th className="text-right">₹ damage</Th>
                     <Th className="text-right">Tags missing</Th>
-                    <Th className="text-right">Biller missing</Th>
                     <Th />
                   </tr>
                 </thead>
                 <tbody>
-                  {missing.map((m) => (
-                    <Fragment key={m.id}>
-                      <tr className="hover:bg-slate-50">
-                        <Td>
-                          <Link to={`/deliveries/${m.id}`} className="font-semibold text-violet-700 hover:underline">
-                            {m.deliveryNo}
-                          </Link>
-                        </Td>
-                        <Td className="max-w-[10rem] truncate">{m.customerName}</Td>
-                        <Td className="max-w-[8rem] truncate">{m.siteName || '—'}</Td>
-                        <Td className="max-w-[8rem] truncate">{m.godownName || '—'}</Td>
-                        <Td>
-                          <Badge variant="amber">{m.status}</Badge>
-                        </Td>
-                        <Td className="text-right">{formatNumber(m.missingCount)}</Td>
-                        <Td className="text-right">{m.missingTotal != null ? formatNumber(m.missingTotal) : '—'}</Td>
-                        <Td>
-                          {m.productMissing.length ? (
-                            <Button size="sm" variant="secondary" onClick={() => setExpandedMissing(expandedMissing === m.id ? null : m.id)}>
-                              {expandedMissing === m.id ? 'Hide' : 'Products'}
-                            </Button>
-                          ) : null}
-                        </Td>
-                      </tr>
-                      {expandedMissing === m.id && m.productMissing.length ? (
-                        <tr key={`${m.id}-detail`}>
-                          <Td colSpan={8}>
-                            <div className="rounded-lg bg-slate-50 p-3 text-sm">
-                              {m.productMissing.map((p) => (
-                                <div key={p.productId} className="flex justify-between gap-2 py-1">
-                                  <span>{p.particulars || p.sku || p.productId}</span>
-                                  <span className="font-semibold">qty {p.qty}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </Td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </Table>
-            ) : (
-              <EmptyState title="No missing deliveries" subtitle="No tag or biller missing items for this date and filters." />
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {activeTab === 'missing-products' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Missing products (aggregated)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {missingProducts?.length ? (
-              <Table>
-                <thead>
-                  <tr>
-                    <Th>Product</Th>
-                    <Th>SKU</Th>
-                    <Th className="text-right">Total qty</Th>
-                    <Th className="text-right">Deliveries</Th>
-                    <Th>Delivery links</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {missingProducts.map((row) => (
-                    <tr key={row.productId} className="hover:bg-slate-50">
-                      <Td className="font-semibold">{row.particulars || row.productId}</Td>
-                      <Td>{row.sku || '—'}</Td>
-                      <Td className="text-right">{formatNumber(row.totalQty)}</Td>
-                      <Td className="text-right">{formatNumber(row.deliveryCount)}</Td>
+                  {godownIssues.map((g) => (
+                    <tr key={g.godownId} className="hover:bg-slate-50">
+                      <Td className="font-semibold">{g.godownName || g.godownId}</Td>
+                      <Td className="text-right">{formatNumber(g.totalDeliveries)}</Td>
+                      <Td className="text-right">{formatNumber(g.issueDeliveryCount)}</Td>
+                      <Td className="text-right">{formatNumber(g.missingQty)}</Td>
+                      <Td className="text-right">{formatNumber(g.damageQty)}</Td>
+                      <Td className="text-right">{formatRupee(g.missingTotal)}</Td>
+                      <Td className="text-right">{formatRupee(g.damageTotal)}</Td>
+                      <Td className="text-right">{formatNumber(g.missingTagCount)}</Td>
                       <Td>
-                        <div className="flex flex-wrap gap-2">
-                          {row.deliveries.map((d) => (
-                            <Link key={d.id} to={`/deliveries/${d.id}`} className="text-sm font-semibold text-violet-700 hover:underline">
-                              {d.deliveryNo} ({d.qty})
-                            </Link>
-                          ))}
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setFilters({ godownId: g.godownId, tab: 'issues-delivery' })}
+                        >
+                          View deliveries
+                        </Button>
                       </Td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
+            ) : loading ? (
+              <p className="text-sm text-slate-600">Loading...</p>
             ) : (
-              <EmptyState title="No missing products" subtitle="No biller-reported missing products for this date and filters." />
+              <EmptyState title="No godown data" subtitle="No deliveries in the selected period." />
             )}
           </CardContent>
         </Card>
+      ) : null}
+
+      {activeTab === 'issues-delivery' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Missing & damage by delivery</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {deliveryIssues ? (
+              <IssueDeliveryTable rows={deliveryIssues} expandedId={expandedId} onToggleExpand={setExpandedId} />
+            ) : loading ? (
+              <p className="text-sm text-slate-600">Loading...</p>
+            ) : (
+              <EmptyState title="No issue deliveries" subtitle="No missing or damage for this period and filters." />
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {activeTab === 'issues-customer' ? (
+        <div className="space-y-4">
+          {!customerName.trim() ? (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-slate-600">Select a customer above to load their delivery and issue summary.</p>
+              </CardContent>
+            </Card>
+          ) : null}
+          {customerReport ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{customerReport.customerName}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {[
+                    ['Deliveries', customerReport.summary.deliveryCount],
+                    ['With issues', customerReport.summary.issueDeliveryCount],
+                    ['Missing qty', customerReport.summary.missingQty],
+                    ['Damage qty', customerReport.summary.damageQty],
+                    ['₹ missing', formatRupee(customerReport.summary.missingTotal)],
+                    ['₹ damage', formatRupee(customerReport.summary.damageTotal)],
+                    ['Tags missing', customerReport.summary.missingTagCount],
+                    ['Damaged / lost tags', customerReport.summary.damagedTagCount + customerReport.summary.lostTagCount],
+                  ].map(([label, val]) => (
+                    <div key={String(label)} className="rounded-xl bg-slate-50 p-3">
+                      <div className="text-xs text-slate-500">{label}</div>
+                      <div className="mt-1 text-lg font-semibold text-slate-900">
+                        {typeof val === 'number' ? formatNumber(val) : val}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Deliveries (date-wise)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <IssueDeliveryTable
+                    rows={customerReport.deliveries}
+                    expandedId={expandedId}
+                    onToggleExpand={setExpandedId}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          ) : customerName.trim() && !loading ? (
+            <EmptyState title="No data" subtitle="No deliveries for this customer in the selected period." />
+          ) : null}
+        </div>
       ) : null}
 
       {activeTab === 'stock' ? (
@@ -404,43 +586,6 @@ export function ReportsPage() {
           </CardContent>
         </Card>
       ) : null}
-
-      {activeTab === 'customer' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer-wise history</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="flex-1">
-                <Input label="Customer name" value={customerQ} onChange={(e) => setCustomerQ(e.target.value)} placeholder="Search customer..." />
-              </div>
-              <Button
-                variant="secondary"
-                onClick={searchCustomer}
-                disabled={auth.status !== 'authenticated' || (auth.user.role !== 'ADMIN' && auth.user.role !== 'BILLER') || loading}
-              >
-                Search
-              </Button>
-            </div>
-            {customerHistory?.length ? (
-              <div className="mt-4 space-y-1 text-sm">
-                {customerHistory.map((x) => (
-                  <div key={x.id} className="flex items-center justify-between gap-3">
-                    <Link to={`/deliveries/${x.id}`} className="truncate font-semibold text-violet-700 hover:underline">
-                      {x.deliveryNo} — {x.customerName}
-                    </Link>
-                    <div className="text-xs text-slate-500">{new Date(x.deliveryAt).toLocaleDateString()}</div>
-                  </div>
-                ))}
-              </div>
-            ) : customerHistory ? (
-              <p className="mt-3 text-xs text-slate-600">No history found.</p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   )
 }
-

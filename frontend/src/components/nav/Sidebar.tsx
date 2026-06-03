@@ -104,7 +104,6 @@ export function Sidebar() {
             {[
               { label: 'Billers', to: '/masters/billers' },
               { label: 'Delivery Persons', to: '/masters/delivery-persons' },
-              { label: 'Vehicles', to: '/masters/vehicles' },
             ].map((item, index) => (
               <NavLink
                 key={item.to}

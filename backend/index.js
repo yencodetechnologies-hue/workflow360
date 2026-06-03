@@ -100,8 +100,8 @@ seedData(process.env.FORCE_SEED === 'true');
 const ensureSeedAdmin = async () => {
   try {
     if (process.env.SEED_ADMIN_ON_START !== 'true') return
-    const email = (process.env.SEED_ADMIN_EMAIL || 'admin@godown.local').toLowerCase().trim()
-    const password = process.env.SEED_ADMIN_PASSWORD || 'admin123'
+    const email = (process.env.SEED_ADMIN_EMAIL || 'admin@gmail.com').toLowerCase().trim()
+    const password = process.env.SEED_ADMIN_PASSWORD || '123456'
     const exists = await User.findOne({ email }).lean()
     if (exists) return
     const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10)

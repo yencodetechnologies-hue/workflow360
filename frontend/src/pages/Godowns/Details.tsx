@@ -126,6 +126,21 @@ export function GodownsDetailsPage() {
     load()
   }, [id])
 
+  useEffect(() => {
+    const onStockChanged = () => {
+      void reloadStock()
+    }
+    const onFocus = () => {
+      void reloadStock()
+    }
+    window.addEventListener('godown-stock-changed', onStockChanged)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('godown-stock-changed', onStockChanged)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [id])
+
   const catalogById = useMemo(() => new Map(catalog.map((c) => [c.productId, c])), [catalog])
 
   const stockQtyByProductId = useMemo(() => {

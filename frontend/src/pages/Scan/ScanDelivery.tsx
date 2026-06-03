@@ -8,8 +8,8 @@ import { Badge } from '../../components/ui/Badge'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 import { formatDateTime } from '../../lib/format'
-import { API_BASE } from '../../lib/api'
 import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
+import { ChallanPdfIcon, openDeliveryChallanPdf } from '../../lib/openChallanPdf'
 
 type Delivery = {
   id: string
@@ -142,14 +142,7 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
     const token = getToken()
     if (!token || !id) return
     try {
-      const res = await fetch(`${API_BASE}/deliveries/${id}/challan.pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to generate PDF')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank', 'noopener,noreferrer')
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      await openDeliveryChallanPdf(id, token)
     } catch (e: any) {
       setError(e?.message || 'Failed to open challan')
     }
@@ -281,7 +274,8 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
                   </div>
                 )}
                 <div className="pt-3">
-                  <Button variant="secondary" size="sm" onClick={openChallan}>
+                  <Button variant="secondary" size="sm" onClick={openChallan} className="inline-flex items-center gap-2">
+                    <ChallanPdfIcon className="h-3.5 w-3.5" />
                     Open challan PDF
                   </Button>
                 </div>

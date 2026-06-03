@@ -31,6 +31,8 @@ async function populateLineDetails(delivery) {
       godownId: gid,
       godownName: g?.name,
       qty: line.qty,
+      dispatchedQty: Number(line.dispatchedQty) || 0,
+      returnedQty: Number(line.returnedQty) || 0,
       particulars: p?.particulars,
       sku: p?.sku || p?.s_no,
       rate: p?.rate,

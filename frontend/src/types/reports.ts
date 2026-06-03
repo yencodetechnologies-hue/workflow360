@@ -35,6 +35,9 @@ export type DailyDeliveryRow = {
   lost: number
   damaged: number
   missingTotal?: number
+  damageTotal?: number
+  missingQty?: number
+  damageQty?: number
 }
 
 export type ProductMissingLine = {
@@ -45,7 +48,7 @@ export type ProductMissingLine = {
   note?: string
 }
 
-export type MissingDeliveryRow = {
+export type IssueDeliveryRow = {
   id: string
   deliveryNo: string
   customerName: string
@@ -59,7 +62,47 @@ export type MissingDeliveryRow = {
   missingTagIds: string[]
   missingTotal?: number
   damageTotal?: number
+  missingQty: number
+  damageQty: number
+  missingTagCount: number
+  damagedTagCount: number
+  lostTagCount: number
+  hasIssue?: boolean
   productMissing: ProductMissingLine[]
+  productDamaged: ProductMissingLine[]
+}
+
+/** @deprecated use IssueDeliveryRow */
+export type MissingDeliveryRow = IssueDeliveryRow
+
+export type GodownIssueRow = {
+  godownId: string
+  godownName?: string
+  totalDeliveries: number
+  issueDeliveryCount: number
+  missingQty: number
+  damageQty: number
+  missingTotal: number
+  damageTotal: number
+  missingTagCount: number
+  damagedTagCount: number
+  lostTagCount: number
+}
+
+export type CustomerIssueReport = {
+  customerName: string
+  summary: {
+    deliveryCount: number
+    issueDeliveryCount: number
+    missingQty: number
+    damageQty: number
+    missingTotal: number
+    damageTotal: number
+    missingTagCount: number
+    damagedTagCount: number
+    lostTagCount: number
+  }
+  deliveries: IssueDeliveryRow[]
 }
 
 export type MissingProductRow = {
@@ -80,4 +123,12 @@ export type StockReportRow = {
   qty: number
 }
 
-export type ReportTab = 'daily' | 'missing' | 'missing-products' | 'stock' | 'customer'
+export type ReportTab =
+  | 'daily'
+  | 'issues-godown'
+  | 'issues-delivery'
+  | 'issues-customer'
+  | 'missing'
+  | 'missing-products'
+  | 'stock'
+  | 'customer'

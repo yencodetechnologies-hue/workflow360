@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/store'
 import { DonutChart, SparkBars } from '../components/charts/MiniCharts'
 import { formatDateTime, formatNumber } from '../lib/format'
 import { Badge } from '../components/ui/Badge'
@@ -57,10 +58,15 @@ function CardSkeleton({ tall = false }: { tall?: boolean }) {
 }
 
 export function DashboardPage() {
+  const auth = useAuth()
   const nav = useNavigate()
   const { loading, error, refresh, kpis, trend, godownsWithStock, recentActivity, alerts } =
     useDashboardData()
   const [createOpen, setCreateOpen] = useState(false)
+
+  if (auth.status === 'authenticated' && auth.user.role === 'DELIVERY') {
+    return <Navigate to="/deliveries" replace />
+  }
 
   const trendValues = useMemo(() => trend.map((t) => t.total), [trend])
   const trendLabels = useMemo(() => trend.map((t) => t.label), [trend])

@@ -1,23 +1,29 @@
 ﻿import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
-import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
-import { Input } from '../../components/ui/Input'
-import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
-import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
-import { scanPathForDelivery } from '../../lib/scanMode'
+import { DeliveryStatusSelect } from '../../components/delivery/DeliveryStatusSelect'
+import { DeleteDeliveryButton } from '../../components/delivery/DeleteDeliveryButton'
+import { GodownDeliveryWorkflow } from '../../components/delivery/GodownDeliveryWorkflow'
+import { ReturnPickupVehicleModal } from '../../components/delivery/ReturnPickupVehicleModal'
+import { ReturnReconciliationCard } from '../../components/delivery/ReturnReconciliationCard'
+import { Badge } from '../../components/ui/Badge'
+import { deliveryBadgeVariant, deliveryStatusLabel, getDeliveryEditState } from '../../lib/deliveryStatus'
+import { DriverDeliveryDetail } from '../../components/delivery/DriverDeliveryDetail'
+import { CreateDeliveryModal } from './CreateDeliveryModal'
 
 type DeliveryLine = {
   productId: string
   godownId?: string
   godownName?: string
   qty: number
+  dispatchedQty?: number
+  returnedQty?: number
   particulars?: string
   sku?: string
   rate?: string
@@ -52,6 +58,12 @@ type DeliveryDetail = {
     dispatchComplete?: boolean
     returnPickupComplete?: boolean
   }
+  qtyProgress?: {
+    dispatchComplete?: boolean
+    dispatchedByProduct?: Record<string, number>
+    returnedByProduct?: Record<string, number>
+  }
+  stockByGodown?: Record<string, Record<string, number>>
   deliveryVerifierName?: string
   deliveryVerifiedAt?: string
   billerReturnSubmittedAt?: string
@@ -61,19 +73,33 @@ type DeliveryDetail = {
   missingTotal?: number
   deliveryVerifyUrl?: string
   billerReturnUrl?: string
+  dispatchedTagIds?: string[]
+  pickedUpTagIds?: string[]
+  deliveredTagIds?: string[]
+  returnPickedUpTagIds?: string[]
+  returnedTagIds?: string[]
+  damagedTagIds?: string[]
+  lostTagIds?: string[]
 }
 
 export function DeliveryDetailPage() {
+  const { id } = useParams()
+  const auth = useAuth()
+  if (auth.status === 'authenticated' && auth.user.role === 'DELIVERY') {
+    return <DriverDeliveryDetail deliveryId={id} />
+  }
+  return <AdminDeliveryDetailPage />
+}
+
+function AdminDeliveryDetailPage() {
   const { id } = useParams()
   const nav = useNavigate()
   const auth = useAuth()
   const [d, setD] = useState<DeliveryDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [returnModalOpen, setReturnModalOpen] = useState(false)
-  const [vehicleModalOpen, setVehicleModalOpen] = useState(false)
-  const [vehicleNumber, setVehicleNumber] = useState('')
-  const [returnVehicle, setReturnVehicle] = useState('')
+  const [returnPickupModalOpen, setReturnPickupModalOpen] = useState(false)
   const [actionBusy, setActionBusy] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const load = () => {
     const token = getToken()
@@ -92,63 +118,41 @@ export function DeliveryDetailPage() {
 
   const role = auth.status === 'authenticated' ? auth.user.role : ''
   const canRegen = role === 'ADMIN'
-  const isGodown = role === 'GODOWN' || role === 'ADMIN'
+  const isGodownUser = role === 'GODOWN'
   const isAdmin = role === 'ADMIN'
+  const showDeleteDelivery =
+    auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
+
+  const editState =
+    d && auth.status === 'authenticated'
+      ? getDeliveryEditState(auth.user.role, auth.user.id, {
+          status: d.status,
+          billerUserId: d.billerUserId,
+          dispatchedTagIds: d.dispatchedTagIds,
+          pickedUpTagIds: d.pickedUpTagIds,
+          deliveredTagIds: d.deliveredTagIds,
+          returnPickedUpTagIds: d.returnPickedUpTagIds,
+          returnedTagIds: d.returnedTagIds,
+          damagedTagIds: d.damagedTagIds,
+          lostTagIds: d.lostTagIds,
+        })
+      : { canEdit: false, fullLines: false, metadataOnly: false }
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {})
   }
 
-  const markPacked = async () => {
+  const assignReturnPickup = async (vehicleNumber: string) => {
     const token = getToken()
     if (!token || !id) return
-    setActionBusy(true)
-    try {
-      await apiFetch(`/deliveries/${id}/mark-packed`, { token, method: 'POST' })
-      load()
-    } catch (e: unknown) {
-      setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Mark packed failed')
-    } finally {
-      setActionBusy(false)
-    }
-  }
-
-  const outForDelivery = async () => {
-    const token = getToken()
-    if (!token || !id) return
-    const v = vehicleNumber.trim()
-    if (!v) return
-    setActionBusy(true)
-    try {
-      await apiFetch(`/deliveries/${id}/out-for-delivery`, {
-        token,
-        method: 'POST',
-        body: JSON.stringify({ vehicleNumber: v }),
-      })
-      setVehicleModalOpen(false)
-      setVehicleNumber('')
-      load()
-    } catch (e: unknown) {
-      setError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Out for delivery failed')
-    } finally {
-      setActionBusy(false)
-    }
-  }
-
-  const assignReturnPickup = async () => {
-    const token = getToken()
-    if (!token || !id) return
-    const v = returnVehicle.trim()
-    if (!v) return
     setActionBusy(true)
     try {
       await apiFetch(`/deliveries/${id}/assign-return-pickup`, {
         token,
         method: 'POST',
-        body: JSON.stringify({ vehicleNumber: v }),
+        body: JSON.stringify({ vehicleNumber }),
       })
-      setReturnModalOpen(false)
-      setReturnVehicle('')
+      setReturnPickupModalOpen(false)
       load()
     } catch (e: unknown) {
       setError(
@@ -158,6 +162,10 @@ export function DeliveryDetailPage() {
       setActionBusy(false)
     }
   }
+
+  const showReturnPhase = ['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'].includes(d?.status ?? '')
+  const canAssignReturnPickup =
+    d?.status === 'DELIVERED' && (isAdmin || isGodownUser)
 
   if (!id) return null
 
@@ -184,69 +192,83 @@ export function DeliveryDetailPage() {
         title={d.deliveryNo}
         subtitle={`${d.customerName} • ${d.siteName || d.siteAddress || '—'}`}
         right={
-          <Link to="/deliveries" className="text-sm font-semibold text-slate-900 hover:text-slate-700">
-            Back to list
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {editState.canEdit ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditOpen(true)}
+                title={editState.reason || (editState.metadataOnly ? 'Edit delivery (limited)' : 'Edit delivery')}
+              >
+                Edit
+              </Button>
+            ) : null}
+            {showDeleteDelivery ? (
+              <DeleteDeliveryButton
+                deliveryId={d.id}
+                deliveryNo={d.deliveryNo}
+                customerName={d.customerName}
+                status={d.status}
+                billerUserId={d.billerUserId}
+                dispatchedTagIds={d.dispatchedTagIds}
+                pickedUpTagIds={d.pickedUpTagIds}
+                deliveredTagIds={d.deliveredTagIds}
+                returnPickedUpTagIds={d.returnPickedUpTagIds}
+                returnedTagIds={d.returnedTagIds}
+                damagedTagIds={d.damagedTagIds}
+                lostTagIds={d.lostTagIds}
+                variant="button"
+                onDeleted={() => nav('/deliveries')}
+                onError={(msg) => setError(msg)}
+              />
+            ) : null}
+            <Link to="/deliveries" className="text-sm font-semibold text-slate-900 hover:text-slate-700">
+              Back to list
+            </Link>
+          </div>
         }
       />
 
       {error ? <div className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
-      <Modal open={vehicleModalOpen} title="Out for delivery" onClose={() => setVehicleModalOpen(false)}>
-        <p className="mb-3 text-sm text-slate-600">
-          Enter vehicle number. Driver logs in with this number; default password <span className="font-mono">123456</span>{' '}
-          for auto-created accounts.
-        </p>
-        <Input label="Vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
-        <div className="mt-4 flex gap-2">
-          <Button onClick={outForDelivery} disabled={actionBusy || !vehicleNumber.trim()}>
-            Confirm
-          </Button>
-          <Button variant="secondary" onClick={() => setVehicleModalOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      </Modal>
+      <ReturnPickupVehicleModal
+        open={returnPickupModalOpen}
+        busy={actionBusy}
+        onClose={() => setReturnPickupModalOpen(false)}
+        onConfirm={assignReturnPickup}
+      />
 
-      <Modal open={returnModalOpen} title="Assign return pickup" onClose={() => setReturnModalOpen(false)}>
-        <Input label="Vehicle number" value={returnVehicle} onChange={(e) => setReturnVehicle(e.target.value)} />
-        <div className="mt-4 flex gap-2">
-          <Button onClick={assignReturnPickup} disabled={actionBusy || !returnVehicle.trim()}>
-            Assign
-          </Button>
-          <Button variant="secondary" onClick={() => setReturnModalOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      </Modal>
+      {showReturnPhase ? (
+        <ReturnReconciliationCard
+          status={d.status}
+          billerReturnUrl={d.billerReturnUrl}
+          billerReturnSubmittedAt={d.billerReturnSubmittedAt}
+          billerMissingLines={d.billerMissingLines}
+          billerDamagedLines={d.billerDamagedLines}
+          damageTotal={d.damageTotal}
+          missingTotal={d.missingTotal}
+          onCopyLink={copy}
+        />
+      ) : null}
 
-      {isGodown ? (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {(d.status === 'PROCESSED' || d.status === 'PACKED') && (
-            <Button variant="secondary" onClick={() => nav(scanPathForDelivery(role, d.status, d.id))}>
-              Dispatch scan
-            </Button>
-          )}
-          {d.status === 'PROCESSED' && d.scanProgress?.dispatchComplete ? (
-            <Button variant="secondary" onClick={markPacked} disabled={actionBusy}>
-              Mark packed
-            </Button>
-          ) : null}
-          {d.status === 'PACKED' ? (
-            <Button onClick={() => setVehicleModalOpen(true)}>Out for delivery</Button>
-          ) : null}
-          {(d.status === 'RETURN_PICKUP' || d.status === 'DELIVERED') && (
-            <Button variant="secondary" onClick={() => nav(`/scan/return/${d.id}`)}>
-              Return scan at godown
-            </Button>
-          )}
+      {canAssignReturnPickup && isAdmin && !isGodownUser ? (
+        <div className="mb-4">
+          <Button onClick={() => setReturnPickupModalOpen(true)} disabled={actionBusy}>
+            Assign return pickup
+          </Button>
         </div>
       ) : null}
 
-      {isAdmin && d.status === 'DELIVERED' ? (
-        <div className="mb-4">
-          <Button onClick={() => setReturnModalOpen(true)}>Assign return pickup</Button>
-        </div>
+      {isGodownUser && d ? (
+        <GodownDeliveryWorkflow
+          delivery={{
+            ...d,
+            billerReturnUrl: d.billerReturnUrl,
+            billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+          }}
+          onUpdated={load}
+          onError={(msg) => setError(msg)}
+        />
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -257,7 +279,16 @@ export function DeliveryDetailPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-600">Status</span>
-              <Badge variant={deliveryBadgeVariant(d.status)}>{deliveryStatusLabel(d.status)}</Badge>
+              {isGodownUser ? (
+                <Badge variant={deliveryBadgeVariant(d.status)}>{deliveryStatusLabel(d.status)}</Badge>
+              ) : (
+                <DeliveryStatusSelect
+                  deliveryId={d.id}
+                  status={d.status}
+                  onUpdated={(status) => setD((prev) => (prev ? { ...prev, status } : prev))}
+                  onError={(msg) => setError(msg)}
+                />
+              )}
             </div>
             <div>
               <span className="text-slate-600">Scheduled: </span>
@@ -297,19 +328,12 @@ export function DeliveryDetailPage() {
                 <div className="text-amber-700">Pending — share delivery verify link</div>
               )}
             </div>
-            <div className="rounded-xl border border-slate-200 p-3">
-              <div className="font-semibold text-slate-900">Biller return</div>
-              {d.billerReturnSubmittedAt ? (
-                <>
-                  <div className="text-slate-600">Submitted {formatDateTime(d.billerReturnSubmittedAt)}</div>
-                  <div className="mt-1 text-slate-700">
-                    Damage total: {d.damageTotal ?? '—'} · Missing total: {d.missingTotal ?? '—'}
-                  </div>
-                </>
-              ) : (
-                <div className="text-amber-700">Pending — share biller return link after delivery</div>
-              )}
-            </div>
+            {!showReturnPhase ? (
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="font-semibold text-slate-900">Biller return</div>
+                <div className="text-amber-700">Available after delivery — use Return reconciliation when delivered</div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -364,46 +388,6 @@ export function DeliveryDetailPage() {
         </Card>
       </div>
 
-      {d.billerReturnSubmittedAt && (d.billerMissingLines?.length || d.billerDamagedLines?.length) ? (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Missing and damage (biller return)</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-semibold text-slate-800">Missing products</div>
-              {d.billerMissingLines?.length ? (
-                <ul className="space-y-1 text-sm text-slate-700">
-                  {d.billerMissingLines.map((l) => (
-                    <li key={l.productId} className="flex justify-between gap-2">
-                      <span>{l.particulars || l.sku || l.productId}</span>
-                      <span className="font-semibold">qty {l.qty}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-600">None reported.</p>
-              )}
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-semibold text-slate-800">Damaged products</div>
-              {d.billerDamagedLines?.length ? (
-                <ul className="space-y-1 text-sm text-slate-700">
-                  {d.billerDamagedLines.map((l) => (
-                    <li key={l.productId} className="flex justify-between gap-2">
-                      <span>{l.particulars || l.sku || l.productId}</span>
-                      <span className="font-semibold">qty {l.qty}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-600">None reported.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
       <Card className="mt-4">
         <CardHeader>
           <CardTitle>Products in delivery</CardTitle>
@@ -418,28 +402,46 @@ export function DeliveryDetailPage() {
                   <Th>Product</Th>
                   <Th>SKU</Th>
                   <Th>Godown</Th>
-                  <Th className="text-right">Qty</Th>
-                  <Th className="text-right">Rate</Th>
+                  <Th className="text-right">Ordered</Th>
+                  <Th className="text-right">Dispatched</Th>
+                  <Th className="text-right">Returned</Th>
+                  <Th className="text-right">In stock</Th>
                 </tr>
               </thead>
               <tbody>
-                {d.lines.map((l) => (
-                  <tr key={`${l.productId}-${l.godownId ?? ''}`} className="hover:bg-slate-50">
-                    <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
-                    <Td className="font-mono text-xs text-slate-600">{l.sku || '—'}</Td>
-                    <Td className="text-slate-700">{l.godownName || '—'}</Td>
-                    <Td className="text-right font-semibold text-slate-900">
-                      {l.qty}
-                      {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
-                    </Td>
-                    <Td className="text-right text-slate-700">{l.rate ?? '—'}</Td>
-                  </tr>
-                ))}
+                {d.lines.map((l) => {
+                  const gid = l.godownId || d.fromGodownId
+                  const stock = d.stockByGodown?.[gid]?.[l.productId]
+                  return (
+                    <tr key={`${l.productId}-${l.godownId ?? ''}`} className="hover:bg-slate-50">
+                      <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
+                      <Td className="font-mono text-xs text-slate-600">{l.sku || '—'}</Td>
+                      <Td className="text-slate-700">{l.godownName || '—'}</Td>
+                      <Td className="text-right font-semibold text-slate-900">
+                        {l.qty}
+                        {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
+                      </Td>
+                      <Td className="text-right text-slate-700">{l.dispatchedQty ?? 0}</Td>
+                      <Td className="text-right text-slate-700">{l.returnedQty ?? 0}</Td>
+                      <Td className="text-right font-semibold text-violet-700">
+                        {stock !== undefined ? stock : '—'}
+                      </Td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </Table>
           )}
         </CardContent>
       </Card>
+
+      <CreateDeliveryModal
+        open={editOpen}
+        deliveryId={d.id}
+        onClose={() => setEditOpen(false)}
+        onCreated={load}
+        onUpdated={load}
+      />
     </div>
   )
 }

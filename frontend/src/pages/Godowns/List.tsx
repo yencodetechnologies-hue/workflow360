@@ -532,6 +532,14 @@ export function GodownsListPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    const onStockChanged = () => {
+      load()
+    }
+    window.addEventListener('godown-stock-changed', onStockChanged)
+    return () => window.removeEventListener('godown-stock-changed', onStockChanged)
+  }, [])
+
   /* ======================================================
      SEARCH
   ====================================================== */
