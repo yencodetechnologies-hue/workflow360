@@ -1,24 +1,29 @@
 // import { useEffect, useMemo, useState } from 'react'
-// import { Link, useNavigate } from 'react-router-dom'
+// import { useNavigate, useSearchParams } from 'react-router-dom'
 // import { formatDateTime } from '../../lib/format'
-// import { Badge } from '../../components/ui/Badge'
 // import { Button } from '../../components/ui/Button'
 // import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 // import { Input } from '../../components/ui/Input'
 // import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 // import { apiFetch } from '../../lib/api'
 // import { getToken, useAuth } from '../../auth/store'
+// import { DeliveryStatusSelect } from '../../components/delivery/DeliveryStatusSelect'
+// import { DeliveryRowActions } from '../../components/delivery/DeliveryRowActions'
+// import { GodownDeliveryWorkflow } from '../../components/delivery/GodownDeliveryWorkflow'
+// import { Badge } from '../../components/ui/Badge'
+// import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
 // import { CreateDeliveryModal } from './CreateDeliveryModal'
+// import { DriverDeliveriesDashboard } from '../../components/delivery/DriverDeliveriesDashboard'
 
-// type Tab = 'all' | 'UPCOMING' | 'DISPATCHED' | 'DELIVERED' | 'PENDING_RETURN' | 'COMPLETED'
-
-// function badgeVariant(status: string) {
-//   if (status === 'DISPATCHED') return 'green'
-//   if (status === 'UPCOMING') return 'blue'
-//   if (status === 'PENDING_RETURN') return 'amber'
-//   if (status === 'DELIVERED') return 'amber'
-//   return 'slate'
-// }
+// type Tab =
+//   | 'all'
+//   | 'PROCESSED'
+//   | 'PACKED'
+//   | 'OUT_FOR_DELIVERY'
+//   | 'DELIVERED'
+//   | 'RETURN_PICKUP'
+//   | 'PENDING_RETURN'
+//   | 'COMPLETED'
 
 // type DeliveryRow = {
 //   id: string
@@ -29,29 +34,79 @@
 //   status: string
 //   deliveryAt: string
 //   fromGodownId?: string
+//   billerUserId?: string
+//   dispatchedTagIds?: string[]
+//   pickedUpTagIds?: string[]
+//   deliveredTagIds?: string[]
+//   returnPickedUpTagIds?: string[]
+//   returnedTagIds?: string[]
+//   damagedTagIds?: string[]
+//   lostTagIds?: string[]
+//   lines?: Array<{
+//     productId: string
+//     qty: number
+//     dispatchedQty?: number
+//     returnedQty?: number
+//   }>
 // }
 
 // export function DeliveriesListPage() {
 //   const auth = useAuth()
 //   const nav = useNavigate()
+//   const [searchParams] = useSearchParams()
+//   const statusFromUrl = searchParams.get('status') as Tab | null
+
 //   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
 //   const [error, setError] = useState<string | null>(null)
-//   const [tab, setTab] = useState<Tab>('all')
+//   const [tab, setTab] = useState<Tab>(
+//     statusFromUrl &&
+//       [
+//         'all',
+//         'PROCESSED',
+//         'PACKED',
+//         'OUT_FOR_DELIVERY',
+//         'DELIVERED',
+//         'RETURN_PICKUP',
+//         'PENDING_RETURN',
+//         'COMPLETED',
+//       ].includes(statusFromUrl)
+//       ? statusFromUrl
+//       : 'all',
+//   )
 //   const [q, setQ] = useState('')
 //   const [createOpen, setCreateOpen] = useState(false)
+//   const [editDeliveryId, setEditDeliveryId] = useState<string | null>(null)
+//   const [loading, setLoading] = useState(false)
+//   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-//   const canCreate = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
+//   const canCreate =
+//     auth.status === 'authenticated' &&
+//     (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
+
+//   const isGodownUser = auth.status === 'authenticated' && auth.user.role === 'GODOWN'
+
+//   const removeFromList = (deliveryId: string) => {
+//     setDeliveries((prev) => prev.filter((row) => row.id !== deliveryId))
+//   }
 
 //   const loadDeliveries = () => {
 //     const token = getToken()
 //     if (!token) return
+
+//     setLoading(true)
 //     setError(null)
+
 //     apiFetch<DeliveryRow[]>('/deliveries?limit=200', { token })
 //       .then(setDeliveries)
 //       .catch((e: unknown) => {
-//         const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to load deliveries'
+//         const msg =
+//           e && typeof e === 'object' && 'message' in e
+//             ? String((e as { message: string }).message)
+//             : 'Failed to load deliveries'
+
 //         setError(msg)
 //       })
+//       .finally(() => setLoading(false))
 //   }
 
 //   useEffect(() => {
@@ -60,9 +115,12 @@
 
 //   const rows = useMemo(() => {
 //     const s = q.trim().toLowerCase()
+
 //     return deliveries.filter((d) => {
 //       if (tab !== 'all' && d.status !== tab) return false
+
 //       if (!s) return true
+
 //       return (
 //         d.deliveryNo.toLowerCase().includes(s) ||
 //         d.customerName.toLowerCase().includes(s) ||
@@ -74,46 +132,212 @@
 
 //   const tabs: Array<{ id: Tab; label: string }> = [
 //     { id: 'all', label: 'All' },
-//     { id: 'UPCOMING', label: 'Upcoming' },
-//     { id: 'DISPATCHED', label: 'Dispatched' },
+//     { id: 'PROCESSED', label: 'Processed' },
+//     { id: 'PACKED', label: 'Packed' },
+//     { id: 'OUT_FOR_DELIVERY', label: 'Out for delivery' },
 //     { id: 'DELIVERED', label: 'Delivered' },
-//     { id: 'PENDING_RETURN', label: 'Pending returns' },
+//     { id: 'RETURN_PICKUP', label: 'Return pickup' },
+//     { id: 'PENDING_RETURN', label: 'Pending return' },
 //     { id: 'COMPLETED', label: 'Completed' },
 //   ]
 
-//   return (
-//     <div>
-//       {canCreate ? (
-//         <div className="mb-6 flex justify-end">
-//           <Button onClick={() => setCreateOpen(true)} className="gap-2 shadow-lg shadow-violet-200/50">
-//             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
-//               <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-//             </svg>
-//             Create delivery
-//           </Button>
-//         </div>
-//       ) : null}
+//   if (auth.status === 'authenticated' && auth.user.role === 'DELIVERY') {
+//     return <DriverDeliveriesDashboard />
+//   }
 
-//       <Card>
-//         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-//           <CardTitle>Delivery list</CardTitle>
-//           <div className="w-full sm:w-72">
-//             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search deliveries…" className="h-10" />
+//   return (
+//     <div className="space-y-6">
+//       {/* HEADER */}
+//       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+//         <div>
+//           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+//             Deliveries
+//           </h1>
+
+//           <p className="mt-2 text-sm text-slate-500">
+//             Manage customer deliveries, schedules and dispatch workflow.
+//           </p>
+//         </div>
+
+//         {/* {canCreate ? (
+//           <Button
+//             onClick={() => setCreateOpen(true)}
+//             className="
+//               inline-flex h-12 items-center justify-center gap-2
+//               rounded-2xl border-0
+//               bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600
+//               px-5 text-sm font-semibold text-white
+//               shadow-lg shadow-violet-500/20
+//               transition-all duration-200
+//               hover:scale-[1.02]
+//               hover:shadow-xl hover:shadow-violet-500/30
+//               active:scale-[0.99]
+//             "
+//           >
+//             <svg
+//               className="h-5 w-5 flex-shrink-0"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               aria-hidden
+//             >
+//               <path
+//                 d="M12 5v14M5 12h14"
+//                 stroke="currentColor"
+//                 strokeWidth="2.2"
+//                 strokeLinecap="round"
+//               />
+//             </svg>
+
+//             <span className="leading-none">Create Delivery</span>
+//           </Button>
+//         ) : null} */}
+
+//         {canCreate ? (
+//   <Button
+//     onClick={() => setCreateOpen(true)}
+//     className="
+//       group flex h-12 items-center
+//       rounded-1xl border-0
+//       bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600
+//       px-5
+//       text-white
+//       shadow-lg shadow-violet-500/25
+//       transition-all duration-200
+//       hover:scale-[1.02]
+//       hover:shadow-xl hover:shadow-violet-500/30
+//       active:scale-[0.99]
+//     "
+//   >
+//     {/* INNER WRAPPER */}
+//     <div className="flex items-center gap-3">
+//       {/* ICON BOX */}
+//       <div
+//         className="
+//           flex h-8 w-10 items-center justify-center
+//           rounded-xl
+//           bg-white/10
+//           ring-1 ring-white/20
+//         "
+//       >
+//         <svg
+//           className="h-5 w-5"
+//           viewBox="0 0 24 24"
+//           fill="none"
+//           aria-hidden
+//         >
+//           <path
+//             d="M12 5V19"
+//             stroke="currentColor"
+//             strokeWidth="2.4"
+//             strokeLinecap="round"
+//           />
+//           <path
+//             d="M5 12H19"
+//             stroke="currentColor"
+//             strokeWidth="2.4"
+//             strokeLinecap="round"
+//           />
+//         </svg>
+//       </div>
+
+//       {/* TEXT */}
+//       <div className="flex items-center">
+//         <span className="text-base font-semibold leading-none">
+//           Create Delivery
+//         </span>
+//       </div>
+//     </div>
+//   </Button>
+// ) : null}
+//       </div>
+
+//       {/* MAIN CARD */}
+//       <Card className="overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.12)]">
+//         {/* TOP BAR */}
+//         <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-6">
+//           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+//             <div>
+//               <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
+//                 Delivery List
+//               </CardTitle>
+
+//               <p className="mt-1 text-sm text-slate-500">
+//                 {rows.length} deliveries available
+//               </p>
+//             </div>
+
+//             <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
+//               {/* SEARCH */}
+//               <div className="relative w-full xl:w-80">
+//                 <svg
+//                   className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+//                   viewBox="0 0 24 24"
+//                   fill="none"
+//                 >
+//                   <path
+//                     d="M21 21l-4.35-4.35"
+//                     stroke="currentColor"
+//                     strokeWidth="2"
+//                     strokeLinecap="round"
+//                   />
+//                   <circle
+//                     cx="11"
+//                     cy="11"
+//                     r="6"
+//                     stroke="currentColor"
+//                     strokeWidth="2"
+//                   />
+//                 </svg>
+
+//                 <Input
+//                   value={q}
+//                   onChange={(e) => setQ(e.target.value)}
+//                   placeholder="Search deliveries..."
+//                   className="
+//                     h-12 rounded-2xl border-slate-200
+//                     bg-white pl-11 text-sm
+//                     shadow-sm transition-all
+//                     focus:border-violet-400 focus:ring-4 focus:ring-violet-100
+//                   "
+//                 />
+//               </div>
+
+//               {/* REFRESH */}
+//               <Button
+//                 variant="secondary"
+//                 onClick={loadDeliveries}
+//                 className="
+//                   h-12 rounded-2xl border border-slate-200
+//                   bg-white px-5 font-semibold text-slate-700
+//                   shadow-sm transition-all
+//                   hover:border-slate-300 hover:bg-slate-50
+//                 "
+//               >
+//                 Refresh
+//               </Button>
+//             </div>
 //           </div>
 //         </CardHeader>
-//         <CardContent>
-//           <div className="mb-4 flex flex-wrap gap-2">
+
+//         <CardContent className="p-6">
+//           {/* STATUS TABS */}
+//           <div className="mb-6 flex flex-wrap gap-3">
 //             {tabs.map((t) => {
 //               const active = tab === t.id
+
 //               return (
 //                 <button
 //                   key={t.id}
 //                   onClick={() => setTab(t.id)}
-//                   className={
-//                     active
-//                       ? 'rounded-full bg-gradient-to-r from-violet-600 to-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm'
-//                       : 'rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200'
-//                   }
+//                   className={`
+//                     rounded-2xl px-5 py-2.5 text-sm font-semibold
+//                     transition-all duration-200
+//                     ${
+//                       active
+//                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20'
+//                         : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+//                     }
+//                   `}
 //                 >
 //                   {t.label}
 //                 </button>
@@ -121,68 +345,196 @@
 //             })}
 //           </div>
 
+//           {/* ERROR */}
 //           {error ? (
-//             <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
-//           ) : rows.length === 0 ? (
-//             <EmptyState title="No deliveries found" subtitle="Try a different tab or search." />
-//           ) : (
-//             <Table>
-//               <thead>
-//                 <tr>
-//                   <Th>Delivery</Th>
-//                   <Th>Customer</Th>
-//                   <Th>Location</Th>
-//                   <Th>Status</Th>
-//                   <Th className="text-right">Scheduled</Th>
-//                   <Th className="text-right">Actions</Th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {rows.map((d) => {
-//                   return (
-//                     <tr key={d.id} className="hover:bg-slate-50">
-//                       <Td className="font-semibold text-slate-900">{d.deliveryNo}</Td>
-//                       <Td>{d.customerName}</Td>
-//                       <Td className="max-w-[22rem] truncate">{d.siteName || d.siteAddress || '—'}</Td>
-//                       <Td>
-//                         <Badge variant={badgeVariant(d.status)}>{d.status}</Badge>
-//                       </Td>
-//                       <Td className="text-right text-xs text-slate-500">{formatDateTime(d.deliveryAt)}</Td>
-//                       <Td className="text-right space-x-2">
-//                         <Link
-//                           to={`/deliveries/${d.id}`}
-//                           className="mr-2 inline-flex h-9 items-center justify-center rounded-xl bg-white px-3 text-sm font-medium text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-//                         >
-//                           Details
-//                         </Link>
-//                         <Button
-//                           size="sm"
-//                           variant="secondary"
-//                           onClick={() => {
-//                             if (auth.status !== 'authenticated') return
-//                             if (auth.user.role === 'DELIVERY') {
-//                               if (d.status === 'DISPATCHED') nav(`/scan/pickup/${d.id}`)
-//                               else nav(`/scan/deliver/${d.id}`)
-//                             } else if (auth.user.role === 'GODOWN') nav(`/scan/dispatch/${d.id}`)
-//                             else nav(`/scan/dispatch/${d.id}`)
-//                           }}
-//                         >
-//                           Scan
-//                         </Button>
-//                       </Td>
+//             <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+//               {error}
+//             </div>
+//           ) : null}
+
+//           {/* SUCCESS */}
+//           {successMessage ? (
+//             <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+//               <span>{successMessage}</span>
+//               <button
+//                 type="button"
+//                 className="shrink-0 rounded-lg px-2 py-1 text-emerald-700 hover:bg-emerald-100"
+//                 onClick={() => setSuccessMessage(null)}
+//                 aria-label="Dismiss"
+//               >
+//                 ×
+//               </button>
+//             </div>
+//           ) : null}
+
+//           {/* EMPTY */}
+//           {!loading && rows.length === 0 ? (
+//             <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16">
+//               <EmptyState
+//                 title="No deliveries found"
+//                 subtitle="Try changing search or delivery status."
+//               />
+//             </div>
+//           ) : null}
+
+//           {/* LOADING */}
+//           {loading ? (
+//             <div className="flex items-center justify-center py-20">
+//               <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-violet-600" />
+//             </div>
+//           ) : null}
+
+//           {/* TABLE */}
+//           {!loading && rows.length > 0 ? (
+//             <div className="overflow-hidden rounded-3xl border border-slate-100">
+//               <div className="overflow-x-auto">
+//                 <Table className="min-w-[950px]">
+//                   <thead className="bg-slate-50">
+//                     <tr>
+//                       <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Delivery
+//                       </Th>
+
+//                       <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Customer
+//                       </Th>
+
+//                       <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Location
+//                       </Th>
+
+//                       <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Status
+//                       </Th>
+
+//                       <Th className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Scheduled
+//                       </Th>
+
+//                       <Th className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+//                         Actions
+//                       </Th>
 //                     </tr>
-//                   )
-//                 })}
-//               </tbody>
-//             </Table>
-//           )}
+//                   </thead>
+
+//                   <tbody>
+//                     {rows.map((d, index) => {
+//                       return (
+//                         <tr
+//                           key={d.id}
+//                           className={`
+//                             border-b border-slate-100
+//                             transition-all duration-150
+//                             hover:bg-violet-50/40
+//                             ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}
+//                           `}
+//                         >
+//                           {/* DELIVERY */}
+//                           <Td className="py-5">
+//                             <div>
+//                               <div className="font-bold tracking-wide text-slate-900">
+//                                 {d.deliveryNo}
+//                               </div>
+
+//                               <div className="mt-1 text-xs text-slate-400">
+//                                 ID: {d.id.slice(0, 8)}
+//                               </div>
+//                             </div>
+//                           </Td>
+
+//                           {/* CUSTOMER */}
+//                           <Td className="py-5">
+//                             <div className="font-semibold text-slate-800">
+//                               {d.customerName}
+//                             </div>
+//                           </Td>
+
+//                           {/* LOCATION */}
+//                           <Td className="max-w-[280px] py-5">
+//                             <div className="truncate text-sm text-slate-600">
+//                               {d.siteName || d.siteAddress || '—'}
+//                             </div>
+//                           </Td>
+
+//                           {/* STATUS */}
+//                           <Td className="py-5">
+//                             {isGodownUser ? (
+//                               <Badge variant={deliveryBadgeVariant(d.status)}>
+//                                 {deliveryStatusLabel(d.status)}
+//                               </Badge>
+//                             ) : (
+//                               <DeliveryStatusSelect
+//                                 deliveryId={d.id}
+//                                 status={d.status}
+//                                 onUpdated={(status) => {
+//                                   setDeliveries((prev) =>
+//                                     prev.map((row) => (row.id === d.id ? { ...row, status } : row)),
+//                                   )
+//                                 }}
+//                                 onError={(msg) => setError(msg)}
+//                               />
+//                             )}
+//                           </Td>
+
+//                           {/* DATE */}
+//                           <Td className="py-5 text-right">
+//                             <div className="text-sm font-medium text-slate-700">
+//                               {formatDateTime(d.deliveryAt)}
+//                             </div>
+//                           </Td>
+
+//                           {/* ACTIONS */}
+//                           <Td className="py-5 text-right">
+//                             <div className="flex flex-col items-end gap-2">
+//                               {isGodownUser ? (
+//                                 <GodownDeliveryWorkflow
+//                                   delivery={{
+//                                     id: d.id,
+//                                     status: d.status,
+//                                     lines: d.lines,
+//                                   }}
+//                                   compact
+//                                   onUpdated={loadDeliveries}
+//                                   onError={(msg) => setError(msg)}
+//                                 />
+//                               ) : null}
+//                               <DeliveryRowActions
+//                                 delivery={d}
+//                                 onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
+//                                 onScan={(path) => nav(path)}
+//                                 onDeleted={() => {
+//                                   removeFromList(d.id)
+//                                   setSuccessMessage(`${d.deliveryNo} deleted successfully`)
+//                                   setError(null)
+//                                 }}
+//                                 onError={(msg) => setError(msg)}
+//                               />
+//                             </div>
+//                           </Td>
+//                         </tr>
+//                       )
+//                     })}
+//                   </tbody>
+//                 </Table>
+//               </div>
+//             </div>
+//           ) : null}
 //         </CardContent>
 //       </Card>
 
+//       {/* CREATE MODAL */}
 //       <CreateDeliveryModal
 //         open={createOpen}
 //         onClose={() => setCreateOpen(false)}
 //         onCreated={loadDeliveries}
+//       />
+
+//       <CreateDeliveryModal
+//         open={!!editDeliveryId}
+//         deliveryId={editDeliveryId}
+//         onClose={() => setEditDeliveryId(null)}
+//         onCreated={loadDeliveries}
+//         onUpdated={loadDeliveries}
 //       />
 //     </div>
 //   )
@@ -191,10 +543,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
-import { Button } from '../../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
-import { Input } from '../../components/ui/Input'
-import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 import { DeliveryStatusSelect } from '../../components/delivery/DeliveryStatusSelect'
@@ -240,28 +588,97 @@ type DeliveryRow = {
   }>
 }
 
+// ── icons ──────────────────────────────────────────────────────────────────
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="15" height="15" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M16.5 16.5 21 21" />
+    </svg>
+  )
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <path d="M23 4v6h-6" />
+      <path d="M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  )
+}
+
+// ── action icon button ─────────────────────────────────────────────────────
+
+function IconBtn({
+  children,
+  title,
+  onClick,
+  danger = false,
+}: {
+  children: React.ReactNode
+  title: string
+  onClick?: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 34,
+        height: 34,
+        borderRadius: 9,
+        border: '1px solid #e2e8f0',
+        background: '#fff',
+        color: danger ? '#dc2626' : '#64748b',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+        flexShrink: 0,
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement
+        if (danger) {
+          el.style.background = '#fef2f2'
+          el.style.borderColor = '#fecaca'
+          el.style.color = '#dc2626'
+        } else {
+          el.style.background = '#f0eeff'
+          el.style.borderColor = '#c4b5fd'
+          el.style.color = '#4f46e5'
+        }
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement
+        el.style.background = '#fff'
+        el.style.borderColor = '#e2e8f0'
+        el.style.color = danger ? '#dc2626' : '#64748b'
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ── main component ─────────────────────────────────────────────────────────
+
 export function DeliveriesListPage() {
   const auth = useAuth()
   const nav = useNavigate()
   const [searchParams] = useSearchParams()
   const statusFromUrl = searchParams.get('status') as Tab | null
 
+  const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVERED','RETURN_PICKUP','PENDING_RETURN','COMPLETED']
+
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>(
-    statusFromUrl &&
-      [
-        'all',
-        'PROCESSED',
-        'PACKED',
-        'OUT_FOR_DELIVERY',
-        'DELIVERED',
-        'RETURN_PICKUP',
-        'PENDING_RETURN',
-        'COMPLETED',
-      ].includes(statusFromUrl)
-      ? statusFromUrl
-      : 'all',
+    statusFromUrl && validTabs.includes(statusFromUrl) ? statusFromUrl : 'all'
   )
   const [q, setQ] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
@@ -275,42 +692,29 @@ export function DeliveriesListPage() {
 
   const isGodownUser = auth.status === 'authenticated' && auth.user.role === 'GODOWN'
 
-  const removeFromList = (deliveryId: string) => {
-    setDeliveries((prev) => prev.filter((row) => row.id !== deliveryId))
-  }
+  const removeFromList = (id: string) =>
+    setDeliveries((prev) => prev.filter((r) => r.id !== id))
 
   const loadDeliveries = () => {
     const token = getToken()
     if (!token) return
-
     setLoading(true)
     setError(null)
-
     apiFetch<DeliveryRow[]>('/deliveries?limit=200', { token })
       .then(setDeliveries)
-      .catch((e: unknown) => {
-        const msg =
-          e && typeof e === 'object' && 'message' in e
-            ? String((e as { message: string }).message)
-            : 'Failed to load deliveries'
-
-        setError(msg)
-      })
+      .catch((e: unknown) =>
+        setError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Failed to load deliveries')
+      )
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => {
-    loadDeliveries()
-  }, [])
+  useEffect(() => { loadDeliveries() }, [])
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
-
     return deliveries.filter((d) => {
       if (tab !== 'all' && d.status !== tab) return false
-
       if (!s) return true
-
       return (
         d.deliveryNo.toLowerCase().includes(s) ||
         d.customerName.toLowerCase().includes(s) ||
@@ -335,390 +739,338 @@ export function DeliveriesListPage() {
     return <DriverDeliveriesDashboard />
   }
 
-  return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Deliveries
-          </h1>
+  // ── column header style ──────────────────────────────────────────────────
 
-          <p className="mt-2 text-sm text-slate-500">
+  const colHead: React.CSSProperties = {
+    padding: '10px 16px',
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.07em',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+    borderBottom: '1px solid #f1f5f9',
+    background: 'transparent',
+  }
+
+  // ── render ────────────────────────────────────────────────────────────────
+
+  return (
+    // AppShell provides 20px 24px padding — no extra wrapper needed
+    <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* ── PAGE HEADER ── */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start',
+        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+      }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Deliveries</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
             Manage customer deliveries, schedules and dispatch workflow.
           </p>
         </div>
 
-        {/* {canCreate ? (
-          <Button
+        {canCreate && (
+          <button
             onClick={() => setCreateOpen(true)}
-            className="
-              inline-flex h-12 items-center justify-center gap-2
-              rounded-2xl border-0
-              bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600
-              px-5 text-sm font-semibold text-white
-              shadow-lg shadow-violet-500/20
-              transition-all duration-200
-              hover:scale-[1.02]
-              hover:shadow-xl hover:shadow-violet-500/30
-              active:scale-[0.99]
-            "
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 22px', borderRadius: 12, border: 'none',
+              background: '#4f46e5', fontSize: 14, fontWeight: 600,
+              color: '#fff', cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(79,70,229,0.3)',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = '#4338ca')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '#4f46e5')}
           >
-            <svg
-              className="h-5 w-5 flex-shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M12 5v14M5 12h14"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" />
             </svg>
-
-            <span className="leading-none">Create Delivery</span>
-          </Button>
-        ) : null} */}
-
-        {canCreate ? (
-  <Button
-    onClick={() => setCreateOpen(true)}
-    className="
-      group flex h-12 items-center
-      rounded-1xl border-0
-      bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600
-      px-5
-      text-white
-      shadow-lg shadow-violet-500/25
-      transition-all duration-200
-      hover:scale-[1.02]
-      hover:shadow-xl hover:shadow-violet-500/30
-      active:scale-[0.99]
-    "
-  >
-    {/* INNER WRAPPER */}
-    <div className="flex items-center gap-3">
-      {/* ICON BOX */}
-      <div
-        className="
-          flex h-8 w-10 items-center justify-center
-          rounded-xl
-          bg-white/10
-          ring-1 ring-white/20
-        "
-      >
-        <svg
-          className="h-5 w-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden
-        >
-          <path
-            d="M12 5V19"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M5 12H19"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-        </svg>
+             Create Delivery
+          </button>
+        )}
       </div>
 
-      {/* TEXT */}
-      <div className="flex items-center">
-        <span className="text-base font-semibold leading-none">
-          Create Delivery
-        </span>
-      </div>
-    </div>
-  </Button>
-) : null}
-      </div>
+      {/* ── MAIN CARD ── */}
+      <div style={{
+        background: '#fff',
+        border: '1px solid #e8eaf0',
+        borderRadius: 16,
+        overflow: 'hidden',
+      }}>
 
-      {/* MAIN CARD */}
-      <Card className="overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.12)]">
-        {/* TOP BAR */}
-        <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
-                Delivery List
-              </CardTitle>
-
-              <p className="mt-1 text-sm text-slate-500">
-                {rows.length} deliveries available
-              </p>
+        {/* ── CARD HEADER: title + search + refresh ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '18px 22px', borderBottom: '1px solid #f1f5f9',
+          flexWrap: 'wrap', gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Delivery List</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+              {rows.length} deliveries available
             </div>
+          </div>
 
-            <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
-              {/* SEARCH */}
-              <div className="relative w-full xl:w-80">
-                <svg
-                  className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M21 21l-4.35-4.35"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <circle
-                    cx="11"
-                    cy="11"
-                    r="6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search deliveries..."
-                  className="
-                    h-12 rounded-2xl border-slate-200
-                    bg-white pl-11 text-sm
-                    shadow-sm transition-all
-                    focus:border-violet-400 focus:ring-4 focus:ring-violet-100
-                  "
-                />
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* search */}
+            <div style={{ position: 'relative', width: 220 }}>
+              <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                <SearchIcon />
               </div>
-
-              {/* REFRESH */}
-              <Button
-                variant="secondary"
-                onClick={loadDeliveries}
-                className="
-                  h-12 rounded-2xl border border-slate-200
-                  bg-white px-5 font-semibold text-slate-700
-                  shadow-sm transition-all
-                  hover:border-slate-300 hover:bg-slate-50
-                "
-              >
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-6">
-          {/* STATUS TABS */}
-          <div className="mb-6 flex flex-wrap gap-3">
-            {tabs.map((t) => {
-              const active = tab === t.id
-
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`
-                    rounded-2xl px-5 py-2.5 text-sm font-semibold
-                    transition-all duration-200
-                    ${
-                      active
-                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20'
-                        : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }
-                  `}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* ERROR */}
-          {error ? (
-            <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-              {error}
-            </div>
-          ) : null}
-
-          {/* SUCCESS */}
-          {successMessage ? (
-            <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-              <span>{successMessage}</span>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg px-2 py-1 text-emerald-700 hover:bg-emerald-100"
-                onClick={() => setSuccessMessage(null)}
-                aria-label="Dismiss"
-              >
-                ×
-              </button>
-            </div>
-          ) : null}
-
-          {/* EMPTY */}
-          {!loading && rows.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16">
-              <EmptyState
-                title="No deliveries found"
-                subtitle="Try changing search or delivery status."
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search deliveries..."
+                style={{
+                  width: '100%', height: 36, paddingLeft: 34, paddingRight: 12,
+                  border: '1px solid #e2e8f0', borderRadius: 9, fontSize: 13,
+                  color: '#374151', background: '#f8fafc', outline: 'none',
+                  boxSizing: 'border-box', transition: 'border-color 0.15s',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
-          ) : null}
 
-          {/* LOADING */}
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-violet-600" />
-            </div>
-          ) : null}
+            {/* refresh */}
+            <button
+              onClick={loadDeliveries}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                height: 36, padding: '0 16px', borderRadius: 9,
+                border: '1px solid #e2e8f0', background: '#fff',
+                fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLElement
+                el.style.background = '#f8fafc'
+                el.style.borderColor = '#c7d2fe'
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLElement
+                el.style.background = '#fff'
+                el.style.borderColor = '#e2e8f0'
+              }}
+            >
+              <RefreshIcon />
+              Refresh
+            </button>
+          </div>
+        </div>
 
-          {/* TABLE */}
-          {!loading && rows.length > 0 ? (
-            <div className="overflow-hidden rounded-3xl border border-slate-100">
-              <div className="overflow-x-auto">
-                <Table className="min-w-[950px]">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Delivery
-                      </Th>
+        {/* ── TABS ── */}
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 6,
+          padding: '14px 22px', borderBottom: '1px solid #f1f5f9',
+        }}>
+          {tabs.map((t) => {
+            const active = tab === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: active ? 700 : 500,
+                  border: active ? 'none' : '1px solid #e2e8f0',
+                  background: active ? '#4f46e5' : '#fff',
+                  color: active ? '#fff' : '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = '#f0eeff'
+                    el.style.color = '#4f46e5'
+                    el.style.borderColor = '#c4b5fd'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = '#fff'
+                    el.style.color = '#64748b'
+                    el.style.borderColor = '#e2e8f0'
+                  }
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
 
-                      <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Customer
-                      </Th>
+        {/* ── ERROR ── */}
+        {error && (
+          <div style={{
+            margin: '12px 22px', padding: '10px 14px', borderRadius: 10,
+            background: '#fef2f2', color: '#b91c1c', fontSize: 13,
+            border: '1px solid #fecaca',
+          }}>{error}</div>
+        )}
 
-                      <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Location
-                      </Th>
+        {/* ── SUCCESS ── */}
+        {successMessage && (
+          <div style={{
+            margin: '12px 22px', padding: '10px 14px', borderRadius: 10,
+            background: '#f0fdf4', color: '#15803d', fontSize: 13,
+            border: '1px solid #bbf7d0',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>{successMessage}</span>
+            <button onClick={() => setSuccessMessage(null)} style={{ background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', fontWeight: 700, fontSize: 16, lineHeight: 1 }}>×</button>
+          </div>
+        )}
 
-                      <Th className="py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Status
-                      </Th>
+        {/* ── LOADING ── */}
+        {loading && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              border: '3px solid #e2e8f0', borderTopColor: '#6366f1',
+              animation: 'spin 0.7s linear infinite',
+            }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
 
-                      <Th className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Scheduled
-                      </Th>
+        {/* ── EMPTY ── */}
+        {!loading && rows.length === 0 && (
+          <div style={{ padding: '48px 22px', textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#475569' }}>No deliveries found</div>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>Try changing the search or delivery status filter.</div>
+          </div>
+        )}
 
-                      <Th className="py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Actions
-                      </Th>
-                    </tr>
-                  </thead>
+        {/* ── TABLE ── */}
+        {!loading && rows.length > 0 && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+              <thead>
+                <tr>
+                  <th style={colHead}>Delivery</th>
+                  <th style={colHead}>Customer</th>
+                  <th style={colHead}>Location</th>
+                  <th style={colHead}>Status</th>
+                  <th style={{ ...colHead, textAlign: 'right' }}>Scheduled</th>
+                  <th style={{ ...colHead, textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((d, index) => (
+                  <tr
+                    key={d.id}
+                    style={{
+                      background: index % 2 === 0 ? '#ffffff' : '#fafbfc',
+                      borderBottom: '1px solid #f1f5f9',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(238,242,255,0.5)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = index % 2 === 0 ? '#ffffff' : '#fafbfc')}
+                  >
+                    {/* DELIVERY */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', letterSpacing: '0.01em' }}>
+                        {d.deliveryNo}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                        ID: {d.id.slice(0, 8)}
+                      </div>
+                    </td>
 
-                  <tbody>
-                    {rows.map((d, index) => {
-                      return (
-                        <tr
-                          key={d.id}
-                          className={`
-                            border-b border-slate-100
-                            transition-all duration-150
-                            hover:bg-violet-50/40
-                            ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}
-                          `}
-                        >
-                          {/* DELIVERY */}
-                          <Td className="py-5">
-                            <div>
-                              <div className="font-bold tracking-wide text-slate-900">
-                                {d.deliveryNo}
-                              </div>
+                    {/* CUSTOMER */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                        {d.customerName}
+                      </span>
+                    </td>
 
-                              <div className="mt-1 text-xs text-slate-400">
-                                ID: {d.id.slice(0, 8)}
-                              </div>
-                            </div>
-                          </Td>
+                    {/* LOCATION */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', maxWidth: 200 }}>
+                      <span style={{
+                        fontSize: 13, color: '#64748b',
+                        display: 'block', overflow: 'hidden',
+                        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {d.siteName || d.siteAddress || '—'}
+                      </span>
+                    </td>
 
-                          {/* CUSTOMER */}
-                          <Td className="py-5">
-                            <div className="font-semibold text-slate-800">
-                              {d.customerName}
-                            </div>
-                          </Td>
+                    {/* STATUS */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
+                      {isGodownUser ? (
+                        <Badge variant={deliveryBadgeVariant(d.status)}>
+                          {deliveryStatusLabel(d.status)}
+                        </Badge>
+                      ) : (
+                        <DeliveryStatusSelect
+                          deliveryId={d.id}
+                          status={d.status}
+                          onUpdated={(status) =>
+                            setDeliveries((prev) =>
+                              prev.map((row) => row.id === d.id ? { ...row, status } : row)
+                            )
+                          }
+                          onError={(msg) => setError(msg)}
+                        />
+                      )}
+                    </td>
 
-                          {/* LOCATION */}
-                          <Td className="max-w-[280px] py-5">
-                            <div className="truncate text-sm text-slate-600">
-                              {d.siteName || d.siteAddress || '—'}
-                            </div>
-                          </Td>
+                    {/* SCHEDULED */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', whiteSpace: 'nowrap' }}>
+                        {formatDateTime(d.deliveryAt)}
+                      </span>
+                    </td>
 
-                          {/* STATUS */}
-                          <Td className="py-5">
-                            {isGodownUser ? (
-                              <Badge variant={deliveryBadgeVariant(d.status)}>
-                                {deliveryStatusLabel(d.status)}
-                              </Badge>
-                            ) : (
-                              <DeliveryStatusSelect
-                                deliveryId={d.id}
-                                status={d.status}
-                                onUpdated={(status) => {
-                                  setDeliveries((prev) =>
-                                    prev.map((row) => (row.id === d.id ? { ...row, status } : row)),
-                                  )
-                                }}
-                                onError={(msg) => setError(msg)}
-                              />
-                            )}
-                          </Td>
+                    {/* ACTIONS */}
+                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {isGodownUser && (
+                          <GodownDeliveryWorkflow
+                            delivery={{ id: d.id, status: d.status, lines: d.lines }}
+                            compact
+                            onUpdated={loadDeliveries}
+                            onError={(msg) => setError(msg)}
+                          />
+                        )}
+                        <DeliveryRowActions
+                          delivery={d}
+                          onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
+                          onScan={(path) => nav(path)}
+                          onDeleted={() => {
+                            removeFromList(d.id)
+                            setSuccessMessage(`${d.deliveryNo} deleted successfully`)
+                            setError(null)
+                          }}
+                          onError={(msg) => setError(msg)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-                          {/* DATE */}
-                          <Td className="py-5 text-right">
-                            <div className="text-sm font-medium text-slate-700">
-                              {formatDateTime(d.deliveryAt)}
-                            </div>
-                          </Td>
-
-                          {/* ACTIONS */}
-                          <Td className="py-5 text-right">
-                            <div className="flex flex-col items-end gap-2">
-                              {isGodownUser ? (
-                                <GodownDeliveryWorkflow
-                                  delivery={{
-                                    id: d.id,
-                                    status: d.status,
-                                    lines: d.lines,
-                                  }}
-                                  compact
-                                  onUpdated={loadDeliveries}
-                                  onError={(msg) => setError(msg)}
-                                />
-                              ) : null}
-                              <DeliveryRowActions
-                                delivery={d}
-                                onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
-                                onScan={(path) => nav(path)}
-                                onDeleted={() => {
-                                  removeFromList(d.id)
-                                  setSuccessMessage(`${d.deliveryNo} deleted successfully`)
-                                  setError(null)
-                                }}
-                                onError={(msg) => setError(msg)}
-                              />
-                            </div>
-                          </Td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </Table>
-              </div>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {/* CREATE MODAL */}
+      {/* ── MODALS ── */}
       <CreateDeliveryModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={loadDeliveries}
       />
-
       <CreateDeliveryModal
         open={!!editDeliveryId}
         deliveryId={editDeliveryId}

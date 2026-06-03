@@ -1,12 +1,12 @@
-// import { useEffect, useMemo, useState } from 'react'
-// import { Link } from 'react-router-dom'
+// import { useEffect, useMemo, useState, type ReactNode } from 'react'
+// import { Link, Navigate } from 'react-router-dom'
+
 // import { formatNumber } from '../../lib/format'
 // import { Button } from '../../components/ui/Button'
-// import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 // import { Input } from '../../components/ui/Input'
 // import { Modal } from '../../components/ui/Modal'
 // import { PageHeader } from '../../components/ui/PageHeader'
-// import { EmptyState, Table, Td, Th } from '../../components/ui/Table'
+// import { EmptyState } from '../../components/ui/Table'
 // import { apiFetch } from '../../lib/api'
 // import { getToken, useAuth } from '../../auth/store'
 
@@ -21,31 +21,224 @@
 //   manager?: string
 // }
 
+// // ── icons ──────────────────────────────────────────────────────────────────
+
+// function EyeIcon() {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+//       <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="1.7" />
+//       <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+//     </svg>
+//   )
+// }
+
+// function PencilIcon() {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+//       <path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+//       <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" strokeWidth="1.7" />
+//     </svg>
+//   )
+// }
+
+// function TrashIcon() {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+//       <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+//     </svg>
+//   )
+// }
+
+// function SearchIcon() {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden>
+//       <circle cx="11" cy="11" r="7" stroke="#94a3b8" strokeWidth="1.8" />
+//       <path d="M16.5 16.5 21 21" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" />
+//     </svg>
+//   )
+// }
+
+// // ── action button style ────────────────────────────────────────────────────
+
+// const actionBtn: React.CSSProperties = {
+//   display: 'inline-flex',
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   width: 34,
+//   height: 34,
+//   borderRadius: 10,
+//   border: '1px solid #e2e8f0',
+//   background: '#fff',
+//   color: '#64748b',
+//   cursor: 'pointer',
+//   transition: 'all 0.15s',
+// }
+
+// // ── stat card ──────────────────────────────────────────────────────────────
+
+// function StatCard({
+//   label,
+//   value,
+//   variant = 'white',
+// }: {
+//   label: string
+//   value: string | number
+//   variant?: 'purple' | 'white'
+// }) {
+//   if (variant === 'purple') {
+//     return (
+//       <div
+//         style={{
+//           background: 'linear-gradient(135deg,#4338ca 0%,rgb(49, 46, 129) 100%)',
+//           borderRadius: 20,
+//           padding: '20px 24px',
+//           flex: '1.5',
+//           minWidth: 0,
+//           position: 'relative',
+//           overflow: 'hidden',
+//         }}
+//       >
+//         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 300, marginBottom: 12 }}>
+//           {label}
+//         </div>
+//         <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{value}</div>
+//         {/* decorative circles */}
+//         <div style={{
+//           position: 'absolute', right: -30, top: -30, width: 130, height: 130,
+//           borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
+//         }} />
+//         <div style={{
+//           position: 'absolute', right: 20, bottom: -40, width: 90, height: 90,
+//           borderRadius: '50%', background: 'rgba(255,255,255,0.06)',
+//         }} />
+//       </div>
+//     )
+//   }
+//   return (
+//     <div
+//       style={{
+//         background: '#fff',
+//         border: '1px solid #e2e8f0',
+//         borderRadius: 20,
+//         padding: '26px 30px',
+//         flex: 1,
+//         minWidth: 0,
+//         position: 'relative',
+//         overflow: 'hidden',
+//       }}
+//     >
+//       <div style={{ fontSize: 13, color: '#64748b', fontWeight: 300, marginBottom: 12 }}>{label}</div>
+//       <div style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</div>
+//       {/* decorative circle */}
+//       <div style={{
+//         position: 'absolute', right: -30, bottom: -30, width: 120, height: 120,
+//         borderRadius: '50%', background: '#f1f5f9',
+//       }} />
+//     </div>
+//   )
+// }
+
+// // ── table th / td ─────────────────────────────────────────────────────────
+
+// function Th({ children, align = 'left' }: { children: ReactNode; align?: 'left' | 'right' }) {
+//   return (
+//     <th
+//       style={{
+//         padding: '12px 16px',
+//         fontSize: 11,
+//         fontWeight: 700,
+//         color: '#94a3b8',
+//         textTransform: 'uppercase',
+//         letterSpacing: '0.06em',
+//         textAlign: align,
+//         whiteSpace: 'nowrap',
+//         background: '#f8fafc',
+//         borderBottom: '1px solid #f1f5f9',
+//       }}
+//     >
+//       {children}
+//     </th>
+//   )
+// }
+
+// function Td({
+//   children,
+//   align = 'left',
+//   truncate = false,
+//   style: extraStyle,
+// }: {
+//   children: ReactNode
+//   align?: 'left' | 'right'
+//   truncate?: boolean
+//   style?: React.CSSProperties
+// }) {
+//   return (
+//     <td
+//       style={{
+//         padding: '16px',
+//         fontSize: 13,
+//         color: '#374151',
+//         textAlign: align,
+//         maxWidth: truncate ? 180 : undefined,
+//         overflow: truncate ? 'hidden' : undefined,
+//         textOverflow: truncate ? 'ellipsis' : undefined,
+//         whiteSpace: truncate ? 'nowrap' : undefined,
+//         borderBottom: '1px solid #f1f5f9',
+//         verticalAlign: 'middle',
+//         ...extraStyle,
+//       }}
+//     >
+//       {children}
+//     </td>
+//   )
+// }
+
+// // ── main component ─────────────────────────────────────────────────────────
+
 // export function GodownsListPage() {
 //   const auth = useAuth()
+
+//   if (
+//     auth.status === 'authenticated' &&
+//     auth.user.role === 'GODOWN' &&
+//     auth.user.godownId
+//   ) {
+//     return <Navigate to={`/godowns/${auth.user.godownId}`} replace />
+//   }
+
 //   const isAdmin = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
+
 //   const [godowns, setGodowns] = useState<GodownRow[]>([])
 //   const [stockByGodown, setStockByGodown] = useState<Record<string, number>>({})
 //   const [loading, setLoading] = useState(true)
 //   const [error, setError] = useState<string | null>(null)
 //   const [q, setQ] = useState('')
+
+//   // ── add modal ──
 //   const [addOpen, setAddOpen] = useState(false)
-//   const [addForm, setAddForm] = useState({
-//     name: '',
-//     code: '',
-//     address: '',
-//     mobile: '',
-//     location: '',
-//     password: '',
-//   })
+//   const [addForm, setAddForm] = useState({ name: '', code: '', address: '', mobile: '', location: '', password: '' })
 //   const [saving, setSaving] = useState(false)
+
+//   // ── edit modal ──
+//   const [editOpen, setEditOpen] = useState(false)
+//   const [editingGodownId, setEditingGodownId] = useState<string | null>(null)
+//   const [editForm, setEditForm] = useState({ name: '', code: '', address: '', mobile: '', location: '', newPassword: '' })
+//   const [editSaving, setEditSaving] = useState(false)
+
+//   // ── delete modal ──
+//   const [deleteOpen, setDeleteOpen] = useState(false)
+//   const [deletingGodown, setDeletingGodown] = useState<GodownRow | null>(null)
+//   const [deleteSaving, setDeleteSaving] = useState(false)
+
+//   const openEdit = (g: GodownRow) => {
+//     setEditingGodownId(g.id)
+//     setEditForm({ name: g.name || '', code: g.code || '', address: g.address || '', mobile: g.mobile || '', location: g.location || '', newPassword: '' })
+//     setEditOpen(true)
+//   }
 
 //   const load = () => {
 //     const token = getToken()
-//     if (!token) {
-//       setLoading(false)
-//       return
-//     }
+//     if (!token) { setLoading(false); return }
 //     setError(null)
 //     setLoading(true)
 //     Promise.all([
@@ -68,89 +261,287 @@
 //       .finally(() => setLoading(false))
 //   }
 
+//   useEffect(() => { load() }, [])
 //   useEffect(() => {
-//     load()
+//     const onStockChanged = () => load()
+//     window.addEventListener('godown-stock-changed', onStockChanged)
+//     return () => window.removeEventListener('godown-stock-changed', onStockChanged)
 //   }, [])
 
 //   const rows = useMemo(() => {
 //     const s = q.trim().toLowerCase()
 //     if (!s) return godowns
-//     return godowns.filter((g) => {
-//       const hay = [
-//         g.name,
-//         g.code,
-//         g.address,
-//         g.mobile,
-//         g.location,
-//         g.city,
-//         g.manager,
-//       ]
-//         .filter(Boolean)
-//         .join(' ')
-//         .toLowerCase()
-//       return hay.includes(s)
-//     })
+//     return godowns.filter((g) =>
+//       [g.name, g.code, g.address, g.mobile, g.location, g.city, g.manager]
+//         .filter(Boolean).join(' ').toLowerCase().includes(s)
+//     )
 //   }, [godowns, q])
 
-//   return (
-//     <div>
-//       <PageHeader
-//         title="Godowns"
-//         subtitle="Manage warehouses and view stock distribution."
-//         right={
-//           isAdmin ? (
-//             <Button variant="secondary" onClick={() => setAddOpen(true)}>
-//               Add Godown
-//             </Button>
-//           ) : null
-//         }
-//       />
+//   const totalStock = Object.values(stockByGodown).reduce((a, b) => a + b, 0)
 
+//   // ── render ─────────────────────────────────────────────────────────────
+
+//   return (
+//     <div style={{ fontFamily: 'inherit' }}>
+//       {/* ── page header ── */}
+//       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+//         <div>
+//           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Godowns</h1>
+//           <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+//             Manage warehouses, inventory flow and stock distribution.
+//           </p>
+//         </div>
+//         {isAdmin && (
+//           <button
+//             onClick={() => setAddOpen(true)}
+//             style={{
+//               display: 'flex', alignItems: 'center', gap: 6,
+//               padding: '10px 22px', borderRadius: 12, border: 'none',
+//               background: '#4338ca', fontSize: 14, fontWeight: 600,
+//               color: '#fff', cursor: 'pointer',
+//             }}
+//           >
+//             <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5">
+//               <path d="M12 5v14M5 12h14" />
+//             </svg>
+//             Add Godown
+//           </button>
+//         )}
+//       </div>
+
+//       {/* ── error banner ── */}
+//       {error && (
+//         <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 12, background: '#fef2f2', color: '#b91c1c', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+//           <span>{error}</span>
+//           <button onClick={load} style={{ background: 'none', border: 'none', color: '#b91c1c', fontWeight: 600, cursor: 'pointer' }}>Retry</button>
+//         </div>
+//       )}
+
+//       {/* ── stat cards ── */}
+//       {/* <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+//         <StatCard label="Total Godowns" value={godowns.length} variant="purple" />
+//         <StatCard label="Total Stock Units" value={formatNumber(totalStock)} />
+//         <StatCard label="Search Results" value={rows.length} />
+//       </div> */}
+
+//       {/* ── stat cards ── */}
+// <div
+//   style={{
+//     display: 'grid',
+//     gridTemplateColumns: '1.4fr 1fr 1fr',
+//     gap: 20,
+//     marginBottom: 24,
+//   }}
+// >
+//   <StatCard
+//     label="Total Godowns"
+//     value={godowns.length}
+//     variant="purple"
+//   />
+
+//   <StatCard
+//     label="Total Stock Units"
+//     value={formatNumber(totalStock)}
+//   />
+
+//   <StatCard
+//     label="Search Results"
+//     value={rows.length}
+//   />
+// </div>
+
+//       {/* ── table card ── */}
+//       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden' }}>
+//         {/* card header */}
+//         <div style={{
+//           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+//           padding: '20px 24px', borderBottom: '1px solid #f1f5f9',
+//           flexWrap: 'wrap', gap: 12,
+//         }}>
+//           <div>
+//             <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Godown List</div>
+//             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Warehouse details and stock overview</div>
+//           </div>
+//           {/* search */}
+//           <div style={{ position: 'relative', width: 240 }}>
+//             <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+//               <SearchIcon />
+//             </div>
+//             <input
+//               value={q}
+//               onChange={(e) => setQ(e.target.value)}
+//               placeholder="Search godown..."
+//               style={{
+//                 width: '100%', height: 38, paddingLeft: 36, paddingRight: 12,
+//                 border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13,
+//                 color: '#374151', background: '#f8fafc', outline: 'none',
+//                 boxSizing: 'border-box',
+//               }}
+//             />
+//           </div>
+//         </div>
+
+//         {/* table body */}
+//         {loading ? (
+//           <div style={{ padding: 32, fontSize: 13, color: '#94a3b8' }}>Loading…</div>
+//         ) : rows.length === 0 ? (
+//           <div style={{ padding: 32 }}>
+//             <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+//               <div style={{ fontSize: 32, marginBottom: 8 }}>🏭</div>
+//               <div style={{ fontWeight: 600, color: '#475569' }}>No godowns found</div>
+//               <div style={{ fontSize: 12, marginTop: 4 }}>Try a different search or add a new godown.</div>
+//             </div>
+//           </div>
+//         ) : (
+//           <div style={{ overflowX: 'auto' }}>
+//             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+//               <thead>
+//                 <tr>
+//                   <Th>Code</Th>
+//                   <Th>Name</Th>
+//                   <Th>Location</Th>
+//                   <Th>Mobile</Th>
+//                   <Th>Address</Th>
+//                   <Th align="right">Stock</Th>
+//                   <Th align="right">Actions</Th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {rows.map((g, idx) => (
+//                   <tr
+//                     key={g.id || `row-${idx}`}
+//                     style={{ transition: 'background 0.15s' }}
+//                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
+//                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+//                   >
+//                     {/* CODE */}
+//                     <Td>
+//                       <span style={{
+//                         display: 'inline-block', padding: '4px 10px',
+//                         borderRadius: 8, background: '#f1f5f9',
+//                         fontFamily: 'monospace', fontSize: 12, fontWeight: 700,
+//                         color: '#334155', letterSpacing: '0.02em',
+//                       }}>
+//                         {g.code || '—'}
+//                       </span>
+//                     </Td>
+
+//                     {/* NAME */}
+//                     <Td>
+//                       <span style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>{g.name || '—'}</span>
+//                     </Td>
+
+//                     {/* LOCATION */}
+//                     <Td truncate>{g.location || '—'}</Td>
+
+//                     {/* MOBILE */}
+//                     <Td>{g.mobile || '—'}</Td>
+
+//                     {/* ADDRESS */}
+//                     <Td truncate>{g.address || '—'}</Td>
+
+//                     {/* STOCK */}
+//                     <Td align="right">
+//                       <span style={{ fontWeight: 700, color: '#4338ca', fontSize: 14 }}>
+//                         {formatNumber(stockByGodown[g.id] ?? 0)}
+//                       </span>
+//                     </Td>
+
+//                     {/* ACTIONS */}
+//                     <Td align="right">
+//                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+//                         <Link
+//                           to={`/godowns/${g.id}`}
+//                           title="View godown"
+//                           style={{ ...actionBtn, textDecoration: 'none' }}
+//                           onMouseEnter={(e) => {
+//                             const el = e.currentTarget as HTMLElement
+//                             el.style.background = '#ede9fe'
+//                             el.style.borderColor = '#c4b5fd'
+//                             el.style.color = '#4338ca'
+//                           }}
+//                           onMouseLeave={(e) => {
+//                             const el = e.currentTarget as HTMLElement
+//                             el.style.background = '#fff'
+//                             el.style.borderColor = '#e2e8f0'
+//                             el.style.color = '#64748b'
+//                           }}
+//                         >
+//                           <EyeIcon />
+//                         </Link>
+//                         {isAdmin && (
+//                           <>
+//                             <button
+//                               type="button"
+//                               title="Edit godown"
+//                               style={actionBtn}
+//                               onClick={() => openEdit(g)}
+//                               onMouseEnter={(e) => {
+//                                 const el = e.currentTarget as HTMLElement
+//                                 el.style.background = '#ede9fe'
+//                                 el.style.borderColor = '#c4b5fd'
+//                                 el.style.color = '#4338ca'
+//                               }}
+//                               onMouseLeave={(e) => {
+//                                 const el = e.currentTarget as HTMLElement
+//                                 el.style.background = '#fff'
+//                                 el.style.borderColor = '#e2e8f0'
+//                                 el.style.color = '#64748b'
+//                               }}
+//                             >
+//                               <PencilIcon />
+//                             </button>
+//                             <button
+//                               type="button"
+//                               title="Delete godown"
+//                               style={actionBtn}
+//                               onClick={() => { setDeletingGodown(g); setDeleteOpen(true) }}
+//                               onMouseEnter={(e) => {
+//                                 const el = e.currentTarget as HTMLElement
+//                                 el.style.background = '#fef2f2'
+//                                 el.style.borderColor = '#fecaca'
+//                                 el.style.color = '#dc2626'
+//                               }}
+//                               onMouseLeave={(e) => {
+//                                 const el = e.currentTarget as HTMLElement
+//                                 el.style.background = '#fff'
+//                                 el.style.borderColor = '#e2e8f0'
+//                                 el.style.color = '#64748b'
+//                               }}
+//                             >
+//                               <TrashIcon />
+//                             </button>
+//                           </>
+//                         )}
+//                       </div>
+//                     </Td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* ── ADD MODAL ── */}
 //       <Modal
 //         open={addOpen}
 //         title="Add godown"
 //         onClose={() => setAddOpen(false)}
 //         footer={
-//           <div className="flex justify-end gap-2">
-//             <Button variant="secondary" onClick={() => setAddOpen(false)}>
-//               Cancel
-//             </Button>
+//           <div className="flex justify-end gap-3">
+//             <Button variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
 //             <Button
-//               disabled={
-//                 saving ||
-//                 !addForm.name.trim() ||
-//                 !addForm.code.trim() ||
-//                 !addForm.mobile.trim() ||
-//                 addForm.password.length < 6
-//               }
+//               disabled={saving || !addForm.name.trim() || !addForm.code.trim() || !addForm.mobile.trim() || addForm.password.length < 6}
 //               onClick={() => {
 //                 const token = getToken()
 //                 if (!token) return
 //                 setSaving(true)
 //                 apiFetch<GodownRow>('/godowns', {
-//                   token,
-//                   method: 'POST',
-//                   body: JSON.stringify({
-//                     name: addForm.name.trim(),
-//                     code: addForm.code.trim(),
-//                     address: addForm.address.trim(),
-//                     mobile: addForm.mobile.trim(),
-//                     location: addForm.location.trim(),
-//                     password: addForm.password,
-//                   }),
+//                   token, method: 'POST',
+//                   body: JSON.stringify({ name: addForm.name.trim(), code: addForm.code.trim(), address: addForm.address.trim(), mobile: addForm.mobile.trim(), location: addForm.location.trim(), password: addForm.password }),
 //                 })
-//                   .then(() => {
-//                     setAddForm({
-//                       name: '',
-//                       code: '',
-//                       address: '',
-//                       mobile: '',
-//                       location: '',
-//                       password: '',
-//                     })
-//                     setAddOpen(false)
-//                     load()
-//                   })
+//                   .then(() => { setAddForm({ name: '', code: '', address: '', mobile: '', location: '', password: '' }); setAddOpen(false); load() })
 //                   .catch((e: any) => setError(e?.message || 'Create failed'))
 //                   .finally(() => setSaving(false))
 //               }}
@@ -161,1043 +552,457 @@
 //         }
 //       >
 //         <div className="space-y-4">
-//           <Input
-//             label="Godown name"
-//             value={addForm.name}
-//             onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-//             placeholder="e.g. North warehouse"
-//           />
-//           <Input
-//             label="Godown code"
-//             value={addForm.code}
-//             onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-//             placeholder="e.g. GD-N01"
-//           />
-//           <Input
-//             label="Address"
-//             value={addForm.address}
-//             onChange={(e) => setAddForm((f) => ({ ...f, address: e.target.value }))}
-//             placeholder="Street, area, PIN"
-//           />
-//           <Input
-//             label="Mobile number"
-//             value={addForm.mobile}
-//             onChange={(e) => setAddForm((f) => ({ ...f, mobile: e.target.value }))}
-//             placeholder="Contact mobile"
-//             inputMode="tel"
-//             autoComplete="tel"
-//           />
-//           <Input
-//             type="password"
-//             label="Godown login password"
-//             value={addForm.password}
-//             onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
-//             placeholder="Min. 6 characters"
-//             autoComplete="new-password"
-//             hint="Stored on the server as a bcrypt hash (plain text is never saved)."
-//           />
-//           <Input
-//             label="Location"
-//             value={addForm.location}
-//             onChange={(e) => setAddForm((f) => ({ ...f, location: e.target.value }))}
-//             placeholder="City / region / landmark"
-//           />
+//           <Input label="Godown name" value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. North warehouse" />
+//           <Input label="Godown code" value={addForm.code} onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="e.g. GD-N01" />
+//           <Input label="Address" value={addForm.address} onChange={(e) => setAddForm((f) => ({ ...f, address: e.target.value }))} placeholder="Street, area, PIN" />
+//           <Input label="Mobile number" value={addForm.mobile} onChange={(e) => setAddForm((f) => ({ ...f, mobile: e.target.value }))} placeholder="Contact mobile" inputMode="tel" autoComplete="tel" />
+//           <Input type="password" label="Godown login password" value={addForm.password} onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))} placeholder="Min. 6 characters" autoComplete="new-password" />
+//           <Input label="Location" value={addForm.location} onChange={(e) => setAddForm((f) => ({ ...f, location: e.target.value }))} placeholder="City / region / landmark" />
 //         </div>
 //       </Modal>
 
-//       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-//         <Card className="min-w-0 lg:col-span-2">
-//           <CardHeader className="flex items-center justify-between gap-4">
-//             <CardTitle>Godown list</CardTitle>
-//             <div className="w-full max-w-xs">
-//               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search godown…" className="h-10" />
-//             </div>
-//           </CardHeader>
-//           <CardContent>
-//             {error ? (
-//               <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
-//             ) : loading ? (
-//               <div className="text-sm text-slate-600">Loading…</div>
-//             ) : rows.length === 0 ? (
-//               <EmptyState title="No godowns found" subtitle="Try a different search or add a godown." />
-//             ) : (
-//               <Table className="min-w-[720px]">
-//                 <thead>
-//                   <tr>
-//                     <Th>Code</Th>
-//                     <Th>Name</Th>
-//                     <Th>Location</Th>
-//                     <Th>Mobile</Th>
-//                     <Th className="hidden lg:table-cell">Address</Th>
-//                     <Th className="text-right">Stock units</Th>
-//                     <Th className="text-right">Open</Th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {rows.map((g, idx) => (
-//                     <tr key={g.id || `row-${idx}`} className="hover:bg-slate-50">
-//                       <Td className="font-mono text-xs font-semibold text-slate-900">{g.code || '—'}</Td>
-//                       <Td className="font-semibold text-slate-900">{g.name || '—'}</Td>
-//                       <Td className="max-w-[10rem] truncate text-sm">{g.location || '—'}</Td>
-//                       <Td className="text-sm">{g.mobile || '—'}</Td>
-//                       <Td className="hidden max-w-[14rem] truncate text-sm text-slate-600 lg:table-cell">{g.address || '—'}</Td>
-//                       <Td className="text-right font-semibold">{formatNumber(stockByGodown[g.id] ?? 0)}</Td>
-//                       <Td className="text-right">
-//                         <Link
-//                           className="text-sm font-semibold text-slate-900 hover:text-slate-700"
-//                           to={`/godowns/${g.id}`}
-//                         >
-//                           View
-//                         </Link>
-//                       </Td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </Table>
-//             )}
-//           </CardContent>
-//         </Card>
+//       {/* ── EDIT MODAL ── */}
+//       <Modal
+//         open={editOpen}
+//         title="Edit godown"
+//         onClose={() => setEditOpen(false)}
+//         footer={
+//           <div className="flex justify-end gap-3">
+//             <Button variant="secondary" onClick={() => setEditOpen(false)}>Cancel</Button>
+//             <Button
+//               disabled={editSaving || !editForm.name.trim() || !editForm.code.trim() || (editForm.newPassword.length > 0 && editForm.newPassword.length < 6)}
+//               onClick={() => {
+//                 const token = getToken()
+//                 if (!token || !editingGodownId) return
+//                 setEditSaving(true)
+//                 apiFetch<GodownRow>(`/godowns/${editingGodownId}`, {
+//                   token, method: 'PATCH',
+//                   body: JSON.stringify({ name: editForm.name.trim(), code: editForm.code.trim(), address: editForm.address.trim(), mobile: editForm.mobile.trim(), location: editForm.location.trim(), ...(editForm.newPassword.trim().length >= 6 ? { password: editForm.newPassword } : {}) }),
+//                 })
+//                   .then(() => { setEditOpen(false); setEditingGodownId(null); load() })
+//                   .catch((e: any) => setError(e?.message || 'Update failed'))
+//                   .finally(() => setEditSaving(false))
+//               }}
+//             >
+//               {editSaving ? 'Saving…' : 'Save'}
+//             </Button>
+//           </div>
+//         }
+//       >
+//         <div className="space-y-4">
+//           <Input label="Godown name" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+//           <Input label="Godown code" value={editForm.code} onChange={(e) => setEditForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
+//           <Input label="Address" value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} />
+//           <Input label="Mobile number" value={editForm.mobile} onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))} />
+//           <Input label="Location" value={editForm.location} onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))} />
+//           <Input type="password" label="New password (optional)" value={editForm.newPassword} onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))} placeholder="Leave blank to keep current" />
+//         </div>
+//       </Modal>
 
-//         <Card>
-//           <CardHeader>
-//             <CardTitle>Tips</CardTitle>
-//           </CardHeader>
-//           <CardContent className="space-y-3 text-sm text-slate-600">
-//             <div className="rounded-xl bg-slate-50 p-3">
-//               Use a unique godown code for reports and delivery creation.
-//             </div>
-//             <div className="rounded-xl bg-slate-50 p-3">
-//               Stock units are summed from inventory ledger balances for each warehouse.
-//             </div>
-//           </CardContent>
-//         </Card>
-//       </div>
+//       {/* ── DELETE MODAL ── */}
+//       <Modal
+//         open={deleteOpen}
+//         title="Delete godown"
+//         onClose={() => { if (deleteSaving) return; setDeleteOpen(false); setDeletingGodown(null) }}
+//         footer={
+//           <div className="flex justify-end gap-3">
+//             <Button variant="secondary" disabled={deleteSaving} onClick={() => { setDeleteOpen(false); setDeletingGodown(null) }}>Cancel</Button>
+//             <Button
+//               variant="danger"
+//               disabled={deleteSaving || !deletingGodown}
+//               onClick={() => {
+//                 const token = getToken()
+//                 if (!token || !deletingGodown) return
+//                 setDeleteSaving(true)
+//                 apiFetch(`/godowns/${deletingGodown.id}`, { token, method: 'DELETE' })
+//                   .then(() => { setDeleteOpen(false); setDeletingGodown(null); load() })
+//                   .catch((e: any) => setError(e?.message || 'Delete failed'))
+//                   .finally(() => setDeleteSaving(false))
+//               }}
+//             >
+//               {deleteSaving ? 'Deleting…' : 'Delete'}
+//             </Button>
+//           </div>
+//         }
+//       >
+//         <p className="text-sm text-slate-600">
+//           Are you sure you want to delete{' '}
+//           <span className="font-semibold text-slate-900">{deletingGodown?.name || 'this godown'}</span>?
+//           {' '}This cannot be undone.
+//         </p>
+//       </Modal>
 //     </div>
 //   )
 // }
 
-// GodownsListPage.tsx
-// FULL PROFESSIONAL SAAS UI REDESIGN
-// ✔ Modern warehouse dashboard layout
-// ✔ Better table spacing
-// ✔ Professional cards
-// ✔ Attractive search bar
-// ✔ Responsive mobile layout
-// ✔ Sticky table area
-// ✔ Smooth hover effects
-// ✔ All YOUR existing logic preserved
-// ✔ NO function removed
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-
 import { formatNumber } from '../../lib/format'
 import { Button } from '../../components/ui/Button'
-
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../../components/ui/Card'
-
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
-import { PageHeader } from '../../components/ui/PageHeader'
-
-import {
-  EmptyState,
-  Table,
-  Td,
-  Th,
-} from '../../components/ui/Table'
-
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 
 export type GodownRow = {
-  id: string
-  name: string
-  code?: string
-  address?: string
-  mobile?: string
-  location?: string
-  city?: string
-  manager?: string
-}
-
-function ActionIcon({ children }: { children: ReactNode }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
-      {children}
-    </svg>
-  )
+  id: string; name: string; code?: string; address?: string
+  mobile?: string; location?: string; city?: string; manager?: string
 }
 
 function EyeIcon() {
-  return (
-    <ActionIcon>
-      <path
-        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-      <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" />
-    </ActionIcon>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" strokeWidth="1.7" /><circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" /></svg>
 }
-
 function PencilIcon() {
-  return (
-    <ActionIcon>
-      <path
-        d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <path d="M13.5 6.5 17.5 10.5" stroke="currentColor" strokeWidth="1.7" />
-    </ActionIcon>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-3-3L5 17v3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M13.5 6.5 17.5 10.5" stroke="currentColor" strokeWidth="1.7" /></svg>
 }
-
 function TrashIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
+}
+
+const actionBtn: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  width: 34, height: 34, borderRadius: 10, border: '1px solid #e2e8f0',
+  background: '#fff', color: '#64748b', cursor: 'pointer', transition: 'all 0.15s',
+}
+
+// ── stat card ──────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, variant = 'white' }: { label: string; value: string | number; variant?: 'purple' | 'white' }) {
+  if (variant === 'purple') {
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg,#4338ca 0%,rgb(49,46,129) 100%)',
+        borderRadius: 20, padding: '20px 24px', flex: '1.5', minWidth: 0,
+        position: 'relative', overflow: 'hidden', height:"10%"
+      }}>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 300, marginBottom: 12 }}>{label}</div>
+        <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{value}</div>
+        <div style={{ position: 'absolute', right: -30, top: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ position: 'absolute', right: 20, bottom: -40, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+      </div>
+    )
+  }
   return (
-    <ActionIcon>
-      <path
-        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </ActionIcon>
+    <div style={{
+      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20,
+      padding: '26px 30px', flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden',height:"108px"
+    }}>
+      <div style={{ fontSize: 13, color: '#64748b', fontWeight: 300, marginBottom: 12 }}>{label}</div>
+      <div style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</div>
+      <div style={{ position: 'absolute', right: -30, bottom: -30, width: 120, height: 100, borderRadius: '50%', background: '#f1f5f9' }} />
+    </div>
   )
 }
 
-const actionBtnClass =
-  'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700'
+function Th({ children, align = 'left' }: { children: ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <th style={{
+      padding: '12px 16px', fontSize: 11, fontWeight: 700, color: '#94a3b8',
+      textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: align,
+      whiteSpace: 'nowrap', background: '#f8fafc', borderBottom: '1px solid #f1f5f9',
+    }}>{children}</th>
+  )
+}
+
+function Td({ children, align = 'left', truncate = false, style: s }: { children: ReactNode; align?: 'left' | 'right'; truncate?: boolean; style?: React.CSSProperties }) {
+  return (
+    <td style={{
+      padding: '16px', fontSize: 13, color: '#374151', textAlign: align,
+      maxWidth: truncate ? 180 : undefined, overflow: truncate ? 'hidden' : undefined,
+      textOverflow: truncate ? 'ellipsis' : undefined, whiteSpace: truncate ? 'nowrap' : undefined,
+      borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle', ...s,
+    }}>{children}</td>
+  )
+}
+
+// ── main ───────────────────────────────────────────────────────────────────
 
 export function GodownsListPage() {
   const auth = useAuth()
-
-  if (
-    auth.status === 'authenticated' &&
-    auth.user.role === 'GODOWN' &&
-    auth.user.godownId
-  ) {
+  if (auth.status === 'authenticated' && auth.user.role === 'GODOWN' && auth.user.godownId)
     return <Navigate to={`/godowns/${auth.user.godownId}`} replace />
-  }
 
-  const isAdmin =
-    auth.status === 'authenticated' &&
-    auth.user.role === 'ADMIN'
+  const isAdmin = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
 
-  const [godowns, setGodowns] = useState<
-    GodownRow[]
-  >([])
-
-  const [stockByGodown, setStockByGodown] =
-    useState<Record<string, number>>({})
-
+  const [godowns, setGodowns] = useState<GodownRow[]>([])
+  const [stockByGodown, setStockByGodown] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
-
-  const [error, setError] = useState<string | null>(
-    null,
-  )
-
+  const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
 
-  /* ======================================================
-     ADD MODAL
-  ====================================================== */
-
   const [addOpen, setAddOpen] = useState(false)
-
-  const [addForm, setAddForm] = useState({
-    name: '',
-    code: '',
-    address: '',
-    mobile: '',
-    location: '',
-    password: '',
-  })
-
-  /* ======================================================
-     EDIT MODAL
-  ====================================================== */
-
-  const [editOpen, setEditOpen] = useState(false)
-
-  const [editingGodownId, setEditingGodownId] =
-    useState<string | null>(null)
-
-  const [editForm, setEditForm] = useState({
-    name: '',
-    code: '',
-    address: '',
-    mobile: '',
-    location: '',
-    newPassword: '',
-  })
-
+  const [addForm, setAddForm] = useState({ name: '', code: '', address: '', mobile: '', location: '', password: '' })
   const [saving, setSaving] = useState(false)
 
-  const [editSaving, setEditSaving] =
-    useState(false)
-
-  /* ======================================================
-     DELETE MODAL
-  ====================================================== */
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingGodownId, setEditingGodownId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', code: '', address: '', mobile: '', location: '', newPassword: '' })
+  const [editSaving, setEditSaving] = useState(false)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
-
-  const [deletingGodown, setDeletingGodown] =
-    useState<GodownRow | null>(null)
-
-  const [deleteSaving, setDeleteSaving] =
-    useState(false)
+  const [deletingGodown, setDeletingGodown] = useState<GodownRow | null>(null)
+  const [deleteSaving, setDeleteSaving] = useState(false)
 
   const openEdit = (g: GodownRow) => {
     setEditingGodownId(g.id)
-    setEditForm({
-      name: g.name || '',
-      code: g.code || '',
-      address: g.address || '',
-      mobile: g.mobile || '',
-      location: g.location || '',
-      newPassword: '',
-    })
+    setEditForm({ name: g.name || '', code: g.code || '', address: g.address || '', mobile: g.mobile || '', location: g.location || '', newPassword: '' })
     setEditOpen(true)
   }
 
-  /* ======================================================
-     LOAD
-  ====================================================== */
-
   const load = () => {
     const token = getToken()
-
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    setError(null)
-    setLoading(true)
-
+    if (!token) { setLoading(false); return }
+    setError(null); setLoading(true)
     Promise.all([
-      apiFetch<GodownRow[]>('/godowns', {
-        token,
-      }),
-
-      apiFetch<
-        Array<{
-          godownId: string
-          productId: string
-          qty: number
-        }>
-      >('/reports/stock', {
-        token,
-      }).catch(() => []),
+      apiFetch<GodownRow[]>('/godowns', { token }),
+      apiFetch<Array<{ godownId: string; productId: string; qty: number }>>('/reports/stock', { token }).catch(() => []),
     ])
       .then(([gRows, stockRows]) => {
-        const list = Array.isArray(gRows)
-          ? gRows
-          : []
-
+        const list = Array.isArray(gRows) ? gRows : []
         setGodowns(list)
-
         const map: Record<string, number> = {}
-
         if (Array.isArray(stockRows)) {
           for (const r of stockRows) {
             const gid = String(r.godownId)
-
-            map[gid] =
-              (map[gid] ?? 0) + Number(r.qty)
+            map[gid] = (map[gid] ?? 0) + Number(r.qty)
           }
         }
-
         setStockByGodown(map)
       })
-
-      .catch((e: any) =>
-        setError(e?.message || 'Failed to load'),
-      )
-
+      .catch((e: any) => setError(e?.message || 'Failed to load'))
       .finally(() => setLoading(false))
   }
 
+  useEffect(() => { load() }, [])
   useEffect(() => {
-    load()
-  }, [])
-
-  useEffect(() => {
-    const onStockChanged = () => {
-      load()
-    }
+    const onStockChanged = () => load()
     window.addEventListener('godown-stock-changed', onStockChanged)
     return () => window.removeEventListener('godown-stock-changed', onStockChanged)
   }, [])
 
-  /* ======================================================
-     SEARCH
-  ====================================================== */
-
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
-
     if (!s) return godowns
-
-    return godowns.filter((g) => {
-      const hay = [
-        g.name,
-        g.code,
-        g.address,
-        g.mobile,
-        g.location,
-        g.city,
-        g.manager,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-
-      return hay.includes(s)
-    })
+    return godowns.filter((g) =>
+      [g.name, g.code, g.address, g.mobile, g.location, g.city, g.manager]
+        .filter(Boolean).join(' ').toLowerCase().includes(s)
+    )
   }, [godowns, q])
 
+  const totalStock = Object.values(stockByGodown).reduce((a, b) => a + b, 0)
+
   return (
-    <div className="space-y-6">
-      {/* PAGE HEADER */}
-      <PageHeader
-        title="Godowns"
-        subtitle="Manage warehouses, inventory flow and stock distribution."
-        right={
-          isAdmin ? (
-            <Button
-              variant="primary"
-              className="
-                h-12 rounded-2xl px-6
-                bg-gradient-to-r
-                from-violet-600 to-purple-600
-                shadow-lg shadow-violet-300/30
-              "
-              onClick={() => setAddOpen(true)}
-            >
-              + Add Godown
-            </Button>
-          ) : null
-        }
-      />
+    // No extra padding — AppShell provides 20px 24px padding
+    <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ======================================================
-          ADD MODAL
-      ====================================================== */}
+      {/* ── page header ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Godowns</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
+            Manage warehouses, inventory flow and stock distribution.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setAddOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 22px', borderRadius: 12, border: 'none',
+              background: '#4338ca', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer',
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+             Add Godown
+          </button>
+        )}
+      </div>
 
-      <Modal
-        open={addOpen}
-        title="Add godown"
-        onClose={() => setAddOpen(false)}
+      {/* ── error ── */}
+      {error && (
+        <div style={{ padding: '12px 16px', borderRadius: 12, background: '#fef2f2', color: '#b91c1c', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+          <span>{error}</span>
+          <button onClick={load} style={{ background: 'none', border: 'none', color: '#b91c1c', fontWeight: 600, cursor: 'pointer' }}>Retry</button>
+        </div>
+      )}
+
+      {/* ── stat cards ── */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <StatCard label="Total Godowns" value={godowns.length} variant="purple" />
+        <StatCard label="Total Stock Units" value={formatNumber(totalStock)} />
+        <StatCard label="Search Results" value={rows.length} />
+      </div>
+
+      {/* ── table card ── */}
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden' }}>
+        {/* card header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '20px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Godown List</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Warehouse details and stock overview</div>
+          </div>
+          <div style={{ position: 'relative', width: 240 }}>
+            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden><circle cx="11" cy="11" r="7" stroke="#94a3b8" strokeWidth="1.8" /><path d="M16.5 16.5 21 21" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            </div>
+            <input
+              value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search godown..."
+              style={{
+                width: '100%', height: 38, paddingLeft: 36, paddingRight: 12,
+                border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13,
+                color: '#374151', background: '#f8fafc', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* table */}
+        {loading ? (
+          <div style={{ padding: 32, fontSize: 13, color: '#94a3b8' }}>Loading…</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🏭</div>
+            <div style={{ fontWeight: 600, color: '#475569' }}>No godowns found</div>
+            <div style={{ fontSize: 12, marginTop: 4 }}>Try a different search or add a new godown.</div>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+              <thead>
+                <tr>
+                  <Th>Code</Th><Th>Name</Th><Th>Location</Th>
+                  <Th>Mobile</Th><Th>Address</Th>
+                  <Th align="right">Stock</Th><Th align="right">Actions</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((g, idx) => (
+                  <tr key={g.id || `row-${idx}`}
+                    style={{ transition: 'background 0.15s' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Td>
+                      <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: 8, background: '#f1f5f9', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#334155', letterSpacing: '0.02em' }}>
+                        {g.code || '—'}
+                      </span>
+                    </Td>
+                    <Td><span style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>{g.name || '—'}</span></Td>
+                    <Td truncate>{g.location || '—'}</Td>
+                    <Td>{g.mobile || '—'}</Td>
+                    <Td truncate>{g.address || '—'}</Td>
+                    <Td align="right">
+                      <span style={{ fontWeight: 700, color: '#4338ca', fontSize: 14 }}>{formatNumber(stockByGodown[g.id] ?? 0)}</span>
+                    </Td>
+                    <Td align="right">
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <Link to={`/godowns/${g.id}`} title="View godown" style={{ ...actionBtn, textDecoration: 'none' }}
+                          onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#ede9fe'; el.style.borderColor = '#c4b5fd'; el.style.color = '#4338ca' }}
+                          onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fff'; el.style.borderColor = '#e2e8f0'; el.style.color = '#64748b' }}
+                        ><EyeIcon /></Link>
+                        {isAdmin && (
+                          <>
+                            <button type="button" title="Edit" style={actionBtn} onClick={() => openEdit(g)}
+                              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#ede9fe'; el.style.borderColor = '#c4b5fd'; el.style.color = '#4338ca' }}
+                              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fff'; el.style.borderColor = '#e2e8f0'; el.style.color = '#64748b' }}
+                            ><PencilIcon /></button>
+                            <button type="button" title="Delete" style={actionBtn} onClick={() => { setDeletingGodown(g); setDeleteOpen(true) }}
+                              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#dc2626' }}
+                              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fff'; el.style.borderColor = '#e2e8f0'; el.style.color = '#64748b' }}
+                            ><TrashIcon /></button>
+                          </>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── ADD MODAL ── */}
+      <Modal open={addOpen} title="Add godown" onClose={() => setAddOpen(false)}
         footer={
           <div className="flex justify-end gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setAddOpen(false)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              disabled={
-                saving ||
-                !addForm.name.trim() ||
-                !addForm.code.trim() ||
-                !addForm.mobile.trim() ||
-                addForm.password.length < 6
-              }
+            <Button variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button disabled={saving || !addForm.name.trim() || !addForm.code.trim() || !addForm.mobile.trim() || addForm.password.length < 6}
               onClick={() => {
-                const token = getToken()
-
-                if (!token) return
-
-                setSaving(true)
-
-                apiFetch<GodownRow>(
-                  '/godowns',
-                  {
-                    token,
-                    method: 'POST',
-                    body: JSON.stringify({
-                      name: addForm.name.trim(),
-                      code: addForm.code.trim(),
-                      address:
-                        addForm.address.trim(),
-                      mobile:
-                        addForm.mobile.trim(),
-                      location:
-                        addForm.location.trim(),
-                      password:
-                        addForm.password,
-                    }),
-                  },
-                )
-                  .then(() => {
-                    setAddForm({
-                      name: '',
-                      code: '',
-                      address: '',
-                      mobile: '',
-                      location: '',
-                      password: '',
-                    })
-
-                    setAddOpen(false)
-
-                    load()
-                  })
-
-                  .catch((e: any) =>
-                    setError(
-                      e?.message ||
-                        'Create failed',
-                    ),
-                  )
-
-                  .finally(() =>
-                    setSaving(false),
-                  )
+                const token = getToken(); if (!token) return; setSaving(true)
+                apiFetch<GodownRow>('/godowns', { token, method: 'POST', body: JSON.stringify({ name: addForm.name.trim(), code: addForm.code.trim(), address: addForm.address.trim(), mobile: addForm.mobile.trim(), location: addForm.location.trim(), password: addForm.password }) })
+                  .then(() => { setAddForm({ name: '', code: '', address: '', mobile: '', location: '', password: '' }); setAddOpen(false); load() })
+                  .catch((e: any) => setError(e?.message || 'Create failed'))
+                  .finally(() => setSaving(false))
               }}
-            >
-              {saving ? 'Saving…' : 'Create'}
-            </Button>
+            >{saving ? 'Saving…' : 'Create'}</Button>
           </div>
         }
       >
         <div className="space-y-4">
-          <Input
-            label="Godown name"
-            value={addForm.name}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                name: e.target.value,
-              }))
-            }
-            placeholder="e.g. North warehouse"
-          />
-
-          <Input
-            label="Godown code"
-            value={addForm.code}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                code: e.target.value.toUpperCase(),
-              }))
-            }
-            placeholder="e.g. GD-N01"
-          />
-
-          <Input
-            label="Address"
-            value={addForm.address}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                address: e.target.value,
-              }))
-            }
-            placeholder="Street, area, PIN"
-          />
-
-          <Input
-            label="Mobile number"
-            value={addForm.mobile}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                mobile: e.target.value,
-              }))
-            }
-            placeholder="Contact mobile"
-            inputMode="tel"
-            autoComplete="tel"
-          />
-
-          <Input
-            type="password"
-            label="Godown login password"
-            value={addForm.password}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                password: e.target.value,
-              }))
-            }
-            placeholder="Min. 6 characters"
-            autoComplete="new-password"
-          />
-
-          <Input
-            label="Location"
-            value={addForm.location}
-            onChange={(e) =>
-              setAddForm((f) => ({
-                ...f,
-                location: e.target.value,
-              }))
-            }
-            placeholder="City / region / landmark"
-          />
+          <Input label="Godown name" value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. North warehouse" />
+          <Input label="Godown code" value={addForm.code} onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="e.g. GD-N01" />
+          <Input label="Address" value={addForm.address} onChange={(e) => setAddForm((f) => ({ ...f, address: e.target.value }))} placeholder="Street, area, PIN" />
+          <Input label="Mobile number" value={addForm.mobile} onChange={(e) => setAddForm((f) => ({ ...f, mobile: e.target.value }))} placeholder="Contact mobile" />
+          <Input type="password" label="Godown login password" value={addForm.password} onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))} placeholder="Min. 6 characters" autoComplete="new-password" />
+          <Input label="Location" value={addForm.location} onChange={(e) => setAddForm((f) => ({ ...f, location: e.target.value }))} placeholder="City / region / landmark" />
         </div>
       </Modal>
 
-      {/* ======================================================
-          EDIT MODAL
-      ====================================================== */}
-
-      <Modal
-        open={editOpen}
-        title="Edit godown"
-        onClose={() => setEditOpen(false)}
+      {/* ── EDIT MODAL ── */}
+      <Modal open={editOpen} title="Edit godown" onClose={() => setEditOpen(false)}
         footer={
           <div className="flex justify-end gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setEditOpen(false)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              disabled={
-                editSaving ||
-                !editForm.name.trim() ||
-                !editForm.code.trim() ||
-                (editForm.newPassword.length >
-                  0 &&
-                  editForm.newPassword.length <
-                    6)
-              }
+            <Button variant="secondary" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button disabled={editSaving || !editForm.name.trim() || !editForm.code.trim() || (editForm.newPassword.length > 0 && editForm.newPassword.length < 6)}
               onClick={() => {
-                const token = getToken()
-
-                if (
-                  !token ||
-                  !editingGodownId
-                )
-                  return
-
-                setEditSaving(true)
-
-                apiFetch<GodownRow>(
-                  `/godowns/${editingGodownId}`,
-                  {
-                    token,
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                      name:
-                        editForm.name.trim(),
-                      code:
-                        editForm.code.trim(),
-                      address:
-                        editForm.address.trim(),
-                      mobile:
-                        editForm.mobile.trim(),
-                      location:
-                        editForm.location.trim(),
-
-                      ...(editForm.newPassword.trim()
-                        .length >= 6
-                        ? {
-                            password:
-                              editForm.newPassword,
-                          }
-                        : {}),
-                    }),
-                  },
-                )
-                  .then(() => {
-                    setEditOpen(false)
-
-                    setEditingGodownId(
-                      null,
-                    )
-
-                    load()
-                  })
-
-                  .catch((e: any) =>
-                    setError(
-                      e?.message ||
-                        'Update failed',
-                    ),
-                  )
-
-                  .finally(() =>
-                    setEditSaving(false),
-                  )
+                const token = getToken(); if (!token || !editingGodownId) return; setEditSaving(true)
+                apiFetch<GodownRow>(`/godowns/${editingGodownId}`, { token, method: 'PATCH', body: JSON.stringify({ name: editForm.name.trim(), code: editForm.code.trim(), address: editForm.address.trim(), mobile: editForm.mobile.trim(), location: editForm.location.trim(), ...(editForm.newPassword.trim().length >= 6 ? { password: editForm.newPassword } : {}) }) })
+                  .then(() => { setEditOpen(false); setEditingGodownId(null); load() })
+                  .catch((e: any) => setError(e?.message || 'Update failed'))
+                  .finally(() => setEditSaving(false))
               }}
-            >
-              {editSaving
-                ? 'Saving…'
-                : 'Save'}
-            </Button>
+            >{editSaving ? 'Saving…' : 'Save'}</Button>
           </div>
         }
       >
         <div className="space-y-4">
-          <Input
-            label="Godown name"
-            value={editForm.name}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                name: e.target.value,
-              }))
-            }
-          />
-
-          <Input
-            label="Godown code"
-            value={editForm.code}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                code: e.target.value.toUpperCase(),
-              }))
-            }
-          />
-
-          <Input
-            label="Address"
-            value={editForm.address}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                address: e.target.value,
-              }))
-            }
-          />
-
-          <Input
-            label="Mobile number"
-            value={editForm.mobile}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                mobile: e.target.value,
-              }))
-            }
-          />
-
-          <Input
-            label="Location"
-            value={editForm.location}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                location: e.target.value,
-              }))
-            }
-          />
-
-          <Input
-            type="password"
-            label="New password (optional)"
-            value={editForm.newPassword}
-            onChange={(e) =>
-              setEditForm((f) => ({
-                ...f,
-                newPassword:
-                  e.target.value,
-              }))
-            }
-            placeholder="Leave blank to keep current"
-          />
+          <Input label="Godown name" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+          <Input label="Godown code" value={editForm.code} onChange={(e) => setEditForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
+          <Input label="Address" value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} />
+          <Input label="Mobile number" value={editForm.mobile} onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))} />
+          <Input label="Location" value={editForm.location} onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))} />
+          <Input type="password" label="New password (optional)" value={editForm.newPassword} onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))} placeholder="Leave blank to keep current" />
         </div>
       </Modal>
 
-      {/* ======================================================
-          DELETE MODAL
-      ====================================================== */}
-
-      <Modal
-        open={deleteOpen}
-        title="Delete godown"
-        onClose={() => {
-          if (deleteSaving) return
-          setDeleteOpen(false)
-          setDeletingGodown(null)
-        }}
+      {/* ── DELETE MODAL ── */}
+      <Modal open={deleteOpen} title="Delete godown" onClose={() => { if (deleteSaving) return; setDeleteOpen(false); setDeletingGodown(null) }}
         footer={
           <div className="flex justify-end gap-3">
-            <Button
-              variant="secondary"
-              disabled={deleteSaving}
+            <Button variant="secondary" disabled={deleteSaving} onClick={() => { setDeleteOpen(false); setDeletingGodown(null) }}>Cancel</Button>
+            <Button variant="danger" disabled={deleteSaving || !deletingGodown}
               onClick={() => {
-                setDeleteOpen(false)
-                setDeletingGodown(null)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              disabled={deleteSaving || !deletingGodown}
-              onClick={() => {
-                const token = getToken()
-                if (!token || !deletingGodown) return
-                setDeleteSaving(true)
-                apiFetch(`/godowns/${deletingGodown.id}`, {
-                  token,
-                  method: 'DELETE',
-                })
-                  .then(() => {
-                    setDeleteOpen(false)
-                    setDeletingGodown(null)
-                    load()
-                  })
-                  .catch((e: any) =>
-                    setError(e?.message || 'Delete failed'),
-                  )
+                const token = getToken(); if (!token || !deletingGodown) return; setDeleteSaving(true)
+                apiFetch(`/godowns/${deletingGodown.id}`, { token, method: 'DELETE' })
+                  .then(() => { setDeleteOpen(false); setDeletingGodown(null); load() })
+                  .catch((e: any) => setError(e?.message || 'Delete failed'))
                   .finally(() => setDeleteSaving(false))
               }}
-            >
-              {deleteSaving ? 'Deleting…' : 'Delete'}
-            </Button>
+            >{deleteSaving ? 'Deleting…' : 'Delete'}</Button>
           </div>
         }
       >
         <p className="text-sm text-slate-600">
           Are you sure you want to delete{' '}
-          <span className="font-semibold text-slate-900">
-            {deletingGodown?.name || 'this godown'}
-          </span>
-          ? This cannot be undone.
+          <span className="font-semibold text-slate-900">{deletingGodown?.name || 'this godown'}</span>?
+          {' '}This cannot be undone.
         </p>
       </Modal>
-
-      {/* STATS */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="rounded-3xl border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl shadow-violet-300/30">
-          <CardContent className="p-6">
-            <div className="text-sm text-violet-100">
-              Total Godowns
-            </div>
-
-            <div className="mt-2 text-4xl font-bold">
-              {godowns.length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="text-sm text-slate-500">
-              Total Stock Units
-            </div>
-
-            <div className="mt-2 text-4xl font-bold text-slate-900">
-              {formatNumber(
-                Object.values(
-                  stockByGodown,
-                ).reduce(
-                  (a, b) => a + b,
-                  0,
-                ),
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="text-sm text-slate-500">
-              Search Results
-            </div>
-
-            <div className="mt-2 text-3xl font-bold text-slate-900">
-              {rows.length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* TABLE */}
-      <Card className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-xl shadow-slate-200/40">
-        <CardHeader
-          className="
-            flex flex-col gap-4
-            border-b border-slate-100
-            bg-gradient-to-r
-            from-slate-50 to-white
-            sm:flex-row sm:items-center sm:justify-between
-          "
-        >
-          <div>
-            <CardTitle className="text-3xl font-bold text-slate-900">
-              Godown List
-            </CardTitle>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Warehouse details and stock
-              overview
-            </p>
-          </div>
-
-          <div className="w-full sm:max-w-sm">
-            <Input
-              value={q}
-              onChange={(e) =>
-                setQ(e.target.value)
-              }
-              placeholder="Search godown..."
-              className="
-                h-12 rounded-2xl
-                border-slate-200
-                bg-white
-                shadow-sm
-              "
-            />
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {error ? (
-            <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
-              {error}
-            </div>
-          ) : loading ? (
-            <div className="p-8 text-sm text-slate-600">
-              Loading...
-            </div>
-          ) : rows.length === 0 ? (
-            <div className="p-8">
-              <EmptyState
-                title="No godowns found"
-                subtitle="Try a different search or add a new godown."
-              />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[1100px]">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <Th>Code</Th>
-                    <Th>Name</Th>
-                    <Th>Location</Th>
-                    <Th>Mobile</Th>
-                    <Th>Address</Th>
-                    <Th className="text-right">
-                      Stock
-                    </Th>
-                    <Th className="text-right">
-                      Actions
-                    </Th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {rows.map((g, idx) => (
-                    <tr
-                      key={
-                        g.id ||
-                        `row-${idx}`
-                      }
-                      className="
-                        border-b border-slate-100
-                        transition-all
-                        hover:bg-violet-50/40
-                      "
-                    >
-                      <Td className="py-5">
-                        <span
-                          className="
-                            rounded-xl
-                            bg-slate-100
-                            px-3 py-2
-                            font-mono text-xs
-                            font-bold
-                            text-slate-800
-                          "
-                        >
-                          {g.code || '—'}
-                        </span>
-                      </Td>
-
-                      <Td className="py-5">
-                        <div className="font-bold text-slate-900">
-                          {g.name || '—'}
-                        </div>
-                      </Td>
-
-                      <Td className="max-w-[12rem] truncate py-5 text-sm text-slate-600">
-                        {g.location || '—'}
-                      </Td>
-
-                      <Td className="py-5 text-sm text-slate-700">
-                        {g.mobile || '—'}
-                      </Td>
-
-                      <Td className="max-w-[16rem] truncate py-5 text-sm text-slate-600">
-                        {g.address || '—'}
-                      </Td>
-
-                      <Td className="py-5 text-right font-bold text-violet-700">
-                        {formatNumber(
-                          stockByGodown[
-                            g.id
-                          ] ?? 0,
-                        )}
-                      </Td>
-
-                      <Td className="py-5 text-right">
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <Link
-                            to={`/godowns/${g.id}`}
-                            className={actionBtnClass}
-                            title="View godown"
-                            aria-label="View godown"
-                          >
-                            <EyeIcon />
-                          </Link>
-                          {isAdmin ? (
-                            <>
-                              <button
-                                type="button"
-                                className={actionBtnClass}
-                                title="Edit godown"
-                                aria-label="Edit godown"
-                                onClick={() => openEdit(g)}
-                              >
-                                <PencilIcon />
-                              </button>
-                              <button
-                                type="button"
-                                className={`${actionBtnClass} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700`}
-                                title="Delete godown"
-                                aria-label="Delete godown"
-                                onClick={() => {
-                                  setDeletingGodown(g)
-                                  setDeleteOpen(true)
-                                }}
-                              >
-                                <TrashIcon />
-                              </button>
-                            </>
-                          ) : null}
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
