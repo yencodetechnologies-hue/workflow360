@@ -1,0 +1,79 @@
+name: Workflow360 Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Workflow360 Server
+        uses: appleboy/ssh-action@v0.1.10
+
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+
+          script: |
+            set -e
+
+            cd ~/workflow360/workflow360/backend
+
+            echo "📥 Updating project..."
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "⚙️ Loading Node.js..."
+            export NVM_DIR="$HOME/.nvm"
+
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+              nvm use 20 || nvm install 20
+            elif [ -s "/usr/local/nvm/nvm.sh" ]; then
+              . "/usr/local/nvm/nvm.sh"
+              nvm use 20 || nvm install 20
+            else
+              echo "NVM not found; using system node: $(node -v)"
+            fi
+
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🚀 Restarting PM2..."
+            PM2_APP="worflow360"
+
+            if pm2 describe "$PM2_APP" > /dev/null 2>&1; then
+              pm2 restart "$PM2_APP" --update-env
+            else
+              pm2 start index.js --name "$PM2_APP"
+            fi
+
+            echo "💾 Saving PM2..."
+            pm2 save
+
+            echo "🔍 Verifying PM2 Status..."
+            pm2 describe "$PM2_APP" | grep -E "script path|exec cwd|node.js version|status" || true
+
+            echo "⏳ Waiting for application startup..."
+            sleep 10
+
+            echo "🔍 Checking application process..."
+            if ! pm2 describe "$PM2_APP" | grep -q "online"; then
+              echo "❌ PM2 process is not online"
+              pm2 logs "$PM2_APP" --lines 50 --nostream || true
+              exit 1
+            fi
+
+            echo "🔍 Checking listening ports..."
+            ss -tlnp | grep node || true
+
+            echo "📋 Recent Logs..."
+            pm2 logs "$PM2_APP" --lines 30 --nostream || true
+
+            echo "✅ Workflow360 Deployment Finished Successfully"
