@@ -513,7 +513,7 @@ export function ProductsListPage() {
             <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['S.NO', 'IMAGE', 'CATEGORY', 'PARTICULARS', 'SPECIFICATION', 'RATE', 'ACTIONS'].map((h) => (
+                  {['S.NO', 'IMAGE', 'CATEGORY', 'PARTICULARS', 'SPECIFICATION', , 'ACTIONS'].map((h) => (
                     <th key={h} style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -562,10 +562,7 @@ export function ProductsListPage() {
                       <div style={{ fontSize: 13, color: '#475569', maxWidth: 210, lineHeight: 1.4 }}>{p.specification}</div>
                     </td>
 
-                    {/* RATE */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#4f46e5' }}>₹{p.rate}</span>
-                    </td>
+                
 
                     {/* ACTIONS */}
                     <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>

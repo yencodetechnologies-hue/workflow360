@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
+
 import { login } from '../auth/store'
-import workflow from '../assets/workflowlogo.jpeg'
+
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 function HomeIcon({ size = 20 }: { size?: number }) {
