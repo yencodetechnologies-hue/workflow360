@@ -23,13 +23,13 @@ type Props = {
 
 export function ReportFiltersBar({
   godowns,
-  sites,
+  
   customers = [],
   godownId,
-  site,
+
   customerName = '',
   onGodownChange,
-  onSiteChange,
+  
   onCustomerChange,
   showDate,
   showDateTo,
@@ -69,20 +69,7 @@ export function ReportFiltersBar({
           </select>
         </div>
       ) : null}
-      <div className="min-w-[12rem] flex-1">
-        <Input
-          label="Site"
-          value={site}
-          onChange={(e) => onSiteChange(e.target.value)}
-          placeholder="Filter by site name..."
-          list="report-sites-list"
-        />
-        <datalist id="report-sites-list">
-          {sites.map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
-      </div>
+ 
       {showCustomer && onCustomerChange ? (
         <div className="min-w-[12rem] flex-1">
           <label className="mb-1 block text-sm font-medium text-slate-800">Customer</label>
