@@ -464,7 +464,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
   const sInp = fieldInp
 
   return (
-    <Modal open={open} onClose={handleClose} className="max-w-4xl overflow-hidden w-full" title={undefined} footer={footer}>
+    <Modal open={open} onClose={handleClose} className="max-w-3xl overflow-hidden w-full" title={undefined} footer={footer}>
       {editLoading ? (
         <p style={{ padding: '64px 0', textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>Loading delivery…</p>
       ) : createLinks ? (
