@@ -83,3 +83,24 @@
     padding-bottom: 32px;
   }
 }
+/* ─────────────────────────────────────────────────────────────
+   MAIN CONTENT PADDING — responsive
+   Mobile: 12px sides (tight, fits calendar on 300px screens)
+   Tablet (sm+): 16px sides
+   Desktop (lg+): 24px sides (original)
+   ───────────────────────────────────────────────────────────── */
+.main-content {
+  padding: 16px 10px 32px;
+}
+
+@media (min-width: 480px) {
+  .main-content {
+    padding: 18px 16px 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-content {
+    padding: 20px 24px 32px;
+  }
+}
