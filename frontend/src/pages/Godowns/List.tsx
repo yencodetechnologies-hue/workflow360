@@ -673,8 +673,9 @@ function StatCard({ label, value, variant = 'white' }: { label: string; value: s
     return (
       <div style={{
         background: 'linear-gradient(135deg,#4338ca 0%,rgb(49,46,129) 100%)',
-        borderRadius: 20, padding: '20px 24px', flex: '1.5', minWidth: 0,
-        position: 'relative', overflow: 'hidden', height:"10%"
+        borderRadius: 20, padding: '20px 24px',
+        flex: '1 1 140px', minWidth: 0,
+        position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 300, marginBottom: 12 }}>{label}</div>
         <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{value}</div>
@@ -686,7 +687,9 @@ function StatCard({ label, value, variant = 'white' }: { label: string; value: s
   return (
     <div style={{
       background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20,
-      padding: '26px 30px', flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden',height:"108px"
+      padding: '20px 24px',
+      flex: '1 1 120px', minWidth: 0,
+      position: 'relative', overflow: 'hidden',
     }}>
       <div style={{ fontSize: 13, color: '#64748b', fontWeight: 300, marginBottom: 12 }}>{label}</div>
       <div style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</div>
@@ -828,7 +831,7 @@ export function GodownsListPage() {
       )}
 
       {/* ── stat cards ── */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+      <div className="godown-stat-cards" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <StatCard label="Total Godowns" value={godowns.length} variant="purple" />
         <StatCard label="Total Stock Units" value={formatNumber(totalStock)} />
         <StatCard label="Search Results" value={rows.length} />
@@ -845,7 +848,7 @@ export function GodownsListPage() {
             <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Godown List</div>
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Warehouse details and stock overview</div>
           </div>
-          <div style={{ position: 'relative', width: 240 }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280, minWidth: 0 }}>
             <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
               <svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden><circle cx="11" cy="11" r="7" stroke="#94a3b8" strokeWidth="1.8" /><path d="M16.5 16.5 21 21" stroke="#94a3b8" strokeWidth="1.8" strokeLinecap="round" /></svg>
             </div>

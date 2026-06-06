@@ -21,7 +21,6 @@
 
   body {
     @apply text-slate-900 antialiased;
-    /* matches dashboard bg — no white flash between sidebar & content */
     background: #edf0f8;
   }
 
@@ -53,4 +52,34 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GODOWN STAT CARDS — responsive grid
+   ───────────────────────────────────────────────────────────── */
+
+/* Stack stat cards vertically on very small screens */
+@media (max-width: 480px) {
+  .godown-stat-cards {
+    flex-direction: column !important;
+  }
+  .godown-stat-cards > div {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE RESPONSIVE — does NOT affect desktop (lg+) at all
+   ───────────────────────────────────────────────────────────── */
+
+/* Main content: extra bottom padding on mobile so content clears
+   the fixed bottom nav bar. Desktop keeps its original padding. */
+.mobile-pb {
+  padding-bottom: 80px;
+}
+@media (min-width: 1024px) {
+  .mobile-pb {
+    padding-bottom: 32px;
+  }
 }
