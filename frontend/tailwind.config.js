@@ -192,6 +192,10 @@ export default {
         'spacing': 'margin, padding',
       }
     },
+     safelist: [
+    'max-w-5xl',
+    'max-w-6xl',
+  ],
   },
   plugins: [],
 }

@@ -9,6 +9,7 @@ type Props = {
   footer?: React.ReactNode
   className?: string
   bodyClassName?: string
+    style?: React.CSSProperties 
 }
 
 export function Modal({
@@ -19,6 +20,7 @@ export function Modal({
   footer,
   className,
   bodyClassName,
+  style
 }: Props) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -41,10 +43,16 @@ export function Modal({
         <div
           role="dialog"
           aria-modal="true"
+            style={style}  
+          // className={cn(
+          //   'flex max-h-[min(90vh,48rem)] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl',
+          //   className,
+          // )}
+
           className={cn(
-            'flex max-h-[min(90vh,48rem)] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl',
-            className,
-          )}
+  'flex max-h-[min(90vh,48rem)] w-full flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl',
+  className,
+)}
         >
           {title ? (
             <div className="shrink-0 border-b border-slate-100 px-5 py-4">
