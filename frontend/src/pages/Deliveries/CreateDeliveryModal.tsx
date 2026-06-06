@@ -91,43 +91,43 @@
 // }
 
 // function StepIcon({ step }: { step: number }) {
-//   const cls = 'h-5 w-5'
+//   const cls = 'h-4 w-4'
 //   if (step === 1) {
 //     return (
 //       <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-//         <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="1.7" />
-//         <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+//         <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="1.8" />
+//         <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
 //       </svg>
 //     )
 //   }
 //   if (step === 2) {
 //     return (
 //       <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-//         <path d="M4 9.5 12 5l8 4.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" strokeWidth="1.7" />
-//         <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth="1.7" />
+//         <path d="M4 9.5 12 5l8 4.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" strokeWidth="1.8" />
+//         <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth="1.8" />
 //       </svg>
 //     )
 //   }
 //   if (step === 3) {
 //     return (
 //       <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-//         <path d="M7 7.5 12 5l5 2.5v5L12 15l-5-2.5v-5Z" stroke="currentColor" strokeWidth="1.7" />
-//         <path d="M12 15v6M7 12.5 12 15l5-2.5" stroke="currentColor" strokeWidth="1.7" />
+//         <path d="M7 7.5 12 5l5 2.5v5L12 15l-5-2.5v-5Z" stroke="currentColor" strokeWidth="1.8" />
+//         <path d="M12 15v6M7 12.5 12 15l5-2.5" stroke="currentColor" strokeWidth="1.8" />
 //       </svg>
 //     )
 //   }
 //   return (
 //     <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-//       <path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-//       <circle cx="18" cy="17" r="3" stroke="currentColor" strokeWidth="1.7" />
+//       <path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+//       <circle cx="18" cy="17" r="3" stroke="currentColor" strokeWidth="1.8" />
 //     </svg>
 //   )
 // }
 
 // function CheckIcon() {
 //   return (
-//     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
-//       <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+//     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+//       <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
 //     </svg>
 //   )
 // }
@@ -153,74 +153,98 @@
 //   const clamp = (n: number) => Math.max(0, Math.min(max, n))
 //   return (
 //     <div className="inline-flex flex-col items-end gap-1">
-//     <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white shadow-sm">
-//       <button
-//         type="button"
-//         className="flex h-9 w-9 items-center justify-center rounded-l-xl text-lg text-slate-600 transition hover:bg-violet-50 hover:text-violet-700 disabled:opacity-40"
-//         disabled={value <= 0}
-//         onClick={() => onChange(clamp(value - 1))}
-//         aria-label="Decrease quantity"
-//       >
-//         −
-//       </button>
-//       <input
-//         type="number"
-//         min={0}
-//         max={max}
-//         className="h-9 w-14 border-x border-slate-200 bg-slate-50/80 text-center text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-200"
-//         value={value}
-//         onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
-//       />
-//       <button
-//         type="button"
-//         className="flex h-9 w-9 items-center justify-center rounded-r-xl text-lg text-slate-600 transition hover:bg-violet-50 hover:text-violet-700 disabled:opacity-40"
-//         disabled={value >= max}
-//         onClick={() => onChange(clamp(value + 1))}
-//         aria-label="Increase quantity"
-//       >
-//         +
-//       </button>
+//       <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-sm">
+//         <button
+//           type="button"
+//           className="flex h-8 w-8 items-center justify-center rounded-l-lg text-base text-slate-600 transition hover:bg-[#EEEDFE] hover:text-[#534AB7] disabled:opacity-40"
+//           disabled={value <= 0}
+//           onClick={() => onChange(clamp(value - 1))}
+//           aria-label="Decrease quantity"
+//         >
+//           −
+//         </button>
+//         <input
+//           type="number"
+//           min={0}
+//           max={max}
+//           className="h-8 w-12 border-x border-slate-200 bg-slate-50/80 text-center text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#AFA9EC]"
+//           value={value}
+//           onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
+//         />
+//         <button
+//           type="button"
+//           className="flex h-8 w-8 items-center justify-center rounded-r-lg text-base text-slate-600 transition hover:bg-[#EEEDFE] hover:text-[#534AB7] disabled:opacity-40"
+//           disabled={value >= max}
+//           onClick={() => onChange(clamp(value + 1))}
+//           aria-label="Increase quantity"
+//         >
+//           +
+//         </button>
 //       </div>
 //       <span className="text-[10px] font-medium text-slate-500">In stock: {max}</span>
 //     </div>
 //   )
 // }
 
+// // ─── NEW WizardStepper matching HTML design ───────────────────────────────────
 // function WizardStepper({ step }: { step: number }) {
 //   const progress = ((step - 1) / (STEPS.length - 1)) * 100
 //   return (
-//     <div className="mb-6">
-//       <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+//     <div className="px-6 pb-0 pt-4">
+//       {/* Progress bar */}
+//       <div className="mb-5 h-[3px] overflow-hidden rounded-full bg-[rgba(255,255,255,0.18)]">
 //         <div
-//           className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-600 transition-all duration-500 ease-out"
+//           className="h-full rounded-full bg-white transition-all duration-500 ease-out"
 //           style={{ width: `${progress}%` }}
 //         />
 //       </div>
-//       <ol className="grid grid-cols-4 gap-1">
-//         {STEPS.map((s) => {
+//       {/* Step indicators with connectors */}
+//       <div className="flex items-start justify-between">
+//         {STEPS.map((s, idx) => {
 //           const done = step > s.id
 //           const active = step === s.id
 //           return (
-//             <li key={s.id} className="flex flex-col items-center text-center">
-//               <div
-//                 className={
-//                   done
-//                     ? 'flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-violet-200'
-//                     : active
-//                       ? 'flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white ring-4 ring-violet-100 shadow-lg shadow-violet-200'
-//                       : 'flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-400'
-//                 }
-//               >
-//                 {done ? <CheckIcon /> : <StepIcon step={s.id} />}
+//             <div key={s.id} className="flex flex-1 items-start">
+//               <div className="flex flex-col items-center gap-[5px]" style={{ minWidth: 60 }}>
+//                 <div
+//                   className={[
+//                     'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-200',
+//                     done
+//                       ? 'border-[#7F77DD] bg-[#534AB7] text-white'
+//                       : active
+//                         ? 'border-[#7F77DD] bg-[#EEEDFE] text-[#534AB7]'
+//                         : 'border-[rgba(255,255,255,0.25)] bg-transparent text-[rgba(255,255,255,0.45)]',
+//                   ].join(' ')}
+//                 >
+//                   {done ? <CheckIcon /> : <StepIcon step={s.id} />}
+//                 </div>
+//                 <span
+//                   className={[
+//                     'text-[10.5px] font-semibold text-center leading-tight',
+//                     active || done ? 'text-white' : 'text-[rgba(255,255,255,0.45)]',
+//                   ].join(' ')}
+//                 >
+//                   {s.title}
+//                 </span>
+//                 <span className="hidden text-[9.5px] text-center text-[rgba(255,255,255,0.38)] sm:block leading-tight">
+//                   {s.subtitle}
+//                 </span>
 //               </div>
-//               <span className={`mt-2 text-xs font-semibold ${active || done ? 'text-slate-900' : 'text-slate-400'}`}>
-//                 {s.title}
-//               </span>
-//               <span className="hidden text-[10px] text-slate-500 sm:block">{s.subtitle}</span>
-//             </li>
+//               {/* Connector line between steps */}
+//               {idx < STEPS.length - 1 && (
+//                 <div className="flex-1 mt-[17px] mx-1">
+//                   <div
+//                     className={[
+//                       'h-[2px] rounded-full transition-all duration-300',
+//                       step > s.id ? 'bg-[#7F77DD]' : 'bg-[rgba(255,255,255,0.15)]',
+//                     ].join(' ')}
+//                   />
+//                 </div>
+//               )}
+//             </div>
 //           )
 //         })}
-//       </ol>
+//       </div>
 //     </div>
 //   )
 // }
@@ -228,8 +252,8 @@
 // function StepHeader({ title, description }: { title: string; description: string }) {
 //   return (
 //     <div className="mb-5">
-//       <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-//       <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+//       <h3 className="text-base font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{title}</h3>
+//       <p className="mt-0.5 text-sm text-[#7C7A9A]">{description}</p>
 //     </div>
 //   )
 // }
@@ -245,7 +269,7 @@
 // }) {
 //   const [copied, setCopied] = useState(false)
 //   return (
-//     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+//     <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
 //       <div className="flex items-start justify-between gap-3">
 //         <div>
 //           <div className="text-sm font-semibold text-slate-900">{label}</div>
@@ -264,7 +288,7 @@
 //           {copied ? 'Copied' : 'Copy'}
 //         </Button>
 //       </div>
-//       <div className="mt-3 break-all rounded-xl bg-white px-3 py-2 font-mono text-xs text-slate-600 ring-1 ring-slate-100">
+//       <div className="mt-3 break-all rounded-lg bg-white px-3 py-2 font-mono text-xs text-slate-600 ring-1 ring-slate-100">
 //         {url}
 //       </div>
 //     </div>
@@ -274,9 +298,9 @@
 // function SummaryChip({ label, value }: { label: string; value: string }) {
 //   if (!value) return null
 //   return (
-//     <div className="rounded-xl bg-violet-50/80 px-3 py-2 ring-1 ring-violet-100">
-//       <div className="text-[10px] font-semibold uppercase tracking-wide text-violet-600">{label}</div>
-//       <div className="mt-0.5 truncate text-sm font-medium text-slate-900">{value}</div>
+//     <div className="rounded-lg bg-[#EEEDFE] px-3 py-2 ring-1 ring-[#CECBF6]">
+//       <div className="text-[9.5px] font-bold uppercase tracking-[0.7px] text-[#534AB7]">{label}</div>
+//       <div className="mt-0.5 truncate text-sm font-semibold text-[#1E1A4E]">{value}</div>
 //     </div>
 //   )
 // }
@@ -815,18 +839,21 @@
 //     </div>
 //   ) : (
 //     <div className="flex items-center justify-between gap-3">
-//       <Button
-//         variant="ghost"
+//       <button
+//         type="button"
+//         className="px-5 py-2 rounded-lg border border-[rgba(83,74,183,0.13)] bg-white text-sm font-medium text-[#7C7A9A] transition hover:border-[#7C7A9A] hover:text-[#1E1A4E]"
 //         onClick={() => {
 //           if (step <= 1) handleClose()
 //           else setStep((s) => s - 1)
 //         }}
 //       >
 //         {step <= 1 ? 'Cancel' : 'Back'}
-//       </Button>
-//       <Button
+//       </button>
+//       <button
+//         type="button"
 //         disabled={nextDisabled}
-//         loading={step === 4 ? createBusy : step === 1 && billerCreateBusy}
+//         className="px-6 py-2 rounded-lg border-none text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+//         style={{ background: nextDisabled ? undefined : 'linear-gradient(135deg, #7F77DD, #534AB7)', boxShadow: '0 2px 8px rgba(83,74,183,0.3)' }}
 //         onClick={() => void handleNext()}
 //       >
 //         {step === 4
@@ -836,7 +863,7 @@
 //           : step === 1 && billerCreateBusy
 //             ? 'Saving biller…'
 //             : 'Continue'}
-//       </Button>
+//       </button>
 //     </div>
 //   )
 
@@ -844,23 +871,23 @@
 //     <Modal
 //       open={open}
 //       onClose={handleClose}
-//       className="max-w-3xl overflow-hidden"
+//       className="max-w-2xl overflow-hidden"
 //       title={undefined}
 //       footer={footer}
 //     >
 //       {editLoading ? (
-//         <p className="py-16 text-center text-sm text-slate-500">Loading delivery…</p>
+//         <p className="py-16 text-center text-sm text-[#7C7A9A]">Loading delivery…</p>
 //       ) : createLinks ? (
 //         <div className="text-center">
-//           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200">
+//           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #1D9E75, #0F6E56)', boxShadow: '0 8px 24px rgba(29,158,117,0.3)' }}>
 //             <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden>
 //               <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 //             </svg>
 //           </div>
-//           <h2 className="text-xl font-bold text-slate-900">
+//           <h2 className="text-xl font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 //             {isEditMode ? 'Delivery updated' : 'Delivery created'}
 //           </h2>
-//           <p className="mt-1 text-sm text-slate-500">
+//           <p className="mt-1 text-sm text-[#7C7A9A]">
 //             Share the links below with your delivery person and biller.
 //           </p>
 //           <div className="mt-6 space-y-3 text-left">
@@ -878,26 +905,37 @@
 //         </div>
 //       ) : (
 //         <div>
-//           <div className="-mx-5 -mt-4 mb-0 bg-gradient-to-r from-violet-600 via-purple-600 to-violet-700 px-5 py-5 text-white">
-//             <h2 className="text-lg font-bold">{isEditMode ? 'Edit delivery' : 'New delivery'}</h2>
-//             <p className="mt-0.5 text-sm text-violet-100">
-//               {isEditMode
-//                 ? editMetadataOnly
-//                   ? 'Update schedule and customer details. Line changes are limited while scans are in progress.'
-//                   : 'Update biller, godowns, products, and schedule.'
-//                 : 'Select godowns first, then pick in-stock products from each.'}
-//             </p>
+//           {/* ─── HEADER matching HTML design ─── */}
+//           <div
+//             className="-mx-5 -mt-4 mb-0 px-0 pb-4 text-white"
+//             style={{ background: 'linear-gradient(135deg, #534AB7 0%, #26215C 100%)', position: 'relative', overflow: 'hidden' }}
+//           >
+//             {/* decorative radial */}
+//             <div style={{ position: 'absolute', top: -40, right: -40, width: 140, height: 140, background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 68%)', pointerEvents: 'none' }} />
+//             <div className="px-6 pt-5 pb-0">
+//               <h2 className="text-lg font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+//                 {isEditMode ? 'Edit delivery' : 'New delivery'}
+//               </h2>
+//               <p className="mt-0.5 text-sm text-[rgba(255,255,255,0.65)]">
+//                 {isEditMode
+//                   ? editMetadataOnly
+//                     ? 'Update schedule and customer details. Line changes are limited while scans are in progress.'
+//                     : 'Update biller, godowns, products, and schedule.'
+//                   : 'Select godowns first, then pick in-stock products from each.'}
+//               </p>
+//             </div>
+//             {/* WizardStepper is now inside the header */}
+//             <WizardStepper step={step} />
 //           </div>
 
 //           <div className="mt-5">
-//             <WizardStepper step={step} />
-
 //             {wizardError ? (
-//               <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">
+//               <div className="mb-4 rounded-lg bg-[#FCEBEB] px-4 py-3 text-sm text-[#A32D2D] ring-1 ring-[#E24B4A]/20">
 //                 {wizardError}
 //               </div>
 //             ) : null}
 
+//             {/* ─── STEP 1: BILLER ─── */}
 //             {step === 1 ? (
 //               <div>
 //                 <StepHeader
@@ -905,50 +943,29 @@
 //                   description="Choose the customer account for this delivery, or register a new biller."
 //                 />
 //                 {billers.length === 0 || createBillerMode ? (
-//                   <div className="space-y-4 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/50 to-white p-5 shadow-sm">
+//                   <div className="space-y-4 rounded-xl border border-[#CECBF6] bg-gradient-to-br from-[#EEEDFE]/50 to-white p-5 shadow-sm">
 //                     <div className="flex items-center gap-3">
-//                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+//                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEEDFE] text-[#534AB7]">
 //                         <StepIcon step={1} />
 //                       </div>
 //                       <div>
-//                         <p className="font-semibold text-slate-900">
+//                         <p className="font-semibold text-[#1E1A4E]">
 //                           {billers.length === 0 ? 'No billers yet' : 'New biller'}
 //                         </p>
-//                         <p className="text-xs text-slate-500">Default login password: 123456</p>
+//                         <p className="text-xs text-[#7C7A9A]">Default login password: 123456</p>
 //                       </div>
 //                     </div>
 //                     <div className="grid gap-3 sm:grid-cols-2">
-//                       <Input
-//                         label="Company / office name *"
-//                         value={newBiller.siteName}
-//                         onChange={(e) => setNewBiller((f) => ({ ...f, siteName: e.target.value }))}
-//                       />
-//                       <Input
-//                         label="Contact person"
-//                         value={newBiller.contactName}
-//                         onChange={(e) => setNewBiller((f) => ({ ...f, contactName: e.target.value }))}
-//                       />
-//                       <Input
-//                         label="Mobile number"
-//                         value={newBiller.contactPhone}
-//                         onChange={(e) => setNewBiller((f) => ({ ...f, contactPhone: e.target.value }))}
-//                       />
-//                       <Input
-//                         label="Email (optional)"
-//                         value={newBiller.email}
-//                         onChange={(e) => setNewBiller((f) => ({ ...f, email: e.target.value }))}
-//                         placeholder="optional@example.com"
-//                       />
+//                       <Input label="Company / office name *" value={newBiller.siteName} onChange={(e) => setNewBiller((f) => ({ ...f, siteName: e.target.value }))} />
+//                       <Input label="Contact person" value={newBiller.contactName} onChange={(e) => setNewBiller((f) => ({ ...f, contactName: e.target.value }))} />
+//                       <Input label="Mobile number" value={newBiller.contactPhone} onChange={(e) => setNewBiller((f) => ({ ...f, contactPhone: e.target.value }))} />
+//                       <Input label="Email (optional)" value={newBiller.email} onChange={(e) => setNewBiller((f) => ({ ...f, email: e.target.value }))} placeholder="optional@example.com" />
 //                     </div>
-//                     <Input
-//                       label="Address"
-//                       value={newBiller.siteAddress}
-//                       onChange={(e) => setNewBiller((f) => ({ ...f, siteAddress: e.target.value }))}
-//                     />
+//                     <Input label="Address" value={newBiller.siteAddress} onChange={(e) => setNewBiller((f) => ({ ...f, siteAddress: e.target.value }))} />
 //                     {billers.length > 0 ? (
-//                       <Button variant="ghost" size="sm" onClick={() => setCreateBillerMode(false)}>
+//                       <button type="button" className="text-sm font-semibold text-[#534AB7] hover:underline" onClick={() => setCreateBillerMode(false)}>
 //                         ← Select existing biller
-//                       </Button>
+//                       </button>
 //                     ) : null}
 //                   </div>
 //                 ) : (
@@ -966,29 +983,34 @@
 //                       ]}
 //                     />
 //                     {selectedBiller ? (
-//                       <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-//                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Selected</p>
-//                         <p className="mt-1 font-semibold text-slate-900">
+//                       <div className="rounded-xl border-2 border-[#CECBF6] bg-[#EEEDFE] p-4">
+//                         <p className="text-[9.5px] font-bold uppercase tracking-[0.8px] text-[#534AB7] mb-1">Selected</p>
+//                         <p className="text-[15px] font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 //                           {selectedBiller.siteName || selectedBiller.contactName || 'Biller'}
 //                         </p>
 //                         {selectedBiller.siteAddress ? (
-//                           <p className="mt-1 text-sm text-slate-600">{selectedBiller.siteAddress}</p>
+//                           <p className="mt-1 text-xs text-[#7C7A9A]">{selectedBiller.siteAddress}</p>
 //                         ) : null}
 //                         {selectedBiller.contactPhone ? (
-//                           <p className="mt-1 text-sm text-violet-700">{selectedBiller.contactPhone}</p>
+//                           <p className="mt-1 text-xs font-medium text-[#534AB7]">{selectedBiller.contactPhone}</p>
 //                         ) : null}
 //                       </div>
 //                     ) : null}
 //                     {canCreateBiller && !isEditMode ? (
-//                       <Button variant="secondary" size="sm" onClick={() => setCreateBillerMode(true)}>
-//                         + Register new biller
-//                       </Button>
+//                       <button
+//                         type="button"
+//                         className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#AFA9EC] px-3 py-2 text-sm font-semibold text-[#534AB7] transition hover:bg-[#EEEDFE] hover:border-[#7F77DD]"
+//                         onClick={() => setCreateBillerMode(true)}
+//                       >
+//                         <span className="text-base leading-none">+</span> Register new biller
+//                       </button>
 //                     ) : null}
 //                   </div>
 //                 )}
 //               </div>
 //             ) : null}
 
+//             {/* ─── STEP 2: GODOWNS ─── */}
 //             {step === 2 ? (
 //               <div>
 //                 <StepHeader
@@ -1007,7 +1029,7 @@
 //                   />
 //                   {selectedGodownIds.length > 0 ? (
 //                     <div className="flex items-end">
-//                       <p className="w-full rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-800 ring-1 ring-violet-100">
+//                       <p className="w-full rounded-lg bg-[#EEEDFE] px-4 py-3 text-sm font-semibold text-[#3C3489] ring-1 ring-[#CECBF6]">
 //                         {selectedGodownIds.length} godown{selectedGodownIds.length > 1 ? 's' : ''} selected
 //                       </p>
 //                     </div>
@@ -1021,52 +1043,47 @@
 //                         key={g.id}
 //                         type="button"
 //                         onClick={() => toggleGodown(g.id)}
-//                         className={
+//                         className={[
+//                           'rounded-xl p-4 text-left transition relative',
 //                           selected
-//                             ? 'rounded-2xl border-2 border-violet-500 bg-violet-50 p-4 text-left shadow-md shadow-violet-100 ring-2 ring-violet-200 transition'
-//                             : 'rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-sm'
-//                         }
+//                             ? 'border-2 border-[#534AB7] bg-[#EEEDFE] shadow-md'
+//                             : 'border border-[rgba(83,74,183,0.13)] bg-white hover:border-[#AFA9EC] hover:bg-[#EEEDFE]/30',
+//                         ].join(' ')}
 //                       >
+//                         {selected && (
+//                           <div className="absolute top-2 right-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#534AB7] text-white">
+//                             <CheckIcon />
+//                           </div>
+//                         )}
 //                         <div className="flex items-start gap-3">
-//                           <div
-//                             className={
-//                               selected
-//                                 ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white'
-//                                 : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600'
-//                             }
-//                           >
+//                           <div className={['flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg mb-2', selected ? 'bg-[#CECBF6] text-[#534AB7]' : 'bg-[#F0EFFD] text-[#7C7A9A]'].join(' ')}>
 //                             <StepIcon step={2} />
 //                           </div>
-//                           <div className="min-w-0 flex-1">
-//                             <p className="font-semibold text-slate-900">{g.name}</p>
-//                             {g.code ? <p className="text-xs font-mono text-slate-500">{g.code}</p> : null}
-//                             <p className="mt-1 text-xs font-medium text-violet-600">Branch: {godownBranch(g)}</p>
-//                             {g.location ? <p className="mt-0.5 text-sm text-slate-600">{g.location}</p> : null}
-//                           </div>
-//                           {selected ? (
-//                             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
-//                               <CheckIcon />
-//                             </div>
-//                           ) : null}
 //                         </div>
+//                         <p className="font-semibold text-[#1E1A4E]">{g.name}</p>
+//                         {g.code ? <p className="text-[10.5px] font-mono text-[#7C7A9A] mt-0.5">{g.code}</p> : null}
+//                         <p className="mt-1 text-xs font-medium text-[#534AB7]">Branch: {godownBranch(g)}</p>
+//                         {g.location ? <p className="mt-0.5 text-xs text-[#7C7A9A]">{g.location}</p> : null}
 //                       </button>
 //                     )
 //                   })}
 //                 </div>
 //                 {godownsInBranch.length === 0 ? (
-//                   <p className="mt-3 text-sm text-slate-500">
-//                     No godowns in this branch. Try another branch or add a new godown below.
-//                   </p>
+//                   <p className="mt-3 text-sm text-[#7C7A9A]">No godowns in this branch. Try another branch or add a new godown below.</p>
 //                 ) : null}
 //                 {canCreateGodown && !isEditMode ? (
-//                   <div className="mt-4 space-y-3 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 p-4">
+//                   <div className="mt-4 space-y-3 rounded-xl border border-dashed border-[#AFA9EC] bg-[#EEEDFE]/40 p-4">
 //                     {!createGodownOpen ? (
-//                       <Button variant="secondary" size="sm" onClick={() => setCreateGodownOpen(true)}>
+//                       <button
+//                         type="button"
+//                         className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(83,74,183,0.13)] bg-white px-3 py-2 text-sm font-medium text-[#1E1A4E] transition hover:border-[#7F77DD] hover:text-[#534AB7]"
+//                         onClick={() => setCreateGodownOpen(true)}
+//                       >
 //                         + Add new godown
-//                       </Button>
+//                       </button>
 //                     ) : (
 //                       <>
-//                         <p className="text-sm font-semibold text-slate-900">New godown</p>
+//                         <p className="text-sm font-semibold text-[#1E1A4E]">New godown</p>
 //                         <div className="grid gap-3 sm:grid-cols-2">
 //                           <Input label="Name *" value={newGodown.name} onChange={(e) => setNewGodown((f) => ({ ...f, name: e.target.value }))} />
 //                           <Input label="Code *" value={newGodown.code} onChange={(e) => setNewGodown((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
@@ -1077,12 +1094,8 @@
 //                           <Input label="Address" value={newGodown.address} onChange={(e) => setNewGodown((f) => ({ ...f, address: e.target.value }))} className="sm:col-span-2" />
 //                         </div>
 //                         <div className="flex gap-2">
-//                           <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>
-//                             Cancel
-//                           </Button>
-//                           <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>
-//                             Save godown
-//                           </Button>
+//                           <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>Cancel</Button>
+//                           <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>Save godown</Button>
 //                         </div>
 //                       </>
 //                     )}
@@ -1091,27 +1104,27 @@
 //               </div>
 //             ) : null}
 
+//             {/* ─── STEP 3: PRODUCTS ─── */}
 //             {step === 3 ? (
 //               <div>
 //                 <StepHeader
 //                   title="Select products"
-//                   description="Choose branch, switch godown on the left, pick products on the right. Add godown if missing."
+//                   description="Choose branch, switch godown on the left, pick products on the right."
 //                 />
 //                 {editMetadataOnly ? (
-//                   <div className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
+//                   <div className="mb-4 rounded-lg bg-[#FAEEDA] px-4 py-3 text-sm text-[#BA7517] ring-1 ring-[#BA7517]/20">
 //                     This delivery has scan activity. You can adjust quantities only within dispatched and scanned limits.
 //                   </div>
 //                 ) : null}
 //                 {selectedGodownIds.length === 0 ? (
-//                   <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-8 text-center text-sm text-amber-900">
+//                   <div className="rounded-xl border border-dashed border-[#BA7517]/40 bg-[#FAEEDA]/50 px-4 py-8 text-center text-sm text-[#BA7517]">
 //                     Go back and select at least one godown first.
 //                   </div>
 //                 ) : (
 //                   <div className="grid min-h-[22rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(11rem,13rem)_1fr]">
-//                     <div className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-2">
-//                       <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-//                         1. Branch & godown
-//                       </p>
+//                     {/* Left pane */}
+//                     <div className="flex flex-col rounded-xl border border-[rgba(83,74,183,0.13)] bg-[#F0EFFD]/60 p-2">
+//                       <p className="px-2 pb-1 text-[9.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">1. Branch &amp; godown</p>
 //                       <div className="px-2 pb-2">
 //                         <Select
 //                           label="Branch"
@@ -1126,7 +1139,7 @@
 //                       <div className="flex max-h-[14rem] flex-col gap-2 overflow-y-auto px-2 pb-2">
 //                         {selectedInBranch.length > 0 ? (
 //                           <>
-//                             <p className="text-[10px] font-semibold uppercase text-slate-400">Selected</p>
+//                             <p className="text-[10px] font-bold uppercase text-[#7C7A9A]">Selected</p>
 //                             {selectedInBranch.map((g) => {
 //                               const isActive = activeGodownId === g.id
 //                               const picked = pickedByGodownId.get(g.id)
@@ -1136,17 +1149,18 @@
 //                                   key={g.id}
 //                                   type="button"
 //                                   onClick={() => selectGodownForProducts(g.id)}
-//                                   className={
+//                                   className={[
+//                                     'rounded-lg border p-3 text-left transition',
 //                                     isActive
-//                                       ? 'rounded-xl border-2 border-violet-500 bg-white p-3 text-left shadow-md ring-2 ring-violet-100'
-//                                       : 'rounded-xl border border-slate-200 bg-white p-3 text-left hover:border-violet-300'
-//                                   }
+//                                       ? 'border-2 border-[#534AB7] bg-white shadow-md'
+//                                       : 'border border-[rgba(83,74,183,0.13)] bg-white hover:border-[#AFA9EC]',
+//                                   ].join(' ')}
 //                                 >
-//                                   <p className="font-semibold text-slate-900">{g.name}</p>
-//                                   <p className="text-xs text-violet-600">{godownBranch(g)}</p>
-//                                   <p className="mt-1 text-xs text-slate-500">{inStock} in stock</p>
+//                                   <p className="font-semibold text-[#1E1A4E] text-[12.5px]">{g.name}</p>
+//                                   <p className="text-xs text-[#534AB7]">{godownBranch(g)}</p>
+//                                   <p className="mt-1 text-[10.5px] text-[#7C7A9A]">{inStock} in stock</p>
 //                                   {picked ? (
-//                                     <p className="mt-1 text-xs font-semibold text-violet-700">
+//                                     <p className="mt-1 text-[10.5px] font-bold text-[#534AB7]">
 //                                       {picked.lines} picked · {picked.units} units
 //                                     </p>
 //                                   ) : null}
@@ -1155,34 +1169,38 @@
 //                             })}
 //                           </>
 //                         ) : (
-//                           <p className="text-xs text-slate-500">No selected godown in this branch.</p>
+//                           <p className="text-xs text-[#7C7A9A]">No selected godown in this branch.</p>
 //                         )}
 //                         {availableInBranch.length > 0 ? (
 //                           <>
-//                             <p className="mt-2 text-[10px] font-semibold uppercase text-slate-400">Add from branch</p>
+//                             <p className="mt-2 text-[10px] font-bold uppercase text-[#7C7A9A]">Add from branch</p>
 //                             {availableInBranch.map((g) => (
 //                               <button
 //                                 key={g.id}
 //                                 type="button"
 //                                 onClick={() => addGodownToSelection(g.id)}
-//                                 className="flex items-center justify-between rounded-xl border border-dashed border-slate-300 bg-white p-2 text-left text-sm hover:border-violet-400 hover:bg-violet-50/50"
+//                                 className="flex items-center justify-between rounded-lg border border-dashed border-[rgba(83,74,183,0.2)] bg-white p-2 text-left text-sm hover:border-[#7F77DD] hover:bg-[#EEEDFE]/50"
 //                               >
 //                                 <span>
-//                                   <span className="font-medium text-slate-900">{g.name}</span>
-//                                   <span className="block text-xs text-slate-500">{godownBranch(g)}</span>
+//                                   <span className="font-medium text-[#1E1A4E]">{g.name}</span>
+//                                   <span className="block text-xs text-[#7C7A9A]">{godownBranch(g)}</span>
 //                                 </span>
-//                                 <span className="text-lg font-bold text-violet-600">+</span>
+//                                 <span className="text-lg font-bold text-[#534AB7]">+</span>
 //                               </button>
 //                             ))}
 //                           </>
 //                         ) : null}
 //                       </div>
 //                       {canCreateGodown && !isEditMode ? (
-//                         <div className="mt-auto border-t border-slate-200 p-2">
+//                         <div className="mt-auto border-t border-[rgba(83,74,183,0.13)] p-2">
 //                           {!createGodownOpen ? (
-//                             <Button variant="secondary" size="sm" className="w-full" onClick={() => setCreateGodownOpen(true)}>
+//                             <button
+//                               type="button"
+//                               className="w-full rounded-lg border border-[rgba(83,74,183,0.13)] bg-white py-2 text-sm font-medium text-[#1E1A4E] transition hover:border-[#7F77DD] hover:text-[#534AB7]"
+//                               onClick={() => setCreateGodownOpen(true)}
+//                             >
 //                               + Add godown
-//                             </Button>
+//                             </button>
 //                           ) : (
 //                             <div className="space-y-2">
 //                               <Input label="Name *" value={newGodown.name} onChange={(e) => setNewGodown((f) => ({ ...f, name: e.target.value }))} />
@@ -1191,12 +1209,8 @@
 //                               <Input label="Mobile *" value={newGodown.mobile} onChange={(e) => setNewGodown((f) => ({ ...f, mobile: e.target.value }))} />
 //                               <Input label="Password *" type="password" value={newGodown.password} onChange={(e) => setNewGodown((f) => ({ ...f, password: e.target.value }))} />
 //                               <div className="flex gap-1">
-//                                 <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>
-//                                   Cancel
-//                                 </Button>
-//                                 <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>
-//                                   Save
-//                                 </Button>
+//                                 <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>Cancel</Button>
+//                                 <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>Save</Button>
 //                               </div>
 //                             </div>
 //                           )}
@@ -1204,36 +1218,31 @@
 //                       ) : null}
 //                     </div>
 
-//                     <div className="flex min-h-[18rem] flex-col rounded-2xl border border-slate-200 bg-white">
+//                     {/* Right pane */}
+//                     <div className="flex min-h-[18rem] flex-col rounded-xl border border-[rgba(83,74,183,0.13)] bg-white">
 //                       {activeGodownId ? (
 //                         <>
-//                           <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
-//                             <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
-//                               2. Select products from
-//                             </p>
-//                             <p className="text-base font-bold text-slate-900">{activeGodown?.name}</p>
-//                             {activeGodown?.location ? (
-//                               <p className="text-xs text-slate-500">{activeGodown.location}</p>
-//                             ) : null}
+//                           <div className="border-b border-[rgba(83,74,183,0.08)] px-4 py-3" style={{ background: 'linear-gradient(to right, #EEEDFE, white)' }}>
+//                             <p className="text-[10.5px] font-bold uppercase tracking-[0.6px] text-[#534AB7]">2. Select products from</p>
+//                             <p className="text-sm font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{activeGodown?.name}</p>
+//                             {activeGodown?.location ? <p className="text-xs text-[#7C7A9A]">{activeGodown.location}</p> : null}
 //                           </div>
-//                           <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+//                           <div className="flex flex-col gap-3 border-b border-[rgba(83,74,183,0.08)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 //                             <Input
 //                               placeholder="Search product name or SKU…"
 //                               value={productSearch}
 //                               onChange={(e) => setProductSearch(e.target.value)}
-//                               className="h-10 sm:max-w-xs"
+//                               className="h-9 sm:max-w-xs"
 //                             />
-//                             <p className="text-sm font-semibold text-violet-800">
+//                             <p className="text-sm font-semibold text-[#534AB7]">
 //                               Total: {linesPayload.length} lines · {totalUnits} units
 //                             </p>
 //                           </div>
 //                           <div className="flex-1 overflow-y-auto p-3">
 //                             {productsLoading && !godownProducts[activeGodownId] ? (
-//                               <p className="py-12 text-center text-sm text-slate-500">Loading products…</p>
+//                               <p className="py-12 text-center text-sm text-[#7C7A9A]">Loading products…</p>
 //                             ) : activeProducts.length === 0 ? (
-//                               <p className="py-12 text-center text-sm text-slate-500">
-//                                 No in-stock products here. Pick another godown on the left.
-//                               </p>
+//                               <p className="py-12 text-center text-sm text-[#7C7A9A]">No in-stock products here. Pick another godown on the left.</p>
 //                             ) : (
 //                               <div className="space-y-2">
 //                                 {filteredCatalog.map((c) => {
@@ -1243,15 +1252,16 @@
 //                                   return (
 //                                     <div
 //                                       key={key}
-//                                       className={
+//                                       className={[
+//                                         'flex items-center justify-between gap-3 rounded-lg border px-4 py-3',
 //                                         selected
-//                                           ? 'flex items-center justify-between gap-3 rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3'
-//                                           : 'flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 hover:border-slate-200'
-//                                       }
+//                                           ? 'border-[#AFA9EC] bg-[#EEEDFE]/60'
+//                                           : 'border-[rgba(83,74,183,0.1)] bg-[#F0EFFD]/30 hover:border-[rgba(83,74,183,0.2)]',
+//                                       ].join(' ')}
 //                                     >
 //                                       <div className="min-w-0 flex-1">
-//                                         <p className="font-medium text-slate-900">{c.particulars}</p>
-//                                         <p className="font-mono text-xs text-slate-500">{c.sku || '—'}</p>
+//                                         <p className="font-medium text-[#1E1A4E]">{c.particulars}</p>
+//                                         <p className="font-mono text-xs text-[#7C7A9A]">{c.sku || '—'}</p>
 //                                       </div>
 //                                       <QtyStepper
 //                                         value={qty}
@@ -1262,14 +1272,14 @@
 //                                   )
 //                                 })}
 //                                 {filteredCatalog.length === 0 ? (
-//                                   <p className="py-8 text-center text-sm text-slate-500">No match for your search.</p>
+//                                   <p className="py-8 text-center text-sm text-[#7C7A9A]">No match for your search.</p>
 //                                 ) : null}
 //                               </div>
 //                             )}
 //                           </div>
 //                         </>
 //                       ) : (
-//                         <p className="flex flex-1 items-center justify-center p-8 text-center text-sm text-slate-500">
+//                         <p className="flex flex-1 items-center justify-center p-8 text-center text-sm text-[#7C7A9A]">
 //                           Select a godown on the left to see and pick products.
 //                         </p>
 //                       )}
@@ -1279,55 +1289,37 @@
 //               </div>
 //             ) : null}
 
+//             {/* ─── STEP 4: SCHEDULE ─── */}
 //             {step === 4 ? (
 //               <div>
 //                 <StepHeader title="Schedule & location" description="Confirm delivery timing and site details." />
 //                 {(selectedBiller || selectedGodownLabels || linesPayload.length > 0) && (
-//                   <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-//                     <SummaryChip
-//                       label="Biller"
-//                       value={selectedBiller?.siteName || selectedBiller?.contactName || ''}
-//                     />
-//                     <SummaryChip label="Godowns" value={selectedGodownLabels} />
-//                     <SummaryChip label="Items" value={`${linesPayload.length} lines · ${totalUnits} units`} />
+//                   <div className="mb-5 flex flex-wrap gap-2">
+//                     {selectedBiller && (
+//                       <SummaryChip label="Biller" value={selectedBiller?.siteName || selectedBiller?.contactName || ''} />
+//                     )}
+//                     {selectedGodownLabels && <SummaryChip label="Godowns" value={selectedGodownLabels} />}
+//                     {linesPayload.length > 0 && (
+//                       <SummaryChip label="Items" value={`${linesPayload.length} lines · ${totalUnits} units`} />
+//                     )}
 //                   </div>
 //                 )}
 //                 <div className="space-y-5">
 //                   <div>
-//                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Customer & site</p>
+//                     <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">Customer &amp; site</p>
 //                     <div className="grid gap-3 sm:grid-cols-2">
 //                       <Input label="Customer name *" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
 //                       <Input label="Site name" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
-//                       <Input
-//                         label="Site address"
-//                         value={siteAddress}
-//                         onChange={(e) => setSiteAddress(e.target.value)}
-//                         className="sm:col-span-2"
-//                       />
+//                       <Input label="Site address" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} className="sm:col-span-2" />
 //                       <Input label="Contact phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
-//                       <Input
-//                         label="Vehicle no. / label"
-//                         value={vehicleLabel}
-//                         onChange={(e) => setVehicleLabel(e.target.value)}
-//                         placeholder="e.g. TN-01-AB-1234"
-//                       />
+//                       <Input label="Vehicle no. / label" value={vehicleLabel} onChange={(e) => setVehicleLabel(e.target.value)} placeholder="e.g. TN-01-AB-1234" />
 //                     </div>
 //                   </div>
 //                   <div>
-//                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Timing</p>
+//                     <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">Timing</p>
 //                     <div className="grid gap-3 sm:grid-cols-2">
-//                       <Input
-//                         label="Delivery at *"
-//                         type="datetime-local"
-//                         value={deliveryAt}
-//                         onChange={(e) => setDeliveryAt(e.target.value)}
-//                       />
-//                       <Input
-//                         label="Return expected (optional)"
-//                         type="datetime-local"
-//                         value={returnExpectedAt}
-//                         onChange={(e) => setReturnExpectedAt(e.target.value)}
-//                       />
+//                       <Input label="Delivery at *" type="datetime-local" value={deliveryAt} onChange={(e) => setDeliveryAt(e.target.value)} />
+//                       <Input label="Return expected (optional)" type="datetime-local" value={returnExpectedAt} onChange={(e) => setReturnExpectedAt(e.target.value)} />
 //                     </div>
 //                   </div>
 //                 </div>
@@ -1339,6 +1331,7 @@
 //     </Modal>
 //   )
 // }
+
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -1352,29 +1345,13 @@ import { isDeliveryDeletable } from '../../lib/deliveryStatus'
 import type { GodownRow } from '../Godowns/List'
 
 type UserRow = {
-  id: string
-  email?: string
-  role: string
-  siteName?: string
-  siteAddress?: string
-  contactPhone?: string
-  contactName?: string
-  active?: boolean
+  id: string; email?: string; role: string; siteName?: string;
+  siteAddress?: string; contactPhone?: string; contactName?: string; active?: boolean
 }
-
-type CatalogRow = {
-  productId: string
-  enabled: boolean
-  particulars?: string
-  sku?: string
-}
-
+type CatalogRow = { productId: string; enabled: boolean; particulars?: string; sku?: string }
 type StockedProduct = CatalogRow & { stockQty: number }
 
-function lineKey(godownId: string, productId: string) {
-  return `${godownId}:${productId}`
-}
-
+function lineKey(godownId: string, productId: string) { return `${godownId}:${productId}` }
 function godownBranch(g: GodownRow): string {
   const city = g.city?.trim()
   if (city) return city
@@ -1384,205 +1361,107 @@ function godownBranch(g: GodownRow): string {
 }
 
 const STEPS = [
-  { id: 1, title: 'Biller', subtitle: 'Customer account' },
-  { id: 2, title: 'Godowns', subtitle: 'Select sources' },
-  { id: 3, title: 'Products', subtitle: 'Per godown stock' },
-  { id: 4, title: 'Schedule', subtitle: 'Delivery details' },
+  { id: 1, title: 'Biller',    subtitle: 'Customer account' },
+  { id: 2, title: 'Godowns',   subtitle: 'Select sources' },
+  { id: 3, title: 'Products',  subtitle: 'Per godown stock' },
+  { id: 4, title: 'Schedule',  subtitle: 'Delivery details' },
 ] as const
 
 export type CreateDeliveryPrefill = {
-  orderId?: string
-  customerName?: string
-  siteName?: string
-  siteAddress?: string
-  contactPhone?: string
-  deliveryAt?: string
-  returnExpectedAt?: string
-  fromGodownId?: string
+  orderId?: string; customerName?: string; siteName?: string;
+  siteAddress?: string; contactPhone?: string; deliveryAt?: string;
+  returnExpectedAt?: string; fromGodownId?: string
 }
 
 type DeliveryDetailForEdit = {
-  id: string
-  billerUserId?: string
-  customerName: string
-  siteName?: string
-  siteAddress?: string
-  contactPhone?: string
-  fromGodownId: string
-  deliveryAt: string
-  returnExpectedAt?: string
-  vehicleLabel?: string
-  status: string
-  dispatchedTagIds?: string[]
-  pickedUpTagIds?: string[]
-  deliveredTagIds?: string[]
-  returnPickedUpTagIds?: string[]
-  returnedTagIds?: string[]
-  damagedTagIds?: string[]
-  lostTagIds?: string[]
+  id: string; billerUserId?: string; customerName: string; siteName?: string;
+  siteAddress?: string; contactPhone?: string; fromGodownId: string;
+  deliveryAt: string; returnExpectedAt?: string; vehicleLabel?: string; status: string;
+  dispatchedTagIds?: string[]; pickedUpTagIds?: string[]; deliveredTagIds?: string[];
+  returnPickedUpTagIds?: string[]; returnedTagIds?: string[];
+  damagedTagIds?: string[]; lostTagIds?: string[];
   lines: Array<{ productId: string; godownId?: string; qty: number }>
 }
 
 type Props = {
-  open: boolean
-  onClose: () => void
-  onCreated: () => void
-  onUpdated?: () => void
-  deliveryId?: string | null
-  prefill?: CreateDeliveryPrefill | null
+  open: boolean; onClose: () => void; onCreated: () => void;
+  onUpdated?: () => void; deliveryId?: string | null; prefill?: CreateDeliveryPrefill | null
 }
 
+// ── Step icons ──────────────────────────────────────────────────────────────
 function StepIcon({ step }: { step: number }) {
-  const cls = 'h-4 w-4'
-  if (step === 1) {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    )
-  }
-  if (step === 2) {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M4 9.5 12 5l8 4.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    )
-  }
-  if (step === 3) {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M7 7.5 12 5l5 2.5v5L12 15l-5-2.5v-5Z" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M12 15v6M7 12.5 12 15l5-2.5" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    )
-  }
-  return (
-    <svg className={cls} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="18" cy="17" r="3" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  )
+  const s = { stroke: 'currentColor', strokeWidth: '1.7', fill: 'none' } as const
+  if (step === 1) return <svg width="20" height="20" viewBox="0 0 24 24" {...s}><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" strokeLinecap="round" /></svg>
+  if (step === 2) return <svg width="20" height="20" viewBox="0 0 24 24" {...s}><path d="M4 9.5 12 5l8 4.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z" /><path d="M9 21V12h6v9" /></svg>
+  if (step === 3) return <svg width="20" height="20" viewBox="0 0 24 24" {...s}><path d="M7 7.5 12 5l5 2.5v5L12 15l-5-2.5v-5Z" /><path d="M12 15v6M7 12.5 12 15l5-2.5" /></svg>
+  return <svg width="20" height="20" viewBox="0 0 24 24" {...s}><path d="M4 7h16M4 12h10M4 17h7" strokeLinecap="round" /><circle cx="18" cy="17" r="3" /></svg>
 }
 
 function CheckIcon() {
-  return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5 9.5 17 19 7" /></svg>
 }
 
 function CopyIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="8" y="8" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M6 16H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="1.7" />
-    </svg>
-  )
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M6 16H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
 }
 
-function QtyStepper({
-  value,
-  max,
-  onChange,
-}: {
-  value: number
-  max: number
-  onChange: (n: number) => void
-}) {
+// ── Qty stepper ─────────────────────────────────────────────────────────────
+function QtyStepper({ value, max, onChange }: { value: number; max: number; onChange: (n: number) => void }) {
   const clamp = (n: number) => Math.max(0, Math.min(max, n))
+  const btn: React.CSSProperties = {
+    width: 34, height: 34, border: 'none', background: 'none', cursor: 'pointer',
+    fontSize: 18, color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 8, transition: 'background 0.15s',
+  }
   return (
-    <div className="inline-flex flex-col items-end gap-1">
-      <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white shadow-sm">
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-l-lg text-base text-slate-600 transition hover:bg-[#EEEDFE] hover:text-[#534AB7] disabled:opacity-40"
-          disabled={value <= 0}
-          onClick={() => onChange(clamp(value - 1))}
-          aria-label="Decrease quantity"
-        >
-          −
-        </button>
+    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', overflow: 'hidden' }}>
+        <button type="button" style={{ ...btn, opacity: value <= 0 ? 0.3 : 1 }} disabled={value <= 0} onClick={() => onChange(clamp(value - 1))}>−</button>
         <input
-          type="number"
-          min={0}
-          max={max}
-          className="h-8 w-12 border-x border-slate-200 bg-slate-50/80 text-center text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#AFA9EC]"
-          value={value}
+          type="number" min={0} max={max} value={value}
           onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
+          style={{ width: 52, height: 34, border: 'none', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#0f172a', background: '#f8fafc', outline: 'none', fontFamily: 'inherit' }}
         />
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-r-lg text-base text-slate-600 transition hover:bg-[#EEEDFE] hover:text-[#534AB7] disabled:opacity-40"
-          disabled={value >= max}
-          onClick={() => onChange(clamp(value + 1))}
-          aria-label="Increase quantity"
-        >
-          +
-        </button>
+        <button type="button" style={{ ...btn, opacity: value >= max ? 0.3 : 1 }} disabled={value >= max} onClick={() => onChange(clamp(value + 1))}>+</button>
       </div>
-      <span className="text-[10px] font-medium text-slate-500">In stock: {max}</span>
+      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>In stock: {max}</span>
     </div>
   )
 }
 
-// ─── NEW WizardStepper matching HTML design ───────────────────────────────────
+// ── Wizard stepper UI ────────────────────────────────────────────────────────
 function WizardStepper({ step }: { step: number }) {
   const progress = ((step - 1) / (STEPS.length - 1)) * 100
   return (
-    <div className="px-6 pb-0 pt-4">
-      {/* Progress bar */}
-      <div className="mb-5 h-[3px] overflow-hidden rounded-full bg-[rgba(255,255,255,0.18)]">
-        <div
-          className="h-full rounded-full bg-white transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
+    <div style={{ marginBottom: 24 }}>
+      {/* progress bar */}
+      <div style={{ height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #7F77DD, #534AB7)', borderRadius: 99, transition: 'width 0.4s ease' }} />
       </div>
-      {/* Step indicators with connectors */}
-      <div className="flex items-start justify-between">
-        {STEPS.map((s, idx) => {
+      {/* step indicators */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4 }}>
+        {STEPS.map((s) => {
           const done = step > s.id
           const active = step === s.id
           return (
-            <div key={s.id} className="flex flex-1 items-start">
-              <div className="flex flex-col items-center gap-[5px]" style={{ minWidth: 60 }}>
-                <div
-                  className={[
-                    'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-200',
-                    done
-                      ? 'border-[#7F77DD] bg-[#534AB7] text-white'
-                      : active
-                        ? 'border-[#7F77DD] bg-[#EEEDFE] text-[#534AB7]'
-                        : 'border-[rgba(255,255,255,0.25)] bg-transparent text-[rgba(255,255,255,0.45)]',
-                  ].join(' ')}
-                >
-                  {done ? <CheckIcon /> : <StepIcon step={s.id} />}
-                </div>
-                <span
-                  className={[
-                    'text-[10.5px] font-semibold text-center leading-tight',
-                    active || done ? 'text-white' : 'text-[rgba(255,255,255,0.45)]',
-                  ].join(' ')}
-                >
-                  {s.title}
-                </span>
-                <span className="hidden text-[9.5px] text-center text-[rgba(255,255,255,0.38)] sm:block leading-tight">
-                  {s.subtitle}
-                </span>
+            <div key={s.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              {/* circle */}
+              <div style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: done || active ? 'linear-gradient(135deg, #7F77DD, #534AB7)' : '#fff',
+                border: done || active ? 'none' : '2px solid #e2e8f0',
+                color: done || active ? '#fff' : '#94a3b8',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: active ? '0 4px 14px rgba(83,74,183,0.35)' : 'none',
+                outline: active ? '3px solid rgba(83,74,183,0.15)' : 'none',
+                transition: 'all 0.25s',
+              }}>
+                {done ? <CheckIcon /> : <StepIcon step={s.id} />}
               </div>
-              {/* Connector line between steps */}
-              {idx < STEPS.length - 1 && (
-                <div className="flex-1 mt-[17px] mx-1">
-                  <div
-                    className={[
-                      'h-[2px] rounded-full transition-all duration-300',
-                      step > s.id ? 'bg-[#7F77DD]' : 'bg-[rgba(255,255,255,0.15)]',
-                    ].join(' ')}
-                  />
-                </div>
-              )}
+              <span style={{ marginTop: 8, fontSize: 12, fontWeight: active || done ? 700 : 500, color: active || done ? '#0f172a' : '#94a3b8' }}>
+                {s.title}
+              </span>
+              <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>{s.subtitle}</span>
             </div>
           )
         })}
@@ -1593,44 +1472,34 @@ function WizardStepper({ step }: { step: number }) {
 
 function StepHeader({ title, description }: { title: string; description: string }) {
   return (
-    <div className="mb-5">
-      <h3 className="text-base font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{title}</h3>
-      <p className="mt-0.5 text-sm text-[#7C7A9A]">{description}</p>
+    <div style={{ marginBottom: 20 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>{title}</h3>
+      <p style={{ marginTop: 3, fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>{description}</p>
     </div>
   )
 }
 
-function LinkCard({
-  label,
-  description,
-  url,
-}: {
-  label: string
-  description: string
-  url: string
-}) {
+function LinkCard({ label, description, url }: { label: string; description: string; url: string }) {
   const [copied, setCopied] = useState(false)
   return (
-    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
+    <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, background: '#f8fafc', padding: 16, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
         <div>
-          <div className="text-sm font-semibold text-slate-900">{label}</div>
-          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{label}</div>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#64748b' }}>{description}</p>
         </div>
-        <Button
-          size="sm"
-          variant={copied ? 'success' : 'secondary'}
-          onClick={() => {
-            void navigator.clipboard.writeText(url)
-            setCopied(true)
-            window.setTimeout(() => setCopied(false), 2000)
+        <button
+          onClick={() => { void navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 2000) }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+            borderRadius: 8, border: '1px solid #e2e8f0', background: copied ? '#f0fdf4' : '#fff',
+            fontSize: 12, fontWeight: 600, color: copied ? '#16a34a' : '#374151', cursor: 'pointer', whiteSpace: 'nowrap',
           }}
         >
-          <CopyIcon />
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
+          <CopyIcon />{copied ? 'Copied!' : 'Copy'}
+        </button>
       </div>
-      <div className="mt-3 break-all rounded-lg bg-white px-3 py-2 font-mono text-xs text-slate-600 ring-1 ring-slate-100">
+      <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: 8, padding: '8px 12px', fontFamily: 'monospace', fontSize: 11, color: '#475569', wordBreak: 'break-all' }}>
         {url}
       </div>
     </div>
@@ -1640,9 +1509,9 @@ function LinkCard({
 function SummaryChip({ label, value }: { label: string; value: string }) {
   if (!value) return null
   return (
-    <div className="rounded-lg bg-[#EEEDFE] px-3 py-2 ring-1 ring-[#CECBF6]">
-      <div className="text-[9.5px] font-bold uppercase tracking-[0.7px] text-[#534AB7]">{label}</div>
-      <div className="mt-0.5 truncate text-sm font-semibold text-[#1E1A4E]">{value}</div>
+    <div style={{ borderRadius: 10, background: '#F0EFFD', border: '1px solid #CECBF6', padding: '8px 12px' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#534AB7' }}>{label}</div>
+      <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   )
 }
@@ -1654,91 +1523,68 @@ function toDatetimeLocalValue(iso: string | undefined): string {
   return d.toISOString().slice(0, 16)
 }
 
+// ── Shared input style ────────────────────────────────────────────────────────
+const fieldInp: React.CSSProperties = {
+  width: '100%', height: 38, padding: '0 12px',
+  border: '1px solid #e2e8f0', borderRadius: 9,
+  fontSize: 13, color: '#111827', background: '#f9fafb',
+  outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+  transition: 'border-color 0.15s',
+}
+
+// ── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliveryId, prefill }: Props) {
   const auth = useAuth()
-  const nav = useNavigate()
+  const nav  = useNavigate()
 
-  const [continueEditId, setContinueEditId] = useState<string | null>(null)
+  const [continueEditId,    setContinueEditId]    = useState<string | null>(null)
   const effectiveEditId = deliveryId ?? continueEditId
   const isEditMode = !!effectiveEditId
 
-  const [step, setStep] = useState(1)
-  const [editLoading, setEditLoading] = useState(false)
-  const [editMetadataOnly, setEditMetadataOnly] = useState(false)
-  const [billers, setBillers] = useState<UserRow[]>([])
-  const [godowns, setGodowns] = useState<GodownRow[]>([])
-  const [productSearch, setProductSearch] = useState('')
-  const [billerId, setBillerId] = useState('')
+  const [step,              setStep]              = useState(1)
+  const [editLoading,       setEditLoading]       = useState(false)
+  const [editMetadataOnly,  setEditMetadataOnly]  = useState(false)
+  const [billers,           setBillers]           = useState<UserRow[]>([])
+  const [godowns,           setGodowns]           = useState<GodownRow[]>([])
+  const [productSearch,     setProductSearch]     = useState('')
+  const [billerId,          setBillerId]          = useState('')
   const [selectedGodownIds, setSelectedGodownIds] = useState<string[]>([])
-  const [activeGodownId, setActiveGodownId] = useState('')
-  const [godownProducts, setGodownProducts] = useState<Record<string, StockedProduct[]>>({})
-  const [productsLoading, setProductsLoading] = useState(false)
-  const [lineQty, setLineQty] = useState<Record<string, number>>({})
-  const [customerName, setCustomerName] = useState('')
-  const [deliveryAt, setDeliveryAt] = useState('')
-  const [returnExpectedAt, setReturnExpectedAt] = useState('')
-  const [vehicleLabel, setVehicleLabel] = useState('')
-  const [siteName, setSiteName] = useState('')
-  const [siteAddress, setSiteAddress] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [createBusy, setCreateBusy] = useState(false)
-  const [createLinks, setCreateLinks] = useState<{
-    deliveryVerifyUrl: string
-    billerReturnUrl: string
-    id: string
-  } | null>(null)
-  const [createBillerMode, setCreateBillerMode] = useState(false)
-  const [newBiller, setNewBiller] = useState({
-    siteName: '',
-    siteAddress: '',
-    contactName: '',
-    contactPhone: '',
-    email: '',
-  })
-  const [billerCreateBusy, setBillerCreateBusy] = useState(false)
-  const [branchFilter, setBranchFilter] = useState('')
-  const [createGodownOpen, setCreateGodownOpen] = useState(false)
-  const [newGodown, setNewGodown] = useState({
-    name: '',
-    code: '',
-    address: '',
-    mobile: '',
-    location: '',
-    city: '',
-    password: '',
-  })
-  const [godownCreateBusy, setGodownCreateBusy] = useState(false)
-  const [wizardError, setWizardError] = useState<string | null>(null)
-  const [orderId, setOrderId] = useState<string | undefined>()
+  const [activeGodownId,    setActiveGodownId]    = useState('')
+  const [godownProducts,    setGodownProducts]    = useState<Record<string, StockedProduct[]>>({})
+  const [productsLoading,   setProductsLoading]   = useState(false)
+  const [lineQty,           setLineQty]           = useState<Record<string, number>>({})
+  const [customerName,      setCustomerName]      = useState('')
+  const [deliveryAt,        setDeliveryAt]        = useState('')
+  const [returnExpectedAt,  setReturnExpectedAt]  = useState('')
+  const [vehicleLabel,      setVehicleLabel]      = useState('')
+  const [siteName,          setSiteName]          = useState('')
+  const [siteAddress,       setSiteAddress]       = useState('')
+  const [contactPhone,      setContactPhone]      = useState('')
+  const [createBusy,        setCreateBusy]        = useState(false)
+  const [createLinks,       setCreateLinks]       = useState<{ deliveryVerifyUrl: string; billerReturnUrl: string; id: string } | null>(null)
+  const [createBillerMode,  setCreateBillerMode]  = useState(false)
+  const [newBiller,         setNewBiller]         = useState({ siteName: '', siteAddress: '', contactName: '', contactPhone: '', email: '' })
+  const [billerCreateBusy,  setBillerCreateBusy]  = useState(false)
+  const [branchFilter,      setBranchFilter]      = useState('')
+  const [createGodownOpen,  setCreateGodownOpen]  = useState(false)
+  const [newGodown,         setNewGodown]         = useState({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
+  const [godownCreateBusy,  setGodownCreateBusy]  = useState(false)
+  const [wizardError,       setWizardError]       = useState<string | null>(null)
+  const [orderId,           setOrderId]           = useState<string | undefined>()
 
-  const canCreate = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
+  const canCreate       = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
   const canCreateBiller = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
   const canCreateGodown = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
 
   const resetWizard = () => {
-    setStep(1)
-    setBillerId('')
-    setSelectedGodownIds([])
-    setActiveGodownId('')
-    setGodownProducts({})
-    setProductsLoading(false)
-    setLineQty({})
-    setProductSearch('')
-    setCustomerName('')
-    setDeliveryAt('')
-    setReturnExpectedAt('')
-    setVehicleLabel('')
-    setSiteName('')
-    setSiteAddress('')
-    setContactPhone('')
-    setCreateLinks(null)
-    setCreateBillerMode(false)
-    setNewBiller({ siteName: '', siteAddress: '', contactName: '', contactPhone: '', email: '' })
-    setBranchFilter('')
-    setCreateGodownOpen(false)
+    setStep(1); setBillerId(''); setSelectedGodownIds([]); setActiveGodownId('')
+    setGodownProducts({}); setProductsLoading(false); setLineQty({}); setProductSearch('')
+    setCustomerName(''); setDeliveryAt(''); setReturnExpectedAt(''); setVehicleLabel('')
+    setSiteName(''); setSiteAddress(''); setContactPhone(''); setCreateLinks(null)
+    setCreateBillerMode(false); setNewBiller({ siteName: '', siteAddress: '', contactName: '', contactPhone: '', email: '' })
+    setBranchFilter(''); setCreateGodownOpen(false)
     setNewGodown({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
-    setWizardError(null)
-    setOrderId(undefined)
+    setWizardError(null); setOrderId(undefined)
   }
 
   useEffect(() => {
@@ -1748,315 +1594,131 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     if (prefill.siteName) setSiteName(prefill.siteName)
     if (prefill.siteAddress) setSiteAddress(prefill.siteAddress)
     if (prefill.contactPhone) setContactPhone(prefill.contactPhone)
-    if (prefill.deliveryAt) {
-      const d = new Date(prefill.deliveryAt)
-      if (!Number.isNaN(d.getTime())) {
-        setDeliveryAt(d.toISOString().slice(0, 16))
-      }
-    }
-    if (prefill.returnExpectedAt) {
-      const d = new Date(prefill.returnExpectedAt)
-      if (!Number.isNaN(d.getTime())) {
-        setReturnExpectedAt(d.toISOString().slice(0, 16))
-      }
-    }
-    if (prefill.fromGodownId) {
-      setSelectedGodownIds([prefill.fromGodownId])
-      setActiveGodownId(prefill.fromGodownId)
-    }
+    if (prefill.deliveryAt) { const d = new Date(prefill.deliveryAt); if (!isNaN(d.getTime())) setDeliveryAt(d.toISOString().slice(0, 16)) }
+    if (prefill.returnExpectedAt) { const d = new Date(prefill.returnExpectedAt); if (!isNaN(d.getTime())) setReturnExpectedAt(d.toISOString().slice(0, 16)) }
+    if (prefill.fromGodownId) { setSelectedGodownIds([prefill.fromGodownId]); setActiveGodownId(prefill.fromGodownId) }
   }, [open, prefill])
 
   const createGodownInline = async () => {
     const token = getToken()
     if (!token || !canCreateGodown) return
     if (!newGodown.name.trim() || !newGodown.code.trim() || !newGodown.mobile.trim() || newGodown.password.length < 6) {
-      setWizardError('Godown name, code, mobile, and password (min 6) are required')
-      return
+      setWizardError('Godown name, code, mobile, and password (min 6) are required'); return
     }
-    setGodownCreateBusy(true)
-    setWizardError(null)
+    setGodownCreateBusy(true); setWizardError(null)
     try {
-      const created = await apiFetch<GodownRow>('/godowns', {
-        token,
-        method: 'POST',
-        body: JSON.stringify({
-          name: newGodown.name.trim(),
-          code: newGodown.code.trim(),
-          address: newGodown.address.trim() || undefined,
-          mobile: newGodown.mobile.trim(),
-          location: newGodown.location.trim() || undefined,
-          city: newGodown.city.trim() || undefined,
-          password: newGodown.password,
-        }),
-      })
+      const created = await apiFetch<GodownRow>('/godowns', { token, method: 'POST', body: JSON.stringify({ name: newGodown.name.trim(), code: newGodown.code.trim(), address: newGodown.address.trim() || undefined, mobile: newGodown.mobile.trim(), location: newGodown.location.trim() || undefined, city: newGodown.city.trim() || undefined, password: newGodown.password }) })
       setGodowns((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
-      const branch = godownBranch(created)
-      setBranchFilter(branch)
-      setSelectedGodownIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]))
-      setActiveGodownId(created.id)
-      void loadGodownProducts(created.id)
-      setCreateGodownOpen(false)
-      setNewGodown({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
+      setBranchFilter(godownBranch(created))
+      setSelectedGodownIds((prev) => prev.includes(created.id) ? prev : [...prev, created.id])
+      setActiveGodownId(created.id); void loadGodownProducts(created.id)
+      setCreateGodownOpen(false); setNewGodown({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Create godown failed'
-      setWizardError(msg)
-    } finally {
-      setGodownCreateBusy(false)
-    }
+      setWizardError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Create godown failed')
+    } finally { setGodownCreateBusy(false) }
   }
 
-  const handleClose = () => {
-    onClose()
-    setContinueEditId(null)
-    if (createLinks) resetWizard()
-  }
+  const handleClose = () => { onClose(); setContinueEditId(null); if (createLinks) resetWizard() }
 
   const loadDeliveryForEdit = async (id: string) => {
-    const token = getToken()
-    if (!token) return
-    setEditLoading(true)
-    setWizardError(null)
+    const token = getToken(); if (!token) return
+    setEditLoading(true); setWizardError(null)
     try {
       const d = await apiFetch<DeliveryDetailForEdit>(`/deliveries/${id}`, { token })
-      setBillerId(d.billerUserId || '')
-      setCustomerName(d.customerName)
-      setSiteName(d.siteName || '')
-      setSiteAddress(d.siteAddress || '')
-      setContactPhone(d.contactPhone || '')
-      setVehicleLabel(d.vehicleLabel || '')
-      setDeliveryAt(toDatetimeLocalValue(d.deliveryAt))
-      setReturnExpectedAt(toDatetimeLocalValue(d.returnExpectedAt))
-      const godownIds = [
-        ...new Set(
-          d.lines.map((l) => l.godownId || d.fromGodownId).filter((gid): gid is string => !!gid),
-        ),
-      ]
+      setBillerId(d.billerUserId || ''); setCustomerName(d.customerName)
+      setSiteName(d.siteName || ''); setSiteAddress(d.siteAddress || '')
+      setContactPhone(d.contactPhone || ''); setVehicleLabel(d.vehicleLabel || '')
+      setDeliveryAt(toDatetimeLocalValue(d.deliveryAt)); setReturnExpectedAt(toDatetimeLocalValue(d.returnExpectedAt))
+      const godownIds = [...new Set(d.lines.map((l) => l.godownId || d.fromGodownId).filter((gid): gid is string => !!gid))]
       if (godownIds.length === 0 && d.fromGodownId) godownIds.push(d.fromGodownId)
-      setSelectedGodownIds(godownIds)
-      setActiveGodownId(godownIds[0] || '')
+      setSelectedGodownIds(godownIds); setActiveGodownId(godownIds[0] || '')
       const qty: Record<string, number> = {}
-      for (const line of d.lines) {
-        const gid = line.godownId || d.fromGodownId
-        if (!gid) continue
-        const key = lineKey(gid, line.productId)
-        qty[key] = (qty[key] || 0) + line.qty
-      }
-      setLineQty(qty)
-      setGodownProducts({})
-      setStep(1)
-      setCreateLinks(null)
+      for (const line of d.lines) { const gid = line.godownId || d.fromGodownId; if (!gid) continue; const key = lineKey(gid, line.productId); qty[key] = (qty[key] || 0) + line.qty }
+      setLineQty(qty); setGodownProducts({}); setStep(1); setCreateLinks(null)
       const role = auth.status === 'authenticated' ? auth.user.role : ''
-      setEditMetadataOnly(
-        role === 'ADMIN' &&
-          !isDeliveryDeletable({
-            status: d.status,
-            dispatchedTagIds: d.dispatchedTagIds,
-            pickedUpTagIds: d.pickedUpTagIds,
-            deliveredTagIds: d.deliveredTagIds,
-            returnPickedUpTagIds: d.returnPickedUpTagIds,
-            returnedTagIds: d.returnedTagIds,
-            damagedTagIds: d.damagedTagIds,
-            lostTagIds: d.lostTagIds,
-          }),
-      )
+      setEditMetadataOnly(role === 'ADMIN' && !isDeliveryDeletable({ status: d.status, dispatchedTagIds: d.dispatchedTagIds, pickedUpTagIds: d.pickedUpTagIds, deliveredTagIds: d.deliveredTagIds, returnPickedUpTagIds: d.returnPickedUpTagIds, returnedTagIds: d.returnedTagIds, damagedTagIds: d.damagedTagIds, lostTagIds: d.lostTagIds }))
     } catch (e: unknown) {
-      const msg =
-        e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to load delivery'
-      setWizardError(msg)
-    } finally {
-      setEditLoading(false)
-    }
+      setWizardError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Failed to load delivery')
+    } finally { setEditLoading(false) }
   }
 
-  useEffect(() => {
-    if (!open) return
-    if (!deliveryId) {
-      resetWizard()
-      setContinueEditId(null)
-      setEditMetadataOnly(false)
-    }
-  }, [open, deliveryId])
-
-  useEffect(() => {
-    if (!open || !effectiveEditId) return
-    void loadDeliveryForEdit(effectiveEditId)
-  }, [open, effectiveEditId])
+  useEffect(() => { if (!open) return; if (!deliveryId) { resetWizard(); setContinueEditId(null); setEditMetadataOnly(false) } }, [open, deliveryId])
+  useEffect(() => { if (!open || !effectiveEditId) return; void loadDeliveryForEdit(effectiveEditId) }, [open, effectiveEditId])
 
   useEffect(() => {
     if (!open || !canCreate) return
-    const token = getToken()
-    if (!token) return
+    const token = getToken(); if (!token) return
     apiFetch<UserRow[]>('/users/billers', { token })
-      .then((rows) => {
-        setBillers(rows)
-        if (auth.status === 'authenticated' && auth.user.role === 'BILLER') {
-          setBillerId(auth.user.id)
-        }
-      })
+      .then((rows) => { setBillers(rows); if (auth.status === 'authenticated' && auth.user.role === 'BILLER') setBillerId(auth.user.id) })
       .catch(() => setBillers([]))
     apiFetch<GodownRow[]>('/godowns', { token }).then(setGodowns).catch(() => {})
   }, [open, canCreate, auth])
 
   const loadGodownProducts = async (godownId: string) => {
-    const token = getToken()
-    if (!token) return
+    const token = getToken(); if (!token) return
     setProductsLoading(true)
     try {
       const [catalog, stock] = await Promise.all([
         apiFetch<CatalogRow[]>(`/godowns/${godownId}/products`, { token }),
-        apiFetch<Array<{ godownId: string; productId: string; qty: number }>>(
-          `/reports/stock?godownId=${encodeURIComponent(godownId)}`,
-          { token },
-        ),
+        apiFetch<Array<{ godownId: string; productId: string; qty: number }>>(`/reports/stock?godownId=${encodeURIComponent(godownId)}`, { token }),
       ])
       const stockMap = new Map(stock.map((s) => [s.productId, s.qty]))
-      const stocked: StockedProduct[] = catalog
-        .filter((c) => c.enabled && (stockMap.get(c.productId) ?? 0) > 0)
-        .map((c) => ({ ...c, stockQty: stockMap.get(c.productId) ?? 0 }))
-        .sort((a, b) => (a.particulars || '').localeCompare(b.particulars || ''))
+      const stocked: StockedProduct[] = catalog.filter((c) => c.enabled && (stockMap.get(c.productId) ?? 0) > 0).map((c) => ({ ...c, stockQty: stockMap.get(c.productId) ?? 0 })).sort((a, b) => (a.particulars || '').localeCompare(b.particulars || ''))
       setGodownProducts((prev) => ({ ...prev, [godownId]: stocked }))
-    } catch {
-      setGodownProducts((prev) => ({ ...prev, [godownId]: [] }))
-    } finally {
-      setProductsLoading(false)
-    }
+    } catch { setGodownProducts((prev) => ({ ...prev, [godownId]: [] })) }
+    finally { setProductsLoading(false) }
   }
 
   const addGodownToSelection = (id: string) => {
-    if (selectedGodownIds.includes(id)) {
-      selectGodownForProducts(id)
-      return
-    }
-    void loadGodownProducts(id)
-    setSelectedGodownIds((prev) => [...prev, id])
-    setActiveGodownId(id)
+    if (selectedGodownIds.includes(id)) { selectGodownForProducts(id); return }
+    void loadGodownProducts(id); setSelectedGodownIds((prev) => [...prev, id]); setActiveGodownId(id)
   }
 
   const toggleGodown = (id: string) => {
     setSelectedGodownIds((prev) => {
       if (prev.includes(id)) {
-        setLineQty((q) => {
-          const next = { ...q }
-          for (const k of Object.keys(next)) {
-            if (k.startsWith(`${id}:`)) delete next[k]
-          }
-          return next
-        })
-        setGodownProducts((gp) => {
-          const next = { ...gp }
-          delete next[id]
-          return next
-        })
+        setLineQty((q) => { const next = { ...q }; for (const k of Object.keys(next)) { if (k.startsWith(`${id}:`)) delete next[k] }; return next })
+        setGodownProducts((gp) => { const next = { ...gp }; delete next[id]; return next })
         const next = prev.filter((x) => x !== id)
         if (activeGodownId === id) setActiveGodownId(next[0] || '')
         return next
       }
-      void loadGodownProducts(id)
-      setActiveGodownId(id)
-      return [...prev, id]
+      void loadGodownProducts(id); setActiveGodownId(id); return [...prev, id]
     })
   }
 
   useEffect(() => {
     if (step !== 3 || !open || selectedGodownIds.length === 0) return
-    const token = getToken()
-    if (!token) return
-    for (const gid of selectedGodownIds) {
-      if (!godownProducts[gid]) void loadGodownProducts(gid)
-    }
-    if (!activeGodownId || !selectedGodownIds.includes(activeGodownId)) {
-      setActiveGodownId(selectedGodownIds[0])
-    }
+    for (const gid of selectedGodownIds) { if (!godownProducts[gid]) void loadGodownProducts(gid) }
+    if (!activeGodownId || !selectedGodownIds.includes(activeGodownId)) setActiveGodownId(selectedGodownIds[0])
   }, [step, open, selectedGodownIds])
 
   useEffect(() => {
     const b = billers.find((x) => x.id === billerId)
-    if (b) {
-      setSiteName(b.siteName || '')
-      setContactPhone(b.contactPhone || '')
-      setCustomerName(b.siteName || b.contactName || b.email?.split('@')[0] || '')
-      setSiteAddress(b.siteAddress || '')
-    }
+    if (b) { setSiteName(b.siteName || ''); setContactPhone(b.contactPhone || ''); setCustomerName(b.siteName || b.contactName || b.email?.split('@')[0] || ''); setSiteAddress(b.siteAddress || '') }
   }, [billerId, billers])
 
   const linesPayload = useMemo(() => {
     const lines: Array<{ productId: string; godownId: string; qty: number }> = []
     for (const [key, qty] of Object.entries(lineQty)) {
-      if (qty <= 0) continue
-      const sep = key.indexOf(':')
-      if (sep <= 0) continue
-      const godownId = key.slice(0, sep)
-      const productId = key.slice(sep + 1)
-      lines.push({ godownId, productId, qty })
+      if (qty <= 0) continue; const sep = key.indexOf(':'); if (sep <= 0) continue
+      lines.push({ godownId: key.slice(0, sep), productId: key.slice(sep + 1), qty })
     }
     return lines
   }, [lineQty])
 
-  const totalUnits = useMemo(
-    () => Object.values(lineQty).reduce((sum, q) => sum + (q > 0 ? q : 0), 0),
-    [lineQty],
-  )
-
+  const totalUnits = useMemo(() => Object.values(lineQty).reduce((sum, q) => sum + (q > 0 ? q : 0), 0), [lineQty])
   const selectedBiller = billers.find((b) => b.id === billerId)
-  const selectedGodownLabels = useMemo(
-    () =>
-      selectedGodownIds
-        .map((id) => godowns.find((g) => g.id === id)?.name)
-        .filter(Boolean)
-        .join(', '),
-    [selectedGodownIds, godowns],
-  )
-
+  const selectedGodownLabels = useMemo(() => selectedGodownIds.map((id) => godowns.find((g) => g.id === id)?.name).filter(Boolean).join(', '), [selectedGodownIds, godowns])
   const activeProducts = godownProducts[activeGodownId] ?? []
-
-  const filteredCatalog = useMemo(() => {
-    const q = productSearch.trim().toLowerCase()
-    if (!q) return activeProducts
-    return activeProducts.filter(
-      (c) =>
-        (c.particulars?.toLowerCase().includes(q) ?? false) ||
-        (c.sku?.toLowerCase().includes(q) ?? false),
-    )
-  }, [activeProducts, productSearch])
-
+  const filteredCatalog = useMemo(() => { const q = productSearch.trim().toLowerCase(); if (!q) return activeProducts; return activeProducts.filter((c) => (c.particulars?.toLowerCase().includes(q) ?? false) || (c.sku?.toLowerCase().includes(q) ?? false)) }, [activeProducts, productSearch])
   const activeGodown = godowns.find((g) => g.id === activeGodownId)
-
-  const pickedByGodownId = useMemo(() => {
-    const m = new Map<string, { lines: number; units: number }>()
-    for (const line of linesPayload) {
-      const cur = m.get(line.godownId) ?? { lines: 0, units: 0 }
-      cur.lines += 1
-      cur.units += line.qty
-      m.set(line.godownId, cur)
-    }
-    return m
-  }, [linesPayload])
-
-  const selectGodownForProducts = (gid: string) => {
-    setActiveGodownId(gid)
-    setProductSearch('')
-    if (!godownProducts[gid]) void loadGodownProducts(gid)
-  }
-
-  const branchOptions = useMemo(() => {
-    const set = new Set(godowns.map(godownBranch))
-    return Array.from(set).sort((a, b) => a.localeCompare(b))
-  }, [godowns])
-
-  const godownsInBranch = useMemo(() => {
-    if (!branchFilter) return godowns
-    return godowns.filter((g) => godownBranch(g) === branchFilter)
-  }, [godowns, branchFilter])
-
-  const selectedInBranch = useMemo(
-    () => selectedGodownIds.map((id) => godowns.find((g) => g.id === id)).filter((g): g is GodownRow => !!g && (!branchFilter || godownBranch(g) === branchFilter)),
-    [selectedGodownIds, godowns, branchFilter],
-  )
-
-  const availableInBranch = useMemo(
-    () => godownsInBranch.filter((g) => !selectedGodownIds.includes(g.id)),
-    [godownsInBranch, selectedGodownIds],
-  )
+  const pickedByGodownId = useMemo(() => { const m = new Map<string, { lines: number; units: number }>(); for (const line of linesPayload) { const cur = m.get(line.godownId) ?? { lines: 0, units: 0 }; cur.lines += 1; cur.units += line.qty; m.set(line.godownId, cur) }; return m }, [linesPayload])
+  const selectGodownForProducts = (gid: string) => { setActiveGodownId(gid); setProductSearch(''); if (!godownProducts[gid]) void loadGodownProducts(gid) }
+  const branchOptions = useMemo(() => Array.from(new Set(godowns.map(godownBranch))).sort((a, b) => a.localeCompare(b)), [godowns])
+  const godownsInBranch = useMemo(() => branchFilter ? godowns.filter((g) => godownBranch(g) === branchFilter) : godowns, [godowns, branchFilter])
+  const selectedInBranch = useMemo(() => selectedGodownIds.map((id) => godowns.find((g) => g.id === id)).filter((g): g is GodownRow => !!g && (!branchFilter || godownBranch(g) === branchFilter)), [selectedGodownIds, godowns, branchFilter])
+  const availableInBranch = useMemo(() => godownsInBranch.filter((g) => !selectedGodownIds.includes(g.id)), [godownsInBranch, selectedGodownIds])
 
   const nextDisabled =
     (step === 1 && ((createBillerMode || billers.length === 0) ? !newBiller.siteName.trim() : !billerId)) ||
@@ -2068,605 +1730,383 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     setWizardError(null)
     if (step === 1 && (createBillerMode || billers.length === 0) && !billerId) {
       if (!newBiller.siteName.trim()) return
-      const token = getToken()
-      if (!token || !canCreateBiller) {
-        setWizardError('Only admin can create a new biller')
-        return
-      }
+      const token = getToken(); if (!token || !canCreateBiller) { setWizardError('Only admin can create a new biller'); return }
       setBillerCreateBusy(true)
       try {
-        const created = await apiFetch<UserRow>('/users/billers', {
-          token,
-          method: 'POST',
-          body: JSON.stringify({
-            siteName: newBiller.siteName.trim(),
-            siteAddress: newBiller.siteAddress.trim() || undefined,
-            contactName: newBiller.contactName.trim() || undefined,
-            contactPhone: newBiller.contactPhone.trim() || undefined,
-            email: newBiller.email.trim() || undefined,
-            password: '123456',
-          }),
-        })
-        setBillers((prev) => [...prev, created])
-        setBillerId(created.id)
-        setCreateBillerMode(false)
-        setStep(2)
-      } catch (e: unknown) {
-        const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Create biller failed'
-        setWizardError(msg)
-      } finally {
-        setBillerCreateBusy(false)
-      }
+        const created = await apiFetch<UserRow>('/users/billers', { token, method: 'POST', body: JSON.stringify({ siteName: newBiller.siteName.trim(), siteAddress: newBiller.siteAddress.trim() || undefined, contactName: newBiller.contactName.trim() || undefined, contactPhone: newBiller.contactPhone.trim() || undefined, email: newBiller.email.trim() || undefined, password: '123456' }) })
+        setBillers((prev) => [...prev, created]); setBillerId(created.id); setCreateBillerMode(false); setStep(2)
+      } catch (e: unknown) { setWizardError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Create biller failed') }
+      finally { setBillerCreateBusy(false) }
       return
     }
-    if (step < 4) {
-      setStep((s) => s + 1)
-      return
-    }
-    const token = getToken()
-    if (!token) return
+    if (step < 4) { setStep((s) => s + 1); return }
+    const token = getToken(); if (!token) return
     setCreateBusy(true)
-    const body = {
-      orderId: orderId || undefined,
-      billerUserId: billerId,
-      fromGodownId: selectedGodownIds[0],
-      customerName: customerName.trim(),
-      siteName: siteName.trim() || undefined,
-      siteAddress: siteAddress.trim() || undefined,
-      contactPhone: contactPhone.trim() || undefined,
-      deliveryAt: new Date(deliveryAt).toISOString(),
-      returnExpectedAt: returnExpectedAt ? new Date(returnExpectedAt).toISOString() : undefined,
-      vehicleLabel: vehicleLabel.trim() || undefined,
-      lines: linesPayload,
-    }
+    const body = { orderId: orderId || undefined, billerUserId: billerId, fromGodownId: selectedGodownIds[0], customerName: customerName.trim(), siteName: siteName.trim() || undefined, siteAddress: siteAddress.trim() || undefined, contactPhone: contactPhone.trim() || undefined, deliveryAt: new Date(deliveryAt).toISOString(), returnExpectedAt: returnExpectedAt ? new Date(returnExpectedAt).toISOString() : undefined, vehicleLabel: vehicleLabel.trim() || undefined, lines: linesPayload }
     try {
-      const res = await apiFetch<{
-        id: string
-        deliveryNo: string
-        deliveryVerifyUrl: string
-        billerReturnUrl: string
-      }>(isEditMode ? `/deliveries/${effectiveEditId}` : '/deliveries', {
-        token,
-        method: isEditMode ? 'PATCH' : 'POST',
-        body: JSON.stringify(body),
-      })
-      setCreateLinks({
-        id: res.id,
-        deliveryVerifyUrl: res.deliveryVerifyUrl,
-        billerReturnUrl: res.billerReturnUrl,
-      })
+      const res = await apiFetch<{ id: string; deliveryNo: string; deliveryVerifyUrl: string; billerReturnUrl: string }>(isEditMode ? `/deliveries/${effectiveEditId}` : '/deliveries', { token, method: isEditMode ? 'PATCH' : 'POST', body: JSON.stringify(body) })
+      setCreateLinks({ id: res.id, deliveryVerifyUrl: res.deliveryVerifyUrl, billerReturnUrl: res.billerReturnUrl })
       window.dispatchEvent(new CustomEvent('godown-stock-changed'))
       setGodownProducts({})
-      if (isEditMode) onUpdated?.()
-      else onCreated()
-    } catch (e: unknown) {
-      const msg =
-        e && typeof e === 'object' && 'message' in e
-          ? String((e as { message: string }).message)
-          : isEditMode
-            ? 'Update failed'
-            : 'Create failed'
-      setWizardError(msg)
-    } finally {
-      setCreateBusy(false)
-    }
+      if (isEditMode) onUpdated?.(); else onCreated()
+    } catch (e: unknown) { setWizardError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : isEditMode ? 'Update failed' : 'Create failed') }
+    finally { setCreateBusy(false) }
   }
 
+  // ── Footer buttons ────────────────────────────────────────────────────────
   const footer = createLinks ? (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-      <Button variant="secondary" onClick={handleClose}>
-        Close
-      </Button>
+    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8 }}>
+      <Button variant="secondary" onClick={handleClose}>Close</Button>
       {!isEditMode && auth.status === 'authenticated' && auth.user.role === 'ADMIN' ? (
-        <Button
-          variant="secondary"
-          onClick={() => {
-            const id = createLinks.id
-            setCreateLinks(null)
-            setContinueEditId(id)
-            void loadDeliveryForEdit(id)
-          }}
-        >
+        <Button variant="secondary" onClick={() => { const id = createLinks.id; setCreateLinks(null); setContinueEditId(id); void loadDeliveryForEdit(id) }}>
           Edit delivery
         </Button>
       ) : null}
-      <Button
-        onClick={() => {
-          nav(`/deliveries/${createLinks.id}`)
-          handleClose()
-        }}
-      >
+      <Button onClick={() => { nav(`/deliveries/${createLinks.id}`); handleClose() }}>
         Open delivery details
       </Button>
     </div>
   ) : (
-    <div className="flex items-center justify-between gap-3">
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      {/* Cancel / Back */}
       <button
-        type="button"
-        className="px-5 py-2 rounded-lg border border-[rgba(83,74,183,0.13)] bg-white text-sm font-medium text-[#7C7A9A] transition hover:border-[#7C7A9A] hover:text-[#1E1A4E]"
-        onClick={() => {
-          if (step <= 1) handleClose()
-          else setStep((s) => s - 1)
+        onClick={() => { if (step <= 1) handleClose(); else setStep((s) => s - 1) }}
+        style={{ padding: '9px 20px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}
+      >
+        {step <= 1 ? 'Cancel' : '← Back'}
+      </button>
+      {/* Continue / Create */}
+      <button
+        disabled={nextDisabled}
+        onClick={() => void handleNext()}
+        style={{
+          padding: '9px 24px', borderRadius: 10, border: 'none',
+          background: nextDisabled ? '#AFA9EC' : 'linear-gradient(135deg, #7F77DD, #534AB7)',
+          fontSize: 13, fontWeight: 700, color: '#fff',
+          cursor: nextDisabled ? 'not-allowed' : 'pointer',
+          boxShadow: nextDisabled ? 'none' : '0 4px 14px rgba(83,74,183,0.35)',
+          fontFamily: 'inherit', transition: 'opacity 0.15s',
         }}
       >
-        {step <= 1 ? 'Cancel' : 'Back'}
-      </button>
-      <button
-        type="button"
-        disabled={nextDisabled}
-        className="px-6 py-2 rounded-lg border-none text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ background: nextDisabled ? undefined : 'linear-gradient(135deg, #7F77DD, #534AB7)', boxShadow: '0 2px 8px rgba(83,74,183,0.3)' }}
-        onClick={() => void handleNext()}
-      >
         {step === 4
-          ? isEditMode
-            ? 'Update delivery'
-            : 'Create delivery'
-          : step === 1 && billerCreateBusy
-            ? 'Saving biller…'
-            : 'Continue'}
+          ? isEditMode ? 'Update delivery' : 'Create delivery'
+          : step === 1 && billerCreateBusy ? 'Saving…' : 'Continue'}
       </button>
     </div>
   )
 
+  // ── shared inline input style for godown/biller create forms ──────────────
+  const sInp = fieldInp
+
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      className="max-w-2xl overflow-hidden"
-      title={undefined}
-      footer={footer}
-    >
+    <Modal open={open} onClose={handleClose} className="max-w-4xl overflow-hidden" title={undefined} footer={footer}>
       {editLoading ? (
-        <p className="py-16 text-center text-sm text-[#7C7A9A]">Loading delivery…</p>
+        <p style={{ padding: '64px 0', textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>Loading delivery…</p>
       ) : createLinks ? (
-        <div className="text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #1D9E75, #0F6E56)', boxShadow: '0 8px 24px rgba(29,158,117,0.3)' }}>
-            <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+        // ── Success screen ──────────────────────────────────────────────────
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #34d399, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 16px rgba(5,150,105,0.30)' }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5 9.5 17 19 7" /></svg>
           </div>
-          <h2 className="text-xl font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            {isEditMode ? 'Delivery updated' : 'Delivery created'}
-          </h2>
-          <p className="mt-1 text-sm text-[#7C7A9A]">
-            Share the links below with your delivery person and biller.
-          </p>
-          <div className="mt-6 space-y-3 text-left">
-            <LinkCard
-              label="Delivery verify link"
-              description="For the delivery person to confirm handover"
-              url={createLinks.deliveryVerifyUrl}
-            />
-            <LinkCard
-              label="Biller return link"
-              description="For the biller to confirm equipment return"
-              url={createLinks.billerReturnUrl}
-            />
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>{isEditMode ? 'Delivery updated' : 'Delivery created!'}</h2>
+          <p style={{ marginTop: 6, fontSize: 13, color: '#64748b' }}>Share the links below with your delivery person and biller.</p>
+          <div style={{ marginTop: 20, textAlign: 'left' }}>
+            <LinkCard label="Delivery verify link" description="For the delivery person to confirm handover" url={createLinks.deliveryVerifyUrl} />
+            <LinkCard label="Biller return link" description="For the biller to confirm equipment return" url={createLinks.billerReturnUrl} />
           </div>
         </div>
       ) : (
         <div>
-          {/* ─── HEADER matching HTML design ─── */}
-          <div
-            className="-mx-5 -mt-4 mb-0 px-0 pb-4 text-white"
-            style={{ background: 'linear-gradient(135deg, #534AB7 0%, #26215C 100%)', position: 'relative', overflow: 'hidden' }}
-          >
-            {/* decorative radial */}
-            <div style={{ position: 'absolute', top: -40, right: -40, width: 140, height: 140, background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 68%)', pointerEvents: 'none' }} />
-            <div className="px-6 pt-5 pb-0">
-              <h2 className="text-lg font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                {isEditMode ? 'Edit delivery' : 'New delivery'}
-              </h2>
-              <p className="mt-0.5 text-sm text-[rgba(255,255,255,0.65)]">
-                {isEditMode
-                  ? editMetadataOnly
-                    ? 'Update schedule and customer details. Line changes are limited while scans are in progress.'
-                    : 'Update biller, godowns, products, and schedule.'
-                  : 'Select godowns first, then pick in-stock products from each.'}
-              </p>
-            </div>
-            {/* WizardStepper is now inside the header */}
-            <WizardStepper step={step} />
+          {/* ── Header ── */}
+          <div style={{ margin: '-20px -24px 0', padding: '22px 24px 20px', background: 'linear-gradient(135deg, #534AB7 0%, #26215C 100%)' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{isEditMode ? 'Edit delivery' : 'New delivery'}</h2>
+            <p style={{ marginTop: 4, fontSize: 13, color: 'rgba(255,255,255,0.80)', margin: '4px 0 0' }}>
+              {isEditMode
+                ? editMetadataOnly ? 'Update schedule and customer details.' : 'Update biller, godowns, products, and schedule.'
+                : 'Select godowns first, then pick in-stock products from each.'}
+            </p>
           </div>
 
-          <div className="mt-5">
-            {wizardError ? (
-              <div className="mb-4 rounded-lg bg-[#FCEBEB] px-4 py-3 text-sm text-[#A32D2D] ring-1 ring-[#E24B4A]/20">
+          <div style={{ marginTop: 22 }}>
+            <WizardStepper step={step} />
+
+            {/* error */}
+            {wizardError && (
+              <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: '#fef2f2', color: '#b91c1c', fontSize: 13, border: '1px solid #fecaca' }}>
                 {wizardError}
               </div>
-            ) : null}
+            )}
 
-            {/* ─── STEP 1: BILLER ─── */}
-            {step === 1 ? (
+            {/* ══ STEP 1: BILLER ════════════════════════════════════════════ */}
+            {step === 1 && (
               <div>
-                <StepHeader
-                  title="Select biller"
-                  description="Choose the customer account for this delivery, or register a new biller."
-                />
+                <StepHeader title="Select biller" description="Choose the customer account for this delivery, or register a new biller." />
+
                 {billers.length === 0 || createBillerMode ? (
-                  <div className="space-y-4 rounded-xl border border-[#CECBF6] bg-gradient-to-br from-[#EEEDFE]/50 to-white p-5 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEEDFE] text-[#534AB7]">
-                        <StepIcon step={1} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[#1E1A4E]">
-                          {billers.length === 0 ? 'No billers yet' : 'New biller'}
-                        </p>
-                        <p className="text-xs text-[#7C7A9A]">Default login password: 123456</p>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                  // new biller form
+                  <div style={{ border: '1px solid #CECBF6', borderRadius: 14, background: '#EEEDFE', padding: 18 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#534AB7', marginBottom: 14 }}>
+                      {billers.length === 0 ? 'No billers yet — create one' : 'New biller'} <span style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8' }}>(default password: 123456)</span>
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                       <Input label="Company / office name *" value={newBiller.siteName} onChange={(e) => setNewBiller((f) => ({ ...f, siteName: e.target.value }))} />
                       <Input label="Contact person" value={newBiller.contactName} onChange={(e) => setNewBiller((f) => ({ ...f, contactName: e.target.value }))} />
                       <Input label="Mobile number" value={newBiller.contactPhone} onChange={(e) => setNewBiller((f) => ({ ...f, contactPhone: e.target.value }))} />
                       <Input label="Email (optional)" value={newBiller.email} onChange={(e) => setNewBiller((f) => ({ ...f, email: e.target.value }))} placeholder="optional@example.com" />
                     </div>
                     <Input label="Address" value={newBiller.siteAddress} onChange={(e) => setNewBiller((f) => ({ ...f, siteAddress: e.target.value }))} />
-                    {billers.length > 0 ? (
-                      <button type="button" className="text-sm font-semibold text-[#534AB7] hover:underline" onClick={() => setCreateBillerMode(false)}>
+                    {billers.length > 0 && (
+                      <button onClick={() => setCreateBillerMode(false)} style={{ marginTop: 10, background: 'none', border: 'none', fontSize: 12, color: '#534AB7', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         ← Select existing biller
                       </button>
-                    ) : null}
+                    )}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <Select
-                      label="Biller"
-                      value={billerId}
-                      onChange={(e) => setBillerId(e.target.value)}
-                      options={[
-                        { value: '', label: 'Select biller…' },
-                        ...billers.map((b) => ({
-                          value: b.id,
-                          label: `${b.siteName || b.contactName || 'Biller'}${b.contactPhone ? ` · ${b.contactPhone}` : ''}`,
-                        })),
-                      ]}
+                  <div>
+                    <Select label="Biller" value={billerId} onChange={(e) => setBillerId(e.target.value)}
+                      options={[{ value: '', label: 'Select biller…' }, ...billers.map((b) => ({ value: b.id, label: `${b.siteName || b.contactName || 'Biller'}${b.contactPhone ? ` · ${b.contactPhone}` : ''}` }))]}
                     />
-                    {selectedBiller ? (
-                      <div className="rounded-xl border-2 border-[#CECBF6] bg-[#EEEDFE] p-4">
-                        <p className="text-[9.5px] font-bold uppercase tracking-[0.8px] text-[#534AB7] mb-1">Selected</p>
-                        <p className="text-[15px] font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                          {selectedBiller.siteName || selectedBiller.contactName || 'Biller'}
-                        </p>
-                        {selectedBiller.siteAddress ? (
-                          <p className="mt-1 text-xs text-[#7C7A9A]">{selectedBiller.siteAddress}</p>
-                        ) : null}
-                        {selectedBiller.contactPhone ? (
-                          <p className="mt-1 text-xs font-medium text-[#534AB7]">{selectedBiller.contactPhone}</p>
-                        ) : null}
+                    {selectedBiller && (
+                      <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 4 }}>Selected</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{selectedBiller.siteName || selectedBiller.contactName || 'Biller'}</div>
+                        {selectedBiller.siteAddress && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{selectedBiller.siteAddress}</div>}
+                        {selectedBiller.contactPhone && <div style={{ fontSize: 12, color: '#534AB7', marginTop: 2, fontWeight: 600 }}>{selectedBiller.contactPhone}</div>}
                       </div>
-                    ) : null}
-                    {canCreateBiller && !isEditMode ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#AFA9EC] px-3 py-2 text-sm font-semibold text-[#534AB7] transition hover:bg-[#EEEDFE] hover:border-[#7F77DD]"
-                        onClick={() => setCreateBillerMode(true)}
-                      >
-                        <span className="text-base leading-none">+</span> Register new biller
+                    )}
+                    {canCreateBiller && !isEditMode && (
+                      <button onClick={() => setCreateBillerMode(true)} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, border: '1px dashed #AFA9EC', background: '#EEEDFE', fontSize: 12, fontWeight: 600, color: '#534AB7', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        + Register new biller
                       </button>
-                    ) : null}
+                    )}
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
 
-            {/* ─── STEP 2: GODOWNS ─── */}
-            {step === 2 ? (
+            {/* ══ STEP 2: GODOWNS ══════════════════════════════════════════ */}
+            {step === 2 && (
               <div>
-                <StepHeader
-                  title="Select godowns"
-                  description="Filter by branch, select godowns, or add a new godown if it is missing."
-                />
-                <div className="mb-4 grid gap-3 sm:grid-cols-2">
-                  <Select
-                    label="Branch / location"
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
-                    options={[
-                      { value: '', label: 'All branches' },
-                      ...branchOptions.map((b) => ({ value: b, label: b })),
-                    ]}
-                  />
-                  {selectedGodownIds.length > 0 ? (
-                    <div className="flex items-end">
-                      <p className="w-full rounded-lg bg-[#EEEDFE] px-4 py-3 text-sm font-semibold text-[#3C3489] ring-1 ring-[#CECBF6]">
+                <StepHeader title="Select godowns" description="Filter by branch, select godowns, or add a new godown if it is missing." />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                  <Select label="Branch / location" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} options={[{ value: '', label: 'All branches' }, ...branchOptions.map((b) => ({ value: b, label: b }))]} />
+                  {selectedGodownIds.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                      <div style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#F0EFFD', border: '1px solid #CECBF6', fontSize: 13, fontWeight: 700, color: '#534AB7' }}>
                         {selectedGodownIds.length} godown{selectedGodownIds.length > 1 ? 's' : ''} selected
-                      </p>
+                      </div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {godownsInBranch.map((g) => {
                     const selected = selectedGodownIds.includes(g.id)
                     return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGodown(g.id)}
-                        className={[
-                          'rounded-xl p-4 text-left transition relative',
-                          selected
-                            ? 'border-2 border-[#534AB7] bg-[#EEEDFE] shadow-md'
-                            : 'border border-[rgba(83,74,183,0.13)] bg-white hover:border-[#AFA9EC] hover:bg-[#EEEDFE]/30',
-                        ].join(' ')}
-                      >
-                        {selected && (
-                          <div className="absolute top-2 right-2 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#534AB7] text-white">
-                            <CheckIcon />
-                          </div>
-                        )}
-                        <div className="flex items-start gap-3">
-                          <div className={['flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg mb-2', selected ? 'bg-[#CECBF6] text-[#534AB7]' : 'bg-[#F0EFFD] text-[#7C7A9A]'].join(' ')}>
+                      <button key={g.id} type="button" onClick={() => toggleGodown(g.id)} style={{
+                        textAlign: 'left', borderRadius: 14, padding: 14, cursor: 'pointer', fontFamily: 'inherit',
+                        border: selected ? '2px solid #534AB7' : '1px solid #e2e8f0',
+                        background: selected ? '#EEEDFE' : '#fff',
+                        boxShadow: selected ? '0 2px 10px rgba(83,74,183,0.12)' : 'none',
+                        transition: 'all 0.15s',
+                      }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <div style={{ width: 38, height: 38, borderRadius: 10, background: selected ? '#534AB7' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: selected ? '#fff' : '#64748b' }}>
                             <StepIcon step={2} />
                           </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{g.name}</div>
+                            {g.code && <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#94a3b8' }}>{g.code}</div>}
+                            <div style={{ fontSize: 11, color: '#534AB7', fontWeight: 600, marginTop: 2 }}>Branch: {godownBranch(g)}</div>
+                          </div>
+                          {selected && (
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#534AB7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+                              <CheckIcon />
+                            </div>
+                          )}
                         </div>
-                        <p className="font-semibold text-[#1E1A4E]">{g.name}</p>
-                        {g.code ? <p className="text-[10.5px] font-mono text-[#7C7A9A] mt-0.5">{g.code}</p> : null}
-                        <p className="mt-1 text-xs font-medium text-[#534AB7]">Branch: {godownBranch(g)}</p>
-                        {g.location ? <p className="mt-0.5 text-xs text-[#7C7A9A]">{g.location}</p> : null}
                       </button>
                     )
                   })}
                 </div>
-                {godownsInBranch.length === 0 ? (
-                  <p className="mt-3 text-sm text-[#7C7A9A]">No godowns in this branch. Try another branch or add a new godown below.</p>
-                ) : null}
-                {canCreateGodown && !isEditMode ? (
-                  <div className="mt-4 space-y-3 rounded-xl border border-dashed border-[#AFA9EC] bg-[#EEEDFE]/40 p-4">
+                {godownsInBranch.length === 0 && <p style={{ marginTop: 10, fontSize: 13, color: '#94a3b8' }}>No godowns in this branch.</p>}
+
+                {canCreateGodown && !isEditMode && (
+                  <div style={{ marginTop: 14, border: '1px dashed #AFA9EC', borderRadius: 12, background: '#EEEDFE', padding: 14 }}>
                     {!createGodownOpen ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(83,74,183,0.13)] bg-white px-3 py-2 text-sm font-medium text-[#1E1A4E] transition hover:border-[#7F77DD] hover:text-[#534AB7]"
-                        onClick={() => setCreateGodownOpen(true)}
-                      >
+                      <button onClick={() => setCreateGodownOpen(true)} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 600, color: '#534AB7', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         + Add new godown
                       </button>
                     ) : (
                       <>
-                        <p className="text-sm font-semibold text-[#1E1A4E]">New godown</p>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>New godown</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                           <Input label="Name *" value={newGodown.name} onChange={(e) => setNewGodown((f) => ({ ...f, name: e.target.value }))} />
                           <Input label="Code *" value={newGodown.code} onChange={(e) => setNewGodown((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
                           <Input label="Branch / city *" value={newGodown.city} onChange={(e) => setNewGodown((f) => ({ ...f, city: e.target.value }))} placeholder="e.g. Chennai" />
                           <Input label="Location" value={newGodown.location} onChange={(e) => setNewGodown((f) => ({ ...f, location: e.target.value }))} />
                           <Input label="Mobile *" value={newGodown.mobile} onChange={(e) => setNewGodown((f) => ({ ...f, mobile: e.target.value }))} />
                           <Input label="Password *" type="password" value={newGodown.password} onChange={(e) => setNewGodown((f) => ({ ...f, password: e.target.value }))} />
-                          <Input label="Address" value={newGodown.address} onChange={(e) => setNewGodown((f) => ({ ...f, address: e.target.value }))} className="sm:col-span-2" />
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>Cancel</Button>
+                        <Input label="Address" value={newGodown.address} onChange={(e) => setNewGodown((f) => ({ ...f, address: e.target.value }))} />
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <button onClick={() => setCreateGodownOpen(false)} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
                           <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>Save godown</Button>
                         </div>
                       </>
                     )}
                   </div>
-                ) : null}
+                )}
               </div>
-            ) : null}
+            )}
 
-            {/* ─── STEP 3: PRODUCTS ─── */}
-            {step === 3 ? (
+            {/* ══ STEP 3: PRODUCTS ══════════════════════════════════════════ */}
+            {step === 3 && (
               <div>
-                <StepHeader
-                  title="Select products"
-                  description="Choose branch, switch godown on the left, pick products on the right."
-                />
-                {editMetadataOnly ? (
-                  <div className="mb-4 rounded-lg bg-[#FAEEDA] px-4 py-3 text-sm text-[#BA7517] ring-1 ring-[#BA7517]/20">
-                    This delivery has scan activity. You can adjust quantities only within dispatched and scanned limits.
-                  </div>
-                ) : null}
+                <StepHeader title="Select products" description="Choose branch, switch godown on the left, pick products on the right." />
+                {editMetadataOnly && <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', fontSize: 13, color: '#92400e' }}>This delivery has scan activity. Quantity adjustments may be limited.</div>}
                 {selectedGodownIds.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-[#BA7517]/40 bg-[#FAEEDA]/50 px-4 py-8 text-center text-sm text-[#BA7517]">
-                    Go back and select at least one godown first.
-                  </div>
+                  <div style={{ padding: '32px', textAlign: 'center', borderRadius: 12, border: '1px dashed #fcd34d', background: '#fffbeb', fontSize: 13, color: '#92400e' }}>Go back and select at least one godown first.</div>
                 ) : (
-                  <div className="grid min-h-[22rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(11rem,13rem)_1fr]">
-                    {/* Left pane */}
-                    <div className="flex flex-col rounded-xl border border-[rgba(83,74,183,0.13)] bg-[#F0EFFD]/60 p-2">
-                      <p className="px-2 pb-1 text-[9.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">1. Branch &amp; godown</p>
-                      <div className="px-2 pb-2">
-                        <Select
-                          label="Branch"
-                          value={branchFilter}
-                          onChange={(e) => setBranchFilter(e.target.value)}
-                          options={[
-                            { value: '', label: 'All branches' },
-                            ...branchOptions.map((b) => ({ value: b, label: b })),
-                          ]}
-                        />
+                  <div style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: 12, minHeight: 380 }}>
+                    {/* LEFT: godown list — scroll area is bounded, Add godown pinned at bottom */}
+                    <div style={{ border: '1px solid rgba(83,74,183,0.13)', borderRadius: 12, background: '#F0EFFD40', padding: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#7C7A9A', marginBottom: 8, padding: '0 4px', flexShrink: 0 }}>1. Branch &amp; godown</p>
+                      <div style={{ marginBottom: 8, flexShrink: 0 }}>
+                        <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ ...sInp, height: 32, fontSize: 12 }}>
+                          <option value="">All branches</option>
+                          {branchOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+                        </select>
                       </div>
-                      <div className="flex max-h-[14rem] flex-col gap-2 overflow-y-auto px-2 pb-2">
-                        {selectedInBranch.length > 0 ? (
-                          <>
-                            <p className="text-[10px] font-bold uppercase text-[#7C7A9A]">Selected</p>
-                            {selectedInBranch.map((g) => {
-                              const isActive = activeGodownId === g.id
-                              const picked = pickedByGodownId.get(g.id)
-                              const inStock = godownProducts[g.id]?.length ?? 0
-                              return (
-                                <button
-                                  key={g.id}
-                                  type="button"
-                                  onClick={() => selectGodownForProducts(g.id)}
-                                  className={[
-                                    'rounded-lg border p-3 text-left transition',
-                                    isActive
-                                      ? 'border-2 border-[#534AB7] bg-white shadow-md'
-                                      : 'border border-[rgba(83,74,183,0.13)] bg-white hover:border-[#AFA9EC]',
-                                  ].join(' ')}
-                                >
-                                  <p className="font-semibold text-[#1E1A4E] text-[12.5px]">{g.name}</p>
-                                  <p className="text-xs text-[#534AB7]">{godownBranch(g)}</p>
-                                  <p className="mt-1 text-[10.5px] text-[#7C7A9A]">{inStock} in stock</p>
-                                  {picked ? (
-                                    <p className="mt-1 text-[10.5px] font-bold text-[#534AB7]">
-                                      {picked.lines} picked · {picked.units} units
-                                    </p>
-                                  ) : null}
-                                </button>
-                              )
-                            })}
-                          </>
-                        ) : (
-                          <p className="text-xs text-[#7C7A9A]">No selected godown in this branch.</p>
-                        )}
-                        {availableInBranch.length > 0 ? (
-                          <>
-                            <p className="mt-2 text-[10px] font-bold uppercase text-[#7C7A9A]">Add from branch</p>
-                            {availableInBranch.map((g) => (
-                              <button
-                                key={g.id}
-                                type="button"
-                                onClick={() => addGodownToSelection(g.id)}
-                                className="flex items-center justify-between rounded-lg border border-dashed border-[rgba(83,74,183,0.2)] bg-white p-2 text-left text-sm hover:border-[#7F77DD] hover:bg-[#EEEDFE]/50"
-                              >
-                                <span>
-                                  <span className="font-medium text-[#1E1A4E]">{g.name}</span>
-                                  <span className="block text-xs text-[#7C7A9A]">{godownBranch(g)}</span>
-                                </span>
-                                <span className="text-lg font-bold text-[#534AB7]">+</span>
+                      {/* SCROLLABLE area — flex:1 + minHeight:0 keeps it bounded above the Add Godown button */}
+                      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {selectedInBranch.length > 0 && <>
+                          <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', padding: '0 2px' }}>Selected</p>
+                          {selectedInBranch.map((g) => {
+                            const isActive = activeGodownId === g.id
+                            const picked = pickedByGodownId.get(g.id)
+                            return (
+                              <button key={g.id} type="button" onClick={() => selectGodownForProducts(g.id)} style={{ textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: isActive ? '2px solid #534AB7' : '1px solid rgba(83,74,183,0.13)', background: '#fff', cursor: 'pointer', boxShadow: isActive ? '0 2px 8px rgba(83,74,183,0.15)' : 'none', fontFamily: 'inherit' }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#1E1A4E' }}>{g.name}</div>
+                                <div style={{ fontSize: 10, color: '#534AB7' }}>{godownBranch(g)}</div>
+                                <div style={{ fontSize: 10, color: '#7C7A9A' }}>{godownProducts[g.id]?.length ?? 0} in stock</div>
+                                {picked && <div style={{ fontSize: 10, fontWeight: 700, color: '#534AB7' }}>{picked.lines} picked · {picked.units} units</div>}
                               </button>
-                            ))}
-                          </>
-                        ) : null}
+                            )
+                          })}
+                        </>}
+                        {availableInBranch.length > 0 && <>
+                          <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#7C7A9A', padding: '4px 2px 0' }}>Add from branch</p>
+                          {availableInBranch.map((g) => (
+                            <button key={g.id} type="button" onClick={() => addGodownToSelection(g.id)} style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', padding: '8px 10px', borderRadius: 9, border: '1px dashed rgba(83,74,183,0.2)', background: '#fff', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>
+                              <span><span style={{ fontWeight: 600, color: '#1E1A4E', display: 'block' }}>{g.name}</span><span style={{ fontSize: 10, color: '#7C7A9A' }}>{godownBranch(g)}</span></span>
+                              <span style={{ fontSize: 18, fontWeight: 700, color: '#534AB7' }}>+</span>
+                            </button>
+                          ))}
+                        </>}
                       </div>
-                      {canCreateGodown && !isEditMode ? (
-                        <div className="mt-auto border-t border-[rgba(83,74,183,0.13)] p-2">
+                      {/* ─── "+ Add godown" PINNED at bottom, outside scroll div ─── */}
+                      {canCreateGodown && !isEditMode && (
+                        <div style={{ flexShrink: 0, borderTop: '1px solid rgba(83,74,183,0.1)', paddingTop: 8, marginTop: 6 }}>
                           {!createGodownOpen ? (
-                            <button
-                              type="button"
-                              className="w-full rounded-lg border border-[rgba(83,74,183,0.13)] bg-white py-2 text-sm font-medium text-[#1E1A4E] transition hover:border-[#7F77DD] hover:text-[#534AB7]"
-                              onClick={() => setCreateGodownOpen(true)}
-                            >
+                            <button type="button" onClick={() => setCreateGodownOpen(true)} style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: '1px solid rgba(83,74,183,0.13)', background: '#fff', fontSize: 13, fontWeight: 600, color: '#1E1A4E', cursor: 'pointer', fontFamily: 'inherit' }}>
                               + Add godown
                             </button>
                           ) : (
-                            <div className="space-y-2">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               <Input label="Name *" value={newGodown.name} onChange={(e) => setNewGodown((f) => ({ ...f, name: e.target.value }))} />
                               <Input label="Code *" value={newGodown.code} onChange={(e) => setNewGodown((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
                               <Input label="Branch *" value={newGodown.city} onChange={(e) => setNewGodown((f) => ({ ...f, city: e.target.value }))} />
                               <Input label="Mobile *" value={newGodown.mobile} onChange={(e) => setNewGodown((f) => ({ ...f, mobile: e.target.value }))} />
                               <Input label="Password *" type="password" value={newGodown.password} onChange={(e) => setNewGodown((f) => ({ ...f, password: e.target.value }))} />
-                              <div className="flex gap-1">
+                              <div style={{ display: 'flex', gap: 6 }}>
                                 <Button variant="ghost" size="sm" onClick={() => setCreateGodownOpen(false)}>Cancel</Button>
                                 <Button size="sm" loading={godownCreateBusy} onClick={() => void createGodownInline()}>Save</Button>
                               </div>
                             </div>
                           )}
                         </div>
-                      ) : null}
+                      )}
                     </div>
 
-                    {/* Right pane */}
-                    <div className="flex min-h-[18rem] flex-col rounded-xl border border-[rgba(83,74,183,0.13)] bg-white">
+                    {/* RIGHT: product list */}
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       {activeGodownId ? (
                         <>
-                          <div className="border-b border-[rgba(83,74,183,0.08)] px-4 py-3" style={{ background: 'linear-gradient(to right, #EEEDFE, white)' }}>
-                            <p className="text-[10.5px] font-bold uppercase tracking-[0.6px] text-[#534AB7]">2. Select products from</p>
-                            <p className="text-sm font-bold text-[#1E1A4E]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{activeGodown?.name}</p>
-                            {activeGodown?.location ? <p className="text-xs text-[#7C7A9A]">{activeGodown.location}</p> : null}
+                          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(83,74,183,0.08)', background: 'linear-gradient(to right, #EEEDFE, #fff)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#534AB7', marginBottom: 2 }}>2. Select products from</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#1E1A4E' }}>{activeGodown?.name}</div>
                           </div>
-                          <div className="flex flex-col gap-3 border-b border-[rgba(83,74,183,0.08)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <Input
-                              placeholder="Search product name or SKU…"
-                              value={productSearch}
-                              onChange={(e) => setProductSearch(e.target.value)}
-                              className="h-9 sm:max-w-xs"
-                            />
-                            <p className="text-sm font-semibold text-[#534AB7]">
-                              Total: {linesPayload.length} lines · {totalUnits} units
-                            </p>
+                          <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(83,74,183,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                            <Input placeholder="Search product or SKU…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="h-9" />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#534AB7', whiteSpace: 'nowrap' }}>{linesPayload.length} lines · {totalUnits} units</span>
                           </div>
-                          <div className="flex-1 overflow-y-auto p-3">
+                          <div style={{ flex: 1, overflowY: 'auto', padding: 10 }}>
                             {productsLoading && !godownProducts[activeGodownId] ? (
-                              <p className="py-12 text-center text-sm text-[#7C7A9A]">Loading products…</p>
+                              <p style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#94a3b8' }}>Loading products…</p>
                             ) : activeProducts.length === 0 ? (
-                              <p className="py-12 text-center text-sm text-[#7C7A9A]">No in-stock products here. Pick another godown on the left.</p>
+                              <p style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#94a3b8' }}>No in-stock products here.</p>
                             ) : (
-                              <div className="space-y-2">
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 {filteredCatalog.map((c) => {
                                   const key = lineKey(activeGodownId, c.productId)
                                   const qty = lineQty[key] ?? 0
                                   const selected = qty > 0
                                   return (
-                                    <div
-                                      key={key}
-                                      className={[
-                                        'flex items-center justify-between gap-3 rounded-lg border px-4 py-3',
-                                        selected
-                                          ? 'border-[#AFA9EC] bg-[#EEEDFE]/60'
-                                          : 'border-[rgba(83,74,183,0.1)] bg-[#F0EFFD]/30 hover:border-[rgba(83,74,183,0.2)]',
-                                      ].join(' ')}
-                                    >
-                                      <div className="min-w-0 flex-1">
-                                        <p className="font-medium text-[#1E1A4E]">{c.particulars}</p>
-                                        <p className="font-mono text-xs text-[#7C7A9A]">{c.sku || '—'}</p>
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', borderRadius: 10, border: selected ? '1.5px solid #AFA9EC' : '1px solid rgba(83,74,183,0.1)', background: selected ? '#EEEDFE60' : '#F0EFFD30', transition: 'all 0.12s' }}>
+                                      <div style={{ minWidth: 0, flex: 1 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1E1A4E' }}>{c.particulars}</div>
+                                        <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#7C7A9A' }}>{c.sku || '—'}</div>
                                       </div>
-                                      <QtyStepper
-                                        value={qty}
-                                        max={c.stockQty + qty}
-                                        onChange={(n) => setLineQty((m) => ({ ...m, [key]: n }))}
-                                      />
+                                      <QtyStepper value={qty} max={c.stockQty + qty} onChange={(n) => setLineQty((m) => ({ ...m, [key]: n }))} />
                                     </div>
                                   )
                                 })}
-                                {filteredCatalog.length === 0 ? (
-                                  <p className="py-8 text-center text-sm text-[#7C7A9A]">No match for your search.</p>
-                                ) : null}
+                                {filteredCatalog.length === 0 && <p style={{ textAlign: 'center', padding: '20px', fontSize: 13, color: '#94a3b8' }}>No match for your search.</p>}
                               </div>
                             )}
                           </div>
                         </>
                       ) : (
-                        <p className="flex flex-1 items-center justify-center p-8 text-center text-sm text-[#7C7A9A]">
-                          Select a godown on the left to see and pick products.
-                        </p>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>Select a godown on the left to see and pick products.</div>
                       )}
                     </div>
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
 
-            {/* ─── STEP 4: SCHEDULE ─── */}
-            {step === 4 ? (
+            {/* ══ STEP 4: SCHEDULE ══════════════════════════════════════════ */}
+            {step === 4 && (
               <div>
                 <StepHeader title="Schedule & location" description="Confirm delivery timing and site details." />
                 {(selectedBiller || selectedGodownLabels || linesPayload.length > 0) && (
-                  <div className="mb-5 flex flex-wrap gap-2">
-                    {selectedBiller && (
-                      <SummaryChip label="Biller" value={selectedBiller?.siteName || selectedBiller?.contactName || ''} />
-                    )}
-                    {selectedGodownLabels && <SummaryChip label="Godowns" value={selectedGodownLabels} />}
-                    {linesPayload.length > 0 && (
-                      <SummaryChip label="Items" value={`${linesPayload.length} lines · ${totalUnits} units`} />
-                    )}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
+                    <SummaryChip label="Biller" value={selectedBiller?.siteName || selectedBiller?.contactName || ''} />
+                    <SummaryChip label="Godowns" value={selectedGodownLabels} />
+                    <SummaryChip label="Items" value={`${linesPayload.length} lines · ${totalUnits} units`} />
                   </div>
                 )}
-                <div className="space-y-5">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
-                    <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">Customer &amp; site</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>Customer & site</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <Input label="Customer name *" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                       <Input label="Site name" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
-                      <Input label="Site address" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} className="sm:col-span-2" />
                       <Input label="Contact phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
                       <Input label="Vehicle no. / label" value={vehicleLabel} onChange={(e) => setVehicleLabel(e.target.value)} placeholder="e.g. TN-01-AB-1234" />
+                      <Input label="Site address" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} className="col-span-2" />
                     </div>
                   </div>
                   <div>
-                    <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.8px] text-[#7C7A9A]">Timing</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>Timing</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <Input label="Delivery at *" type="datetime-local" value={deliveryAt} onChange={(e) => setDeliveryAt(e.target.value)} />
                       <Input label="Return expected (optional)" type="datetime-local" value={returnExpectedAt} onChange={(e) => setReturnExpectedAt(e.target.value)} />
                     </div>
                   </div>
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       )}
