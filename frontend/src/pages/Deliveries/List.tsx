@@ -1,14 +1,13 @@
 
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
 import { apiFetch } from '../../lib/api'
 import { getToken, useAuth } from '../../auth/store'
 import { DeliveryStatusSelect } from '../../components/delivery/DeliveryStatusSelect'
 import { DeliveryRowActions } from '../../components/delivery/DeliveryRowActions'
 import { GodownDeliveryWorkflow } from '../../components/delivery/GodownDeliveryWorkflow'
-import { Badge } from '../../components/ui/Badge'
-import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliveryStatus'
+import type { DeliveryStatusPatch } from '../../components/delivery/DeliveryStatusSelect'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
 import { DriverDeliveriesDashboard } from '../../components/delivery/DriverDeliveriesDashboard'
 
@@ -29,6 +28,8 @@ type DeliveryRow = {
   siteName?: string
   siteAddress?: string
   status: string
+  vehicleLabel?: string
+  returnPickupVehicleLabel?: string
   deliveryAt: string
   fromGodownId?: string
   billerUserId?: string
@@ -45,6 +46,77 @@ type DeliveryRow = {
     dispatchedQty?: number
     returnedQty?: number
   }>
+  qtyProgress?: { dispatchComplete?: boolean }
+  scanProgress?: { dispatchComplete?: boolean }
+  deliveryVerifiedAt?: string
+  billerReturnSubmittedAt?: string
+  godownNames?: string[]
+  primaryGodownName?: string
+  linesSummary?: Array<{
+    productId: string
+    particulars?: string
+    sku?: string
+    qty: number
+    godownName?: string
+  }>
+  productCount?: number
+  totalQty?: number
+}
+
+function formatGodownLabel(names?: string[], primary?: string): string {
+  if (!names?.length) return primary || '—'
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]}, ${names[1]}`
+  return `${names[0]}, ${names[1]} +${names.length - 2}`
+}
+
+function DeliveryProductsPanel({ lines }: { lines: DeliveryRow['linesSummary'] }) {
+  if (!lines?.length) {
+    return <div style={{ fontSize: 12, color: '#94a3b8', padding: 12 }}>No products on this delivery.</div>
+  }
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+        <thead>
+          <tr>
+            {['Product', 'Godown', 'Qty'].map((h) => (
+              <th
+                key={h}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#047857',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  textAlign: h === 'Qty' ? 'right' : 'left',
+                  borderBottom: '1px solid #bbf7d0',
+                }}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((line) => (
+            <tr key={line.productId}>
+              <td style={{ padding: '8px 12px', fontSize: 13, color: '#0f172a' }}>
+                {line.particulars || line.sku || line.productId}
+                {line.sku && line.particulars ? (
+                  <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{line.sku}</span>
+                ) : null}
+              </td>
+              <td style={{ padding: '8px 12px', fontSize: 13, color: '#64748b' }}>{line.godownName || '—'}</td>
+              <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 600, color: '#0f172a', textAlign: 'right' }}>
+                {line.qty}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 // ── icons ──────────────────────────────────────────────────────────────────
@@ -109,7 +181,7 @@ function RefreshIcon() {
 //         } else {
 //           el.style.background = '#f0eeff'
 //           el.style.borderColor = '#c4b5fd'
-//           el.style.color = '#4f46e5'
+//           el.style.color = '#059669'
 //         }
 //       }}
 //       onMouseLeave={(e) => {
@@ -144,15 +216,30 @@ export function DeliveriesListPage() {
   const [editDeliveryId, setEditDeliveryId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const canCreate =
     auth.status === 'authenticated' &&
     (auth.user.role === 'ADMIN' || auth.user.role === 'BILLER')
 
   const isGodownUser = auth.status === 'authenticated' && auth.user.role === 'GODOWN'
+  const godownUnlinked = isGodownUser && auth.status === 'authenticated' && !auth.user.godownId
 
   const removeFromList = (id: string) =>
     setDeliveries((prev) => prev.filter((r) => r.id !== id))
+
+  const patchDeliveryRow = (id: string, patch: Partial<DeliveryRow>) =>
+    setDeliveries((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+
+  const handleStatusUpdated = (id: string, patch: DeliveryStatusPatch) => {
+    patchDeliveryRow(id, patch)
+    loadDeliveries()
+  }
+
+  const handleWorkflowUpdated = (id: string, patch?: Partial<DeliveryRow>) => {
+    if (patch) patchDeliveryRow(id, patch)
+    loadDeliveries()
+  }
 
   const loadDeliveries = () => {
     const token = getToken()
@@ -174,11 +261,20 @@ export function DeliveriesListPage() {
     return deliveries.filter((d) => {
       if (tab !== 'all' && d.status !== tab) return false
       if (!s) return true
+      const godownMatch = d.godownNames?.some((n) => n.toLowerCase().includes(s)) ?? false
+      const productMatch =
+        d.linesSummary?.some(
+          (l) =>
+            (l.particulars?.toLowerCase().includes(s) ?? false) ||
+            (l.sku?.toLowerCase().includes(s) ?? false),
+        ) ?? false
       return (
         d.deliveryNo.toLowerCase().includes(s) ||
         d.customerName.toLowerCase().includes(s) ||
         (d.siteName?.toLowerCase().includes(s) ?? false) ||
-        (d.siteAddress?.toLowerCase().includes(s) ?? false)
+        (d.siteAddress?.toLowerCase().includes(s) ?? false) ||
+        godownMatch ||
+        productMatch
       )
     })
   }, [deliveries, q, tab])
@@ -225,7 +321,7 @@ export function DeliveriesListPage() {
         justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
       }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Deliveries</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Delivery Manager</h1>
           <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
             Manage customer deliveries, schedules and dispatch workflow.
           </p>
@@ -237,13 +333,13 @@ export function DeliveriesListPage() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '10px 22px', borderRadius: 12, border: 'none',
-              background: '#4f46e5', fontSize: 14, fontWeight: 600,
+              background: '#059669', fontSize: 14, fontWeight: 600,
               color: '#fff', cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(79,70,229,0.3)',
+              boxShadow: '0 2px 10px rgba(16,185,129,0.3)',
               whiteSpace: 'nowrap',
             }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = '#4338ca')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '#4f46e5')}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = '#047857')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '#059669')}
           >
             <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" />
@@ -290,7 +386,7 @@ export function DeliveriesListPage() {
                   color: '#374151', background: '#f8fafc', outline: 'none',
                   boxSizing: 'border-box', transition: 'border-color 0.15s',
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
@@ -308,7 +404,7 @@ export function DeliveriesListPage() {
               onMouseEnter={(e) => {
                 const el = e.currentTarget as HTMLElement
                 el.style.background = '#f8fafc'
-                el.style.borderColor = '#c7d2fe'
+                el.style.borderColor = '#a7f3d0'
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget as HTMLElement
@@ -339,7 +435,7 @@ export function DeliveriesListPage() {
                   fontSize: 13,
                   fontWeight: active ? 700 : 500,
                   border: active ? 'none' : '1px solid #e2e8f0',
-                  background: active ? '#4f46e5' : '#fff',
+                  background: active ? '#059669' : '#fff',
                   color: active ? '#fff' : '#64748b',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -348,9 +444,9 @@ export function DeliveriesListPage() {
                 onMouseEnter={(e) => {
                   if (!active) {
                     const el = e.currentTarget as HTMLElement
-                    el.style.background = '#f0eeff'
-                    el.style.color = '#4f46e5'
-                    el.style.borderColor = '#c4b5fd'
+                    el.style.background = '#ecfdf5'
+                    el.style.color = '#059669'
+                    el.style.borderColor = '#a7f3d0'
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -367,6 +463,17 @@ export function DeliveriesListPage() {
             )
           })}
         </div>
+
+        {/* ── GODOWN UNLINKED ── */}
+        {godownUnlinked ? (
+          <div style={{
+            margin: '12px 22px', padding: '10px 14px', borderRadius: 10,
+            background: '#fffbeb', color: '#92400e', fontSize: 13,
+            border: '1px solid #fde68a',
+          }}>
+            Godown account is not linked to a warehouse. Log out and sign in again with your godown mobile.
+          </div>
+        ) : null}
 
         {/* ── ERROR ── */}
         {error && (
@@ -395,7 +502,7 @@ export function DeliveriesListPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              border: '3px solid #e2e8f0', borderTopColor: '#6366f1',
+              border: '3px solid #e2e8f0', borderTopColor: '#10b981',
               animation: 'spin 0.7s linear infinite',
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -414,110 +521,200 @@ export function DeliveriesListPage() {
         {/* ── TABLE ── */}
         {!loading && rows.length > 0 && (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1100 }}>
               <thead>
                 <tr>
                   <th style={colHead}>Delivery</th>
                   <th style={colHead}>Customer</th>
-                  <th style={colHead}>Location</th>
+                  <th style={colHead}>Area</th>
+                  <th style={colHead}>Godown</th>
+                  <th style={colHead}>Products</th>
                   <th style={colHead}>Status</th>
                   <th style={{ ...colHead, textAlign: 'right' }}>Scheduled</th>
                   <th style={{ ...colHead, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((d, index) => (
-                  <tr
-                    key={d.id}
-                    style={{
-                      background: index % 2 === 0 ? '#ffffff' : '#fafbfc',
-                      borderBottom: '1px solid #f1f5f9',
-                      transition: 'background 0.12s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(238,242,255,0.5)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = index % 2 === 0 ? '#ffffff' : '#fafbfc')}
-                  >
-                    {/* DELIVERY */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', letterSpacing: '0.01em' }}>
-                        {d.deliveryNo}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                        ID: {d.id.slice(0, 8)}
-                      </div>
-                    </td>
+                {rows.map((d, index) => {
+                  const rowBg = index % 2 === 0 ? '#ffffff' : '#fafbfc'
+                  const hasProducts = (d.linesSummary?.length ?? 0) > 0
+                  return (
+                    <Fragment key={d.id}>
+                      <tr
+                        style={{
+                          background: rowBg,
+                          borderBottom: expandedId === d.id ? 'none' : '1px solid #f1f5f9',
+                          transition: 'background 0.12s',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => nav(`/deliveries/${d.id}`)}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(236,253,245,0.7)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = rowBg)}
+                      >
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                          <Link
+                            to={`/deliveries/${d.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 14,
+                              color: '#059669',
+                              textDecoration: 'none',
+                            }}
+                            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'none')}
+                          >
+                            {d.deliveryNo}
+                          </Link>
+                        </td>
 
-                    {/* CUSTOMER */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                        {d.customerName}
-                      </span>
-                    </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{d.customerName}</span>
+                        </td>
 
-                    {/* LOCATION */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', maxWidth: 200 }}>
-                      <span style={{
-                        fontSize: 13, color: '#64748b',
-                        display: 'block', overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {d.siteName || d.siteAddress || '—'}
-                      </span>
-                    </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle', maxWidth: 180 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: '#0f172a',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {d.siteName || '—'}
+                          </div>
+                          {d.siteAddress ? (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: '#94a3b8',
+                                marginTop: 2,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {d.siteAddress}
+                            </div>
+                          ) : null}
+                        </td>
 
-                    {/* STATUS */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle' }}>
-                      {isGodownUser ? (
-                        <Badge variant={deliveryBadgeVariant(d.status)}>
-                          {deliveryStatusLabel(d.status)}
-                        </Badge>
-                      ) : (
-                        <DeliveryStatusSelect
-                          deliveryId={d.id}
-                          status={d.status}
-                          onUpdated={(status) =>
-                            setDeliveries((prev) =>
-                              prev.map((row) => row.id === d.id ? { ...row, status } : row)
-                            )
-                          }
-                          onError={(msg) => setError(msg)}
-                        />
-                      )}
-                    </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle', maxWidth: 140 }}>
+                          <span
+                            style={{
+                              fontSize: 13,
+                              color: '#374151',
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {formatGodownLabel(d.godownNames, d.primaryGodownName)}
+                          </span>
+                        </td>
 
-                    {/* SCHEDULED */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', whiteSpace: 'nowrap' }}>
-                        {formatDateTime(d.deliveryAt)}
-                      </span>
-                    </td>
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                              {d.productCount ?? 0} items · {d.totalQty ?? 0} qty
+                            </span>
+                            {hasProducts ? (
+                              <button
+                                type="button"
+                                onClick={() => setExpandedId(expandedId === d.id ? null : d.id)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid #bbf7d0',
+                                  background: expandedId === d.id ? '#ecfdf5' : '#fff',
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color: '#059669',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {expandedId === d.id ? 'Hide' : 'View'}
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
 
-                    {/* ACTIONS */}
-                    <td style={{ padding: '16px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                        {isGodownUser && (
-                          <GodownDeliveryWorkflow
-                            delivery={{ id: d.id, status: d.status, lines: d.lines }}
-                            compact
-                            onUpdated={loadDeliveries}
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
+                          <DeliveryStatusSelect
+                            deliveryId={d.id}
+                            status={d.status}
+                            vehicleLabel={d.vehicleLabel}
+                            returnPickupVehicleLabel={d.returnPickupVehicleLabel}
+                            onUpdated={(patch) => handleStatusUpdated(d.id, patch)}
                             onError={(msg) => setError(msg)}
                           />
-                        )}
-                        <DeliveryRowActions
-                          delivery={d}
-                          onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
-                          onScan={(path) => nav(path)}
-                          onDeleted={() => {
-                            removeFromList(d.id)
-                            setSuccessMessage(`${d.deliveryNo} deleted successfully`)
-                            setError(null)
-                          }}
-                          onError={(msg) => setError(msg)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </td>
+
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', whiteSpace: 'nowrap' }}>
+                            {formatDateTime(d.deliveryAt)}
+                          </span>
+                        </td>
+
+                        <td
+                          style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            {isGodownUser ? (
+                              <GodownDeliveryWorkflow
+                                delivery={{
+                                  id: d.id,
+                                  status: d.status,
+                                  vehicleLabel: d.vehicleLabel,
+                                  returnPickupVehicleLabel: d.returnPickupVehicleLabel,
+                                  lines: d.lines,
+                                  qtyProgress: d.qtyProgress,
+                                  scanProgress: d.scanProgress,
+                                  deliveryVerifiedAt: d.deliveryVerifiedAt,
+                                  billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+                                }}
+                                compact
+                                onUpdated={(patch) => handleWorkflowUpdated(d.id, patch)}
+                                onError={(msg) => setError(msg)}
+                              />
+                            ) : null}
+                            <DeliveryRowActions
+                              delivery={d}
+                              onEdit={(deliveryId) => setEditDeliveryId(deliveryId)}
+                              onScan={(path) => nav(path)}
+                              onDeleted={() => {
+                                removeFromList(d.id)
+                                setSuccessMessage(`${d.deliveryNo} deleted successfully`)
+                                setError(null)
+                              }}
+                              onError={(msg) => setError(msg)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedId === d.id && hasProducts ? (
+                        <tr>
+                          <td colSpan={8} style={{ padding: '0 16px 14px', background: rowBg }}>
+                            <div
+                              style={{
+                                background: '#f0fdf4',
+                                border: '1px solid #bbf7d0',
+                                borderRadius: 10,
+                                padding: '4px 4px 8px',
+                              }}
+                            >
+                              <DeliveryProductsPanel lines={d.linesSummary} />
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>

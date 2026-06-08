@@ -29,8 +29,8 @@
   ::-webkit-scrollbar-thumb { background: #c4c9d8; border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: #a0a8bc; }
 
-  ::selection { @apply bg-violet-500/20 text-violet-900; }
-  :focus-visible { @apply outline-none ring-2 ring-violet-500 ring-offset-2 ring-offset-white; }
+  ::selection { @apply bg-primary-500/20 text-primary-900; }
+  :focus-visible { @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white; }
 }
 
 @layer components {

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatDateTime } from '../../lib/format'
 import { Button } from '../../components/ui/Button'
@@ -12,10 +12,20 @@ import { DeleteDeliveryButton } from '../../components/delivery/DeleteDeliveryBu
 import { GodownDeliveryWorkflow } from '../../components/delivery/GodownDeliveryWorkflow'
 import { ReturnPickupVehicleModal } from '../../components/delivery/ReturnPickupVehicleModal'
 import { ReturnReconciliationCard } from '../../components/delivery/ReturnReconciliationCard'
-import { Badge } from '../../components/ui/Badge'
-import { deliveryBadgeVariant, deliveryStatusLabel, getDeliveryEditState } from '../../lib/deliveryStatus'
+import {
+  displayFulfillmentQty,
+  fulfillmentColumnLabel,
+  getDeliveryEditState,
+  showDispatchedQty,
+} from '../../lib/deliveryStatus'
 import { DriverDeliveryDetail } from '../../components/delivery/DriverDeliveryDetail'
+import { BillerReturnCard } from '../../components/delivery/BillerReturnCard'
+import { DeliveryHandoverCard } from '../../components/delivery/DeliveryHandoverCard'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
+import { ChallanPdfIcon, openDeliveryChallanPdf, openReturnChallanPdf } from '../../lib/openChallanPdf'
+import { groupLinesByGodown } from '../../lib/deliveryLineGroups'
+
+const RETURN_CHALLAN_STATUSES = ['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN', 'COMPLETED']
 
 type DeliveryLine = {
   productId: string
@@ -61,11 +71,14 @@ type DeliveryDetail = {
   qtyProgress?: {
     dispatchComplete?: boolean
     dispatchedByProduct?: Record<string, number>
+    deliveredByProduct?: Record<string, number>
     returnedByProduct?: Record<string, number>
   }
+  deliveryLineChecks?: Array<{ productId: string; qtyAck?: number; ok?: boolean }>
   stockByGodown?: Record<string, Record<string, number>>
   deliveryVerifierName?: string
   deliveryVerifiedAt?: string
+  deliverySignature?: string
   billerReturnSubmittedAt?: string
   billerMissingLines?: BillerReturnLine[]
   billerDamagedLines?: BillerReturnLine[]
@@ -100,6 +113,7 @@ function AdminDeliveryDetailPage() {
   const [returnPickupModalOpen, setReturnPickupModalOpen] = useState(false)
   const [actionBusy, setActionBusy] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [challanError, setChallanError] = useState<string | null>(null)
 
   const load = () => {
     const token = getToken()
@@ -164,8 +178,36 @@ function AdminDeliveryDetailPage() {
   }
 
   const showReturnPhase = ['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'].includes(d?.status ?? '')
+  const showReturnChallan = RETURN_CHALLAN_STATUSES.includes(d?.status ?? '')
+
+  const openDeliveryChallan = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    setChallanError(null)
+    try {
+      await openDeliveryChallanPdf(id, token)
+    } catch (e: unknown) {
+      setChallanError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to open delivery challan')
+    }
+  }
+
+  const openReturnChallan = async () => {
+    const token = getToken()
+    if (!token || !id) return
+    setChallanError(null)
+    try {
+      await openReturnChallanPdf(id, token)
+    } catch (e: unknown) {
+      setChallanError(e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Failed to open return challan')
+    }
+  }
   const canAssignReturnPickup =
     d?.status === 'DELIVERED' && (isAdmin || isGodownUser)
+
+  const linesByGodown = useMemo(() => {
+    if (!d) return []
+    return groupLinesByGodown(d.lines, d.fromGodownId)
+  }, [d])
 
   if (!id) return null
 
@@ -181,7 +223,7 @@ function AdminDeliveryDetailPage() {
   if (!d) {
     return (
       <div>
-        <PageHeader title="Delivery" subtitle="Loading…" />
+        <PageHeader title="Delivery" subtitle="Loading?" />
       </div>
     )
   }
@@ -190,9 +232,19 @@ function AdminDeliveryDetailPage() {
     <div>
       <PageHeader
         title={d.deliveryNo}
-        subtitle={`${d.customerName} • ${d.siteName || d.siteAddress || '—'}`}
+        subtitle={`${d.customerName} ? ${d.siteName || d.siteAddress || '?'}`}
         right={
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={openDeliveryChallan} className="inline-flex items-center gap-1.5">
+              <ChallanPdfIcon className="h-3.5 w-3.5" />
+              Delivery Challan
+            </Button>
+            {showReturnChallan ? (
+              <Button variant="secondary" size="sm" onClick={openReturnChallan} className="inline-flex items-center gap-1.5">
+                <ChallanPdfIcon className="h-3.5 w-3.5" />
+                Return Challan
+              </Button>
+            ) : null}
             {editState.canEdit ? (
               <Button
                 variant="secondary"
@@ -230,10 +282,36 @@ function AdminDeliveryDetailPage() {
       />
 
       {error ? <div className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+      {challanError ? <div className="mb-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{challanError}</div> : null}
+
+      <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm">
+        <div>
+          <span className="font-medium text-emerald-800">Area: </span>
+          <span className="text-slate-700">{d.siteName || '?'}</span>
+          {d.siteAddress ? <span className="text-slate-500"> ? {d.siteAddress}</span> : null}
+        </div>
+        <div>
+          <span className="font-medium text-emerald-800">Godown: </span>
+          <span className="text-slate-700">
+            {linesByGodown.map((g) => g.godownName).join(', ') || '?'}
+          </span>
+        </div>
+        <div>
+          <span className="font-medium text-emerald-800">Products: </span>
+          <span className="text-slate-700">{d.lines.length} items</span>
+        </div>
+        {d.vehicleLabel ? (
+          <div>
+            <span className="font-medium text-emerald-800">Vehicle: </span>
+            <span className="text-slate-700">{d.vehicleLabel}</span>
+          </div>
+        ) : null}
+      </div>
 
       <ReturnPickupVehicleModal
         open={returnPickupModalOpen}
         busy={actionBusy}
+        initialValue={d?.returnPickupVehicleLabel}
         onClose={() => setReturnPickupModalOpen(false)}
         onConfirm={assignReturnPickup}
       />
@@ -243,8 +321,6 @@ function AdminDeliveryDetailPage() {
           status={d.status}
           billerReturnUrl={d.billerReturnUrl}
           billerReturnSubmittedAt={d.billerReturnSubmittedAt}
-          billerMissingLines={d.billerMissingLines}
-          billerDamagedLines={d.billerDamagedLines}
           damageTotal={d.damageTotal}
           missingTotal={d.missingTotal}
           onCopyLink={copy}
@@ -279,16 +355,14 @@ function AdminDeliveryDetailPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-600">Status</span>
-              {isGodownUser ? (
-                <Badge variant={deliveryBadgeVariant(d.status)}>{deliveryStatusLabel(d.status)}</Badge>
-              ) : (
-                <DeliveryStatusSelect
-                  deliveryId={d.id}
-                  status={d.status}
-                  onUpdated={(status) => setD((prev) => (prev ? { ...prev, status } : prev))}
-                  onError={(msg) => setError(msg)}
-                />
-              )}
+              <DeliveryStatusSelect
+                deliveryId={d.id}
+                status={d.status}
+                vehicleLabel={d.vehicleLabel}
+                returnPickupVehicleLabel={d.returnPickupVehicleLabel}
+                onUpdated={() => load()}
+                onError={(msg) => setError(msg)}
+              />
             </div>
             <div>
               <span className="text-slate-600">Scheduled: </span>
@@ -318,22 +392,36 @@ function AdminDeliveryDetailPage() {
                 {d.contactPhone}
               </div>
             ) : null}
-            <div className="rounded-xl border border-slate-200 p-3">
-              <div className="font-semibold text-slate-900">Delivery handover</div>
-              {d.deliveryVerifiedAt ? (
-                <div className="text-slate-700">
-                  Verified by {d.deliveryVerifierName || '—'} ({formatDateTime(d.deliveryVerifiedAt)})
-                </div>
-              ) : (
-                <div className="text-amber-700">Pending — share delivery verify link</div>
-              )}
-            </div>
-            {!showReturnPhase ? (
-              <div className="rounded-xl border border-slate-200 p-3">
-                <div className="font-semibold text-slate-900">Biller return</div>
-                <div className="text-amber-700">Available after delivery — use Return reconciliation when delivered</div>
+            {linesByGodown.length > 0 ? (
+              <div>
+                <span className="text-slate-600">Source godowns: </span>
+                <span className="text-slate-900">
+                  {linesByGodown.map((g, i) => (
+                    <span key={g.godownId}>
+                      {i > 0 ? ', ' : null}
+                      <Link to={`/godowns/${g.godownId}`} className="font-semibold text-primary-700 hover:text-primary-900">
+                        {g.godownName}
+                      </Link>
+                    </span>
+                  ))}
+                </span>
               </div>
             ) : null}
+            <DeliveryHandoverCard
+              deliveryVerifiedAt={d.deliveryVerifiedAt}
+              deliveryVerifierName={d.deliveryVerifierName}
+              vehicleLabel={d.vehicleLabel}
+              deliverySignature={d.deliverySignature}
+              lines={d.lines}
+            />
+            <BillerReturnCard
+              status={d.status}
+              billerReturnSubmittedAt={d.billerReturnSubmittedAt}
+              billerMissingLines={d.billerMissingLines}
+              billerDamagedLines={d.billerDamagedLines}
+              damageTotal={d.damageTotal}
+              missingTotal={d.missingTotal}
+            />
           </CardContent>
         </Card>
 
@@ -368,7 +456,7 @@ function AdminDeliveryDetailPage() {
           <CardContent className="space-y-3 text-xs">
             <div>
               <div className="font-semibold text-slate-800">Delivery verify</div>
-              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || '—'}</div>
+              <div className="break-all text-slate-600">{d.deliveryVerifyUrl || '?'}</div>
               {d.deliveryVerifyUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.deliveryVerifyUrl || '')}>
                   Copy
@@ -377,7 +465,7 @@ function AdminDeliveryDetailPage() {
             </div>
             <div>
               <div className="font-semibold text-slate-800">Biller return</div>
-              <div className="break-all text-slate-600">{d.billerReturnUrl || '—'}</div>
+              <div className="break-all text-slate-600">{d.billerReturnUrl || '?'}</div>
               {d.billerReturnUrl ? (
                 <Button size="sm" variant="secondary" className="mt-1" onClick={() => copy(d.billerReturnUrl || '')}>
                   Copy
@@ -390,47 +478,73 @@ function AdminDeliveryDetailPage() {
 
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>Products in delivery</CardTitle>
+          <CardTitle>Products by godown</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {d.lines.length === 0 ? (
             <p className="text-sm text-slate-600">No products on this delivery.</p>
           ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <Th>Product</Th>
-                  <Th>SKU</Th>
-                  <Th>Godown</Th>
-                  <Th className="text-right">Ordered</Th>
-                  <Th className="text-right">Dispatched</Th>
-                  <Th className="text-right">Returned</Th>
-                  <Th className="text-right">In stock</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.lines.map((l) => {
-                  const gid = l.godownId || d.fromGodownId
-                  const stock = d.stockByGodown?.[gid]?.[l.productId]
-                  return (
-                    <tr key={`${l.productId}-${l.godownId ?? ''}`} className="hover:bg-slate-50">
-                      <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
-                      <Td className="font-mono text-xs text-slate-600">{l.sku || '—'}</Td>
-                      <Td className="text-slate-700">{l.godownName || '—'}</Td>
-                      <Td className="text-right font-semibold text-slate-900">
-                        {l.qty}
-                        {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
-                      </Td>
-                      <Td className="text-right text-slate-700">{l.dispatchedQty ?? 0}</Td>
-                      <Td className="text-right text-slate-700">{l.returnedQty ?? 0}</Td>
-                      <Td className="text-right font-semibold text-violet-700">
-                        {stock !== undefined ? stock : '—'}
-                      </Td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </Table>
+            linesByGodown.map((group) => {
+              const units = group.lines.reduce((sum, l) => sum + l.qty, 0)
+              return (
+                <div key={group.godownId} className="overflow-hidden rounded-xl border border-slate-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
+                    <div>
+                      <Link
+                        to={`/godowns/${group.godownId}`}
+                        className="font-semibold text-primary-800 hover:text-primary-950"
+                      >
+                        {group.godownName}
+                      </Link>
+                      <div className="text-xs text-slate-500">
+                        {group.lines.length} product{group.lines.length === 1 ? '' : 's'} ? {units} unit{units === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Product</Th>
+                        <Th>SKU</Th>
+                        <Th className="text-right">Ordered</Th>
+                        <Th className="text-right">{fulfillmentColumnLabel(d.status)}</Th>
+                        <Th className="text-right">Returned</Th>
+                        <Th className="text-right">In stock</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.lines.map((l) => {
+                        const stock = d.stockByGodown?.[group.godownId]?.[l.productId]
+                        return (
+                          <tr key={`${group.godownId}-${l.productId}`} className="hover:bg-slate-50">
+                            <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
+                            <Td className="font-mono text-xs text-slate-600">{l.sku || '?'}</Td>
+                            <Td className="text-right font-semibold text-slate-900">
+                              {l.qty}
+                              {l.unit ? <span className="ml-1 font-normal text-slate-500">{l.unit}</span> : null}
+                            </Td>
+                            <Td className="text-right text-slate-700">
+                              {displayFulfillmentQty(d.status, l, {
+                                deliveryVerifiedAt: d.deliveryVerifiedAt,
+                                deliveryLineChecks: d.deliveryLineChecks,
+                                qtyProgress: d.qtyProgress,
+                                deliveredTagIds: d.deliveredTagIds,
+                              })}
+                            </Td>
+                            <Td className="text-right text-slate-700">
+                              {showDispatchedQty(d.status) ? (l.returnedQty ?? 0) : '?'}
+                            </Td>
+                            <Td className="text-right font-semibold text-primary-700">
+                              {stock !== undefined ? stock : '?'}
+                            </Td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </Table>
+                </div>
+              )
+            })
           )}
         </CardContent>
       </Card>

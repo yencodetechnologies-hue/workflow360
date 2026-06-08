@@ -29,7 +29,7 @@ type Props = {
 }
 
 const actionBtnClass =
-  'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700'
+  'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700'
 
 function EyeIcon() {
   return (
@@ -108,7 +108,7 @@ export function DeliveryRowActions({ delivery, onDeleted, onError, onScan, onEdi
 
       <button
         type="button"
-        className={cn(actionBtnClass, 'hover:border-violet-300 hover:bg-violet-100 hover:text-violet-800')}
+        className={cn(actionBtnClass, 'hover:border-primary-300 hover:bg-primary-100 hover:text-primary-800')}
         onClick={handleScan}
         title="Scan"
         aria-label="Scan"

@@ -11,9 +11,19 @@ import { deliveryBadgeVariant, deliveryStatusLabel } from '../../lib/deliverySta
 import { scanPathForDelivery } from '../../lib/scanMode'
 import {
   driverStopsForDelivery,
+  godownNameByIdFromPickups,
   normalizeDriverDeliveryRow,
+  resolvePickupLocations,
   type DriverDeliveryListRow,
 } from '../../lib/driverDeliveryLocations'
+import { groupLinesByGodown } from '../../lib/deliveryLineGroups'
+
+function groupDriverLines(d: DriverDeliveryRow) {
+  return groupLinesByGodown(d.lines, {
+    fallbackGodownId: d.fromGodownId,
+    godownNameById: godownNameByIdFromPickups(d.pickupLocations),
+  })
+}
 
 export type DriverDeliveryRow = DriverDeliveryListRow
 
@@ -24,11 +34,11 @@ const ACTIVE_STATUSES = new Set(['PACKED', 'OUT_FOR_DELIVERY', 'RETURN_PICKUP'])
 function LocationBlock({ label, name, address, phone }: { label: string; name: string; address: string; phone?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-      <div className="text-xs font-semibold uppercase tracking-wide text-violet-600">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-primary-600">{label}</div>
       <div className="mt-1 font-semibold text-slate-900">{name}</div>
       <div className="mt-0.5 text-sm text-slate-600">{address}</div>
       {phone ? (
-        <a href={`tel:${phone}`} className="mt-1 inline-block text-sm font-medium text-violet-700 hover:underline">
+        <a href={`tel:${phone}`} className="mt-1 inline-block text-sm font-medium text-primary-700 hover:underline">
           {phone}
         </a>
       ) : null}
@@ -132,36 +142,59 @@ export function DriverDeliveriesDashboard() {
         {rows.map((d) => {
           const stops = driverStopsForDelivery(d.phase, d.pickupLocation, d.dropLocation)
           const scanPath = scanPathForDelivery('DELIVERY', d.status, d.id)
+          const linesByGodown = groupDriverLines(d)
+          const pickupLocations = resolvePickupLocations(d, linesByGodown)
           return (
             <Card key={d.id} className="overflow-hidden">
               <CardContent className="space-y-4 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <div className="font-mono text-sm font-semibold text-violet-700">{d.deliveryNo}</div>
+                    <div className="font-mono text-sm font-semibold text-primary-700">{d.deliveryNo}</div>
                     <div className="mt-1 text-xs text-slate-500">{formatDateTime(d.deliveryAt)}</div>
                   </div>
                   <Badge variant={deliveryBadgeVariant(d.status)}>{deliveryStatusLabel(d.status)}</Badge>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <LocationBlock {...stops.pickup} />
+                  {d.phase !== 'RETURN' && pickupLocations.length > 1 ? (
+                    <div className="space-y-2 sm:col-span-2">
+                      {pickupLocations.map((loc, i) => (
+                        <LocationBlock
+                          key={loc.godownId || i}
+                          label={`Pickup · ${loc.name}`}
+                          name={loc.name}
+                          address={loc.address || '—'}
+                          phone={loc.mobile}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <LocationBlock {...stops.pickup} />
+                  )}
                   <LocationBlock {...stops.drop} />
                 </div>
 
                 {d.lines.length > 0 ? (
                   <div>
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Products</div>
-                    <ul className="space-y-1 rounded-xl border border-slate-200 p-3 text-sm">
-                      {d.lines.map((l) => (
-                        <li key={l.productId} className="flex justify-between gap-2">
-                          <span className="text-slate-800">{l.particulars || l.sku || l.productId}</span>
-                          <span className="shrink-0 font-semibold text-slate-900">
-                            {l.qty}
-                            {l.unit ? <span className="ml-0.5 font-normal text-slate-500">{l.unit}</span> : null}
-                          </span>
-                        </li>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Products by godown</div>
+                    <div className="space-y-3">
+                      {linesByGodown.map((group) => (
+                        <div key={group.godownId} className="rounded-xl border border-slate-200 overflow-hidden">
+                          <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-primary-700">{group.godownName}</div>
+                          <ul className="space-y-1 p-3 text-sm">
+                            {group.lines.map((l) => (
+                              <li key={`${group.godownId}-${l.productId}`} className="flex justify-between gap-2">
+                                <span className="text-slate-800">{l.particulars || l.sku || l.productId}</span>
+                                <span className="shrink-0 font-semibold text-slate-900">
+                                  {l.qty}
+                                  {l.unit ? <span className="ml-0.5 font-normal text-slate-500">{l.unit}</span> : null}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 ) : null}
 
@@ -180,7 +213,7 @@ export function DriverDeliveriesDashboard() {
       </div>
 
       <p className="text-center text-xs text-slate-400">
-        <Link to="/deliveries" className="text-violet-600 hover:underline" onClick={(e) => { e.preventDefault(); loadDeliveries() }}>
+        <Link to="/deliveries" className="text-primary-600 hover:underline" onClick={(e) => { e.preventDefault(); loadDeliveries() }}>
           Refresh list
         </Link>
       </p>

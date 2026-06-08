@@ -672,7 +672,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }} onClick={() => onChange(!checked)}>
       <div style={{
         width: 44, height: 24, borderRadius: 12,
-        background: checked ? '#534AB7' : '#d1d0d8',
+        background: checked ? '#059669' : '#d1d0d8',
         transition: 'background 0.2s',
         display: 'flex', alignItems: 'center', padding: '2px', flexShrink: 0,
       }}>
@@ -683,7 +683,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
           transition: 'transform 0.2s',
         }} />
       </div>
-      <span style={{ fontSize: 11.5, fontWeight: 600, color: checked ? '#534AB7' : '#7C7A9A', minWidth: 22 }}>
+      <span style={{ fontSize: 11.5, fontWeight: 600, color: checked ? '#059669' : '#7C7A9A', minWidth: 22 }}>
         {checked ? 'On' : 'Off'}
       </span>
     </div>
@@ -693,11 +693,11 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 // ── Status badge ──────────────────────────────────────────────────────────
 function deliveryBadgeStyle(status: string): React.CSSProperties {
   if (status === 'COMPLETED') return { background: '#E1F5EE', color: '#0F6E56' }
-  if (status === 'PROCESSED' || status === 'UPCOMING') return { background: '#EEEDFE', color: '#534AB7' }
+  if (status === 'PROCESSED' || status === 'UPCOMING') return { background: '#ecfdf5', color: '#059669' }
   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return { background: '#E1F5EE', color: '#0F6E56' }
   if (status === 'PENDING_RETURN' || status === 'DELIVERED') return { background: '#FAEEDA', color: '#BA7517' }
   if (status === 'CANCELLED' || status === 'RETURNED') return { background: '#FCEBEB', color: '#E24B4A' }
-  return { background: '#F0EFFD', color: '#534AB7' }
+  return { background: '#ecfdf5', color: '#059669' }
 }
 
 function statusLabel(s: string) {
@@ -815,15 +815,15 @@ export function GodownsDetailsPage() {
 
   if (!id) return <div style={{padding:24}}>Invalid godown ID.</div>
   if (loading && !godown) return <div style={{padding:24,fontSize:13,color:'#7C7A9A'}}>Loading…</div>
-  if (error && !godown) return <div style={{padding:24}}><div style={{padding:'10px 14px',borderRadius:10,background:'#FCEBEB',color:'#E24B4A',fontSize:13,marginBottom:12}}>{error}</div><Link to="/godowns" style={{fontSize:13,color:'#534AB7',fontWeight:600}}>← Back</Link></div>
-  if (!godown) return <div style={{padding:24,fontSize:13}}>Not found. <Link to="/godowns" style={{color:'#534AB7',fontWeight:600}}>Back</Link></div>
+  if (error && !godown) return <div style={{padding:24}}><div style={{padding:'10px 14px',borderRadius:10,background:'#FCEBEB',color:'#E24B4A',fontSize:13,marginBottom:12}}>{error}</div><Link to="/godowns" style={{fontSize:13,color:'#059669',fontWeight:600}}>← Back</Link></div>
+  if (!godown) return <div style={{padding:24,fontSize:13}}>Not found. <Link to="/godowns" style={{color:'#059669',fontWeight:600}}>Back</Link></div>
 
   const tabBtn = (t: Tab): React.CSSProperties => ({
     padding: '12px 22px', fontSize: 13.5,
     fontWeight: tab===t ? 600 : 500,
-    color: tab===t ? '#534AB7' : '#7C7A9A',
+    color: tab===t ? '#059669' : '#7C7A9A',
     border: 'none',
-    borderBottom: tab===t ? '2.5px solid #534AB7' : '2.5px solid transparent',
+    borderBottom: tab===t ? '2.5px solid #059669' : '2.5px solid transparent',
     background: 'transparent',
     cursor: 'pointer', transition: 'all 0.14s',
     whiteSpace: 'nowrap', fontFamily: 'inherit',
@@ -842,18 +842,18 @@ export function GodownsDetailsPage() {
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           {canEditGodown && (
-            <button onClick={() => setEditOpen(true)} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid rgba(83,74,183,0.20)', background:'#fff', fontSize:12.5, fontWeight:500, color:'#534AB7', cursor:'pointer' }}>
+            <button onClick={() => setEditOpen(true)} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid rgba(83,74,183,0.20)', background:'#fff', fontSize:12.5, fontWeight:500, color:'#059669', cursor:'pointer' }}>
               Edit
             </button>
           )}
-          <Link to="/godowns" style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 16px', borderRadius:8, border:'1px solid rgba(83,74,183,0.15)', background:'#fff', fontSize:12.5, fontWeight:500, color:'#7C7A9A', textDecoration:'none' }}>
+          <Link to="/godowns" style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 16px', borderRadius:8, border:'1px solid rgba(5,150,105,0.15)', background:'#fff', fontSize:12.5, fontWeight:500, color:'#7C7A9A', textDecoration:'none' }}>
             ← Back to list
           </Link>
         </div>
       </div>
 
       {/* WAREHOUSE DETAILS CARD */}
-      <div style={{ background:'#fff', border:'1px solid rgba(83,74,183,0.13)', borderRadius:12, padding:'20px 24px' }}>
+      <div style={{ background:'#fff', border:'1px solid rgba(5,150,105,0.13)', borderRadius:12, padding:'20px 24px' }}>
         <h3 style={{ fontSize:15, fontWeight:600, color:'#1E1A4E', marginBottom:18, fontFamily:'inherit' }}>Warehouse details</h3>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
           {[{label:'Godown Code',value:godown.code||'—'},{label:'Mobile',value:godown.mobile||'—'},{label:'Address',value:godown.address||'—'},{label:'Location',value:godown.location||'—'}].map(({label,value}) => (
@@ -868,7 +868,7 @@ export function GodownsDetailsPage() {
       {error && <div style={{ padding:'10px 14px', borderRadius:10, background:'#FCEBEB', color:'#E24B4A', fontSize:13, border:'1px solid rgba(226,75,74,0.2)' }}>{error}</div>}
 
       {/* TABS + CONTENT CARD */}
-      <div style={{ background:'#fff', border:'1px solid rgba(83,74,183,0.13)', borderRadius:12, overflow:'hidden' }}>
+      <div style={{ background:'#fff', border:'1px solid rgba(5,150,105,0.13)', borderRadius:12, overflow:'hidden' }}>
 
         {/* Tab bar — same style as design image */}
         <div style={{ display:'flex', borderBottom:'1px solid rgba(83,74,183,0.12)', background:'#fff' }}>
@@ -905,7 +905,7 @@ export function GodownsDetailsPage() {
                     value={catSearch} onChange={e=>setCatSearch(e.target.value)}
                     placeholder="Search product or SKU..."
                     style={{ width:'100%', padding:'9px 14px 9px 36px', border:'1px solid #e8eaf0', borderRadius:9, fontSize:13.5, color:'#1E1A4E', background:'#f8fafc', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}
-                    onFocus={e=>(e.currentTarget.style.borderColor='#7F77DD')}
+                    onFocus={e=>(e.currentTarget.style.borderColor='#34d399')}
                     onBlur={e=>(e.currentTarget.style.borderColor='#e8eaf0')}
                   />
                 </div>
@@ -941,14 +941,14 @@ export function GodownsDetailsPage() {
 
                         {/* SKU — monospace pill, no wrap */}
                         <td style={{ ...TD, whiteSpace:'nowrap' }}>
-                          <span style={{ fontFamily:'monospace', fontSize:11.5, fontWeight:600, color:'#7C7A9A', background:'#f4f3ff', border:'1px solid #e0dafd', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
+                          <span style={{ fontFamily:'monospace', fontSize:11.5, fontWeight:600, color:'#047857', background:'#ecfdf5', border:'1px solid #bbf7d0', padding:'3px 8px', borderRadius:6, display:'inline-block' }}>
                             {p.sku}
                           </span>
                         </td>
 
                         {/* CATEGORY — pill badge, no wrap */}
                         <td style={{ ...TD, whiteSpace:'nowrap' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#534AB7', background:'#EEEDFE', border:'1px solid #CECBF6', padding:'3px 10px', borderRadius:20, display:'inline-block', letterSpacing:'0.02em', whiteSpace:'nowrap' }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#059669', background:'#ecfdf5', border:'1px solid #a7f3d0', padding:'3px 10px', borderRadius:20, display:'inline-block', letterSpacing:'0.02em', whiteSpace:'nowrap' }}>
                             {p.category}
                           </span>
                         </td>
@@ -970,7 +970,7 @@ export function GodownsDetailsPage() {
                 <div style={{ fontSize:15, fontWeight:700, color:'#1E1A4E' }}>
                   Stock at godown <span style={{ fontSize:13, fontWeight:400, color:'#7C7A9A' }}>(current quantities)</span>
                 </div>
-                <span style={{ fontSize:12, color:'#534AB7', fontWeight:600 }}>Total: {formatNumber(stockRows.reduce((a,r)=>a+r.qty,0))} units</span>
+                <span style={{ fontSize:12, color:'#059669', fontWeight:600 }}>Total: {formatNumber(stockRows.reduce((a,r)=>a+r.qty,0))} units</span>
               </div>
               {stockTableRows.length===0 ? (
                 <div style={{ padding:'40px 22px', textAlign:'center', color:'#7C7A9A', fontSize:13 }}>No stock rows yet.</div>
@@ -978,18 +978,18 @@ export function GodownsDetailsPage() {
                 <div style={{ flex:1, overflowY:'auto', padding:'14px 18px', display:'flex', flexDirection:'column', gap:10 }}>
                   {stockTableRows.map(p => (
                     <div key={p.productId} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', border:'1px solid rgba(83,74,183,0.12)', borderRadius:9, background:'#faf9ff', transition:'border-color 0.12s' }}
-                      onMouseEnter={e=>(e.currentTarget.style.borderColor='#AFA9EC')}
+                      onMouseEnter={e=>(e.currentTarget.style.borderColor='#6ee7b7')}
                       onMouseLeave={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.12)')}
                     >
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:13, fontWeight:500, color:'#1E1A4E' }}>{p.name}</div>
                         <div style={{ fontSize:10.5, color:'#7C7A9A', marginTop:1 }}>{p.sku}</div>
-                        <div style={{ height:4, background:'#EEEDFE', borderRadius:4, overflow:'hidden', marginTop:5 }}>
-                          <div style={{ height:'100%', width:`${Math.round((p.qty/maxStock)*100)}%`, background:'linear-gradient(90deg,#7F77DD,#AFA9EC)', borderRadius:4 }} />
+                        <div style={{ height:4, background:'#ecfdf5', borderRadius:4, overflow:'hidden', marginTop:5 }}>
+                          <div style={{ height:'100%', width:`${Math.round((p.qty/maxStock)*100)}%`, background:'linear-gradient(90deg,#34d399,#6ee7b7)', borderRadius:4 }} />
                         </div>
                       </div>
                       <div style={{ textAlign:'right', flexShrink:0 }}>
-                        <div style={{ fontSize:16, fontWeight:700, color:'#534AB7' }}>{formatNumber(p.qty)}</div>
+                        <div style={{ fontSize:16, fontWeight:700, color:'#059669' }}>{formatNumber(p.qty)}</div>
                         <div style={{ fontSize:10, color:'#7C7A9A' }}>units</div>
                       </div>
                       {canEditGodown && (
@@ -997,7 +997,7 @@ export function GodownsDetailsPage() {
                           <input value={adjustDeltaByProduct[p.productId]??''} onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))} placeholder="+/-"
                             style={{ width:60, height:32, padding:'0 8px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12, color:'#1E1A4E', background:'#fff', outline:'none', fontFamily:'inherit' }} />
                           <button disabled={adjustApplyingProductId===p.productId} onClick={()=>applyStockAdjustment(p.productId)}
-                            style={{ height:32, padding:'0 12px', borderRadius:7, border:'none', background:'#534AB7', fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer' }}>
+                            style={{ height:32, padding:'0 12px', borderRadius:7, border:'none', background:'#059669', fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer' }}>
                             {adjustApplyingProductId===p.productId?'…':'Apply'}
                           </button>
                         </div>
@@ -1041,11 +1041,11 @@ export function GodownsDetailsPage() {
                           >
                             <td style={{ ...TD, fontWeight:500 }}>{p.particulars??p.productId}</td>
                             <td style={{ ...TD, whiteSpace:'nowrap' }}><span style={{ fontFamily:'monospace', fontSize:11.5, color:'#7C7A9A' }}>{p.sku}</span></td>
-                            <td style={{ ...TD, textAlign:'right', fontWeight:700, color:'#534AB7' }}>{formatNumber(stockQtyByProductId.get(p.productId)??0)}</td>
+                            <td style={{ ...TD, textAlign:'right', fontWeight:700, color:'#059669' }}>{formatNumber(stockQtyByProductId.get(p.productId)??0)}</td>
                             <td style={{ ...TD, minWidth:110 }}>
                               <input placeholder="e.g. 10" value={adjustDeltaByProduct[p.productId]??''} onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
                                 style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12.5, color:'#1E1A4E', background:'#faf9ff', outline:'none', fontFamily:'inherit' }}
-                                onFocus={e=>(e.currentTarget.style.borderColor='#7F77DD')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.18)')} />
+                                onFocus={e=>(e.currentTarget.style.borderColor='#34d399')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.18)')} />
                             </td>
                             <td style={{ ...TD, minWidth:130 }}>
                               <input placeholder="Optional" value={adjustNoteByProduct[p.productId]??''} onChange={e=>setAdjustNoteByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
@@ -1053,7 +1053,7 @@ export function GodownsDetailsPage() {
                             </td>
                             <td style={{ ...TD, textAlign:'right' }}>
                               <button disabled={applying} onClick={()=>applyStockAdjustment(p.productId)}
-                                style={{ padding:'6px 14px', borderRadius:7, border:'none', background:'linear-gradient(135deg,#7F77DD,#534AB7)', fontSize:12, fontWeight:600, color:'#fff', cursor:applying?'not-allowed':'pointer', boxShadow:'0 2px 6px rgba(83,74,183,0.25)' }}>
+                                style={{ padding:'6px 14px', borderRadius:7, border:'none', background:'linear-gradient(135deg,#34d399,#059669)', fontSize:12, fontWeight:600, color:'#fff', cursor:applying?'not-allowed':'pointer', boxShadow:'0 2px 6px rgba(83,74,183,0.25)' }}>
                                 {applying?'…':'Apply'}
                               </button>
                             </td>
@@ -1078,7 +1078,7 @@ export function GodownsDetailsPage() {
               ) : deliveries.map(d => (
                 <Link key={d.id} to={`/deliveries/${d.id}`} style={{ textDecoration:'none' }}>
                   <div style={{ background:'#faf9ff', border:'1px solid rgba(83,74,183,0.12)', borderRadius:10, padding:'12px 14px', transition:'all 0.14s' }}
-                    onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#AFA9EC'; (e.currentTarget as HTMLElement).style.background='#EEEDFE' }}
+                    onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#6ee7b7'; (e.currentTarget as HTMLElement).style.background='#ecfdf5' }}
                     onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.borderColor='rgba(83,74,183,0.12)'; (e.currentTarget as HTMLElement).style.background='#faf9ff' }}
                   >
                     <div style={{ fontSize:13, fontWeight:700, color:'#1E1A4E' }}>{d.deliveryNo}</div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Input } from '../../components/ui/Input'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { apiFetch } from '../../lib/api'
+import { deliveryStatusLabel } from '../../lib/deliveryStatus'
 
 type Line = {
   productId: string
@@ -30,7 +31,22 @@ type GetRes = {
 
 type Phase = 'form' | 'thankYou' | 'alreadyDone'
 
-const pageShell = 'min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 px-4 py-10'
+const pageShell = 'min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50/20 px-4 py-10'
+
+const BILLER_RETURN_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'])
+
+function aggregateLines(lines: Line[]): Line[] {
+  const byProduct = new Map<string, Line>()
+  for (const l of lines) {
+    const existing = byProduct.get(l.productId)
+    if (existing) {
+      existing.qty += l.qty
+    } else {
+      byProduct.set(l.productId, { ...l })
+    }
+  }
+  return Array.from(byProduct.values())
+}
 
 export function PublicBillerReturnPage() {
   const { token } = useParams()
@@ -49,7 +65,7 @@ export function PublicBillerReturnPage() {
         setData(r)
         setPhase(r.billerReturnSubmittedAt ? 'alreadyDone' : 'form')
         const z: Record<string, string> = {}
-        for (const l of r.lines) {
+        for (const l of aggregateLines(r.lines)) {
           z[l.productId] = '0'
         }
         setDamaged({ ...z })
@@ -58,11 +74,13 @@ export function PublicBillerReturnPage() {
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
 
+  const formLines = useMemo(() => (data ? aggregateLines(data.lines) : []), [data])
+
   const previewTotals = useMemo(() => {
     if (!data) return { damage: 0, missing: 0 }
     let damage = 0
     let miss = 0
-    for (const l of data.lines) {
+    for (const l of formLines) {
       const dq = Number(damaged[l.productId]) || 0
       const mq = Number(missing[l.productId]) || 0
       const rate = l.parsedRate ?? 0
@@ -70,16 +88,16 @@ export function PublicBillerReturnPage() {
       miss += rate * mq
     }
     return { damage, missing: miss }
-  }, [data, damaged, missing])
+  }, [data, formLines, damaged, missing])
 
   const handleSubmit = async () => {
     if (!token || !data) return
     const t = decodeURIComponent(token)
-    const damagedLines = data.lines.map((l) => ({
+    const damagedLines = formLines.map((l) => ({
       productId: l.productId,
       qty: Number(damaged[l.productId]) || 0,
     }))
-    const missingLines = data.lines.map((l) => ({
+    const missingLines = formLines.map((l) => ({
       productId: l.productId,
       qty: Number(missing[l.productId]) || 0,
     }))
@@ -124,14 +142,14 @@ export function PublicBillerReturnPage() {
     return (
       <div className={pageShell}>
         <div className="mx-auto flex max-w-lg flex-col items-center justify-center gap-3 py-20 text-slate-600">
-          <LoadingSpinner size="lg" className="text-emerald-600" />
+          <LoadingSpinner size="lg" className="text-primary-600" />
           <p className="text-sm">Loading return form…</p>
         </div>
       </div>
     )
   }
 
-  const completionLines = data.lines.map((l) => ({
+  const completionLines = formLines.map((l) => ({
     productId: l.productId,
     particulars: l.particulars,
     sku: l.sku,
@@ -195,8 +213,15 @@ export function PublicBillerReturnPage() {
               Challan: {data.challanNo || '—'} · Site: {data.siteName || '—'}
             </div>
 
+            {!data.canSubmit && !BILLER_RETURN_STATUSES.has(data.status) ? (
+              <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-100">
+                Return report is not available while this delivery is in{' '}
+                {deliveryStatusLabel(data.status)} status.
+              </div>
+            ) : null}
+
             <div className="space-y-4">
-              {data.lines.map((l) => (
+              {formLines.map((l) => (
                 <div key={l.productId} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="font-semibold text-slate-900">{l.particulars || l.productId}</div>
                   <div className="text-xs text-slate-500">
@@ -207,6 +232,7 @@ export function PublicBillerReturnPage() {
                       label="Damaged qty"
                       type="number"
                       min={0}
+                      max={l.qty}
                       disabled={!data.canSubmit}
                       value={damaged[l.productId] ?? '0'}
                       onChange={(e) => setDamaged((d) => ({ ...d, [l.productId]: e.target.value }))}
@@ -215,6 +241,7 @@ export function PublicBillerReturnPage() {
                       label="Missing qty"
                       type="number"
                       min={0}
+                      max={l.qty}
                       disabled={!data.canSubmit}
                       value={missing[l.productId] ?? '0'}
                       onChange={(e) => setMissing((d) => ({ ...d, [l.productId]: e.target.value }))}

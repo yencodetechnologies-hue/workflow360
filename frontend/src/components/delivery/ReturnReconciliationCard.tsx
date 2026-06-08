@@ -2,20 +2,10 @@ import { formatDateTime } from '../../lib/format'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'
 
-type BillerReturnLine = {
-  productId: string
-  qty: number
-  particulars?: string
-  sku?: string
-  note?: string
-}
-
 type Props = {
   status: string
   billerReturnUrl?: string
   billerReturnSubmittedAt?: string
-  billerMissingLines?: BillerReturnLine[]
-  billerDamagedLines?: BillerReturnLine[]
   damageTotal?: number
   missingTotal?: number
   onCopyLink?: (url: string) => void
@@ -28,8 +18,6 @@ export function ReturnReconciliationCard({
   status,
   billerReturnUrl,
   billerReturnSubmittedAt,
-  billerMissingLines,
-  billerDamagedLines,
   damageTotal,
   missingTotal,
   onCopyLink,
@@ -60,7 +48,7 @@ export function ReturnReconciliationCard({
               href={billerReturnUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-semibold text-violet-700 hover:text-violet-900"
+              className="text-sm font-semibold text-primary-700 hover:text-primary-900"
             >
               Open form
             </a>
@@ -69,46 +57,17 @@ export function ReturnReconciliationCard({
           <p className="text-amber-700">Biller return link not available.</p>
         )}
         {billerReturnSubmittedAt ? (
-          <>
-            <p className="text-slate-700">Submitted {formatDateTime(billerReturnSubmittedAt)}</p>
-            <p className="text-slate-700">
-              Damage total: {damageTotal ?? '—'} · Missing total: {missingTotal ?? '—'}
-            </p>
-            {(billerMissingLines?.length || billerDamagedLines?.length) ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <div className="mb-1 font-semibold text-slate-800">Missing</div>
-                  {billerMissingLines?.length ? (
-                    <ul className="space-y-1 text-slate-700">
-                      {billerMissingLines.map((l) => (
-                        <li key={l.productId}>
-                          {l.particulars || l.sku || l.productId} — qty {l.qty}
-                          {l.note ? <span className="block text-xs text-slate-500">Note: {l.note}</span> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-slate-600">None reported.</p>
-                  )}
-                </div>
-                <div>
-                  <div className="mb-1 font-semibold text-slate-800">Damaged</div>
-                  {billerDamagedLines?.length ? (
-                    <ul className="space-y-1 text-slate-700">
-                      {billerDamagedLines.map((l) => (
-                        <li key={l.productId}>
-                          {l.particulars || l.sku || l.productId} — qty {l.qty}
-                          {l.note ? <span className="block text-xs text-slate-500">Note: {l.note}</span> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-slate-600">None reported.</p>
-                  )}
-                </div>
-              </div>
+          <p className="rounded-xl bg-primary-50 px-3 py-2 text-primary-800 ring-1 ring-primary-100">
+            Submitted {formatDateTime(billerReturnSubmittedAt)}
+            {damageTotal != null || missingTotal != null ? (
+              <span>
+                {' '}
+                · Damage {damageTotal != null ? damageTotal.toFixed(2) : '—'} · Missing{' '}
+                {missingTotal != null ? missingTotal.toFixed(2) : '—'}
+              </span>
             ) : null}
-          </>
+            . See biller return details in Overview below.
+          </p>
         ) : (
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-amber-800 ring-1 ring-amber-100">
             Biller has not submitted the return report yet. Share the link above so missing items and notes can be

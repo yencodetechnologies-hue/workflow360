@@ -28,6 +28,8 @@ type QueueRow = {
     dispatchedQty?: number
     returnedQty?: number
   }>
+  qtyProgress?: { dispatchComplete?: boolean }
+  scanProgress?: { dispatchComplete?: boolean }
 }
 
 function todayKey() {
@@ -110,7 +112,7 @@ export function QueuePage() {
                 {rows.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-50">
                     <Td className="font-semibold text-slate-900">
-                      <Link to={`/deliveries/${d.id}`} className="text-violet-600 hover:underline">
+                      <Link to={`/deliveries/${d.id}`} className="text-primary-600 hover:underline">
                         {d.deliveryNo}
                       </Link>
                     </Td>
@@ -123,7 +125,13 @@ export function QueuePage() {
                     {isGodownUser ? (
                       <Td className="text-right">
                         <GodownDeliveryWorkflow
-                          delivery={{ id: d.id, status: d.status, lines: d.lines }}
+                          delivery={{
+                            id: d.id,
+                            status: d.status,
+                            lines: d.lines,
+                            qtyProgress: d.qtyProgress,
+                            scanProgress: d.scanProgress,
+                          }}
                           compact
                           onUpdated={load}
                           onError={(msg) => setError(msg)}

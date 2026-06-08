@@ -179,7 +179,7 @@
 //           {/* <div className="absolute left-10 top-9 flex items-center gap-2.5">
 //             <div
 //               className="flex h-10 w-10 items-center justify-center rounded-[11px] text-white"
-//               style={{ background: '#7F77DD', boxShadow: '0 4px 16px rgba(127,119,221,0.5)' }}
+//               style={{ background: '#34d399', boxShadow: '0 4px 16px rgba(52,211,153,0.5)' }}
 //             >
 //               <HomeIcon size={20} />
 //             </div>
@@ -258,7 +258,7 @@
 //               <div
 //                 className="flex h-12 w-12 items-center justify-center rounded-[13px] text-white"
 //                 style={{
-//                   background: 'linear-gradient(135deg, #7F77DD, #3C3489)',
+//                   background: 'linear-gradient(135deg, #34d399, #047857)',
 //                   boxShadow: '0 4px 16px rgba(83,74,183,0.35)',
 //                 }}
 //               >
@@ -295,13 +295,13 @@
 //                     onBlur={() => setTouched(true)}
 //                     placeholder="admin@gmail.com or mobile"
 //                     style={{
-//                       border: '1.5px solid rgba(83,74,183,0.15)',
+//                       border: '1.5px solid rgba(5,150,105,0.15)',
 //                       color: '#1E1A4E',
 //                       background: '#faf9ff',
 //                     }}
 //                     className="h-11 w-full rounded-[10px] pl-10 pr-4 text-[13.5px] outline-none transition placeholder:text-[#7C7A9A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(127,119,221,0.15)]"
-//                     onFocus={(e) => (e.target.style.borderColor = '#7F77DD')}
-//                     onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(83,74,183,0.15)')}
+//                     onFocus={(e) => (e.target.style.borderColor = '#34d399')}
+//                     onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)')}
 //                   />
 //                 </div>
 //                 {errors.identifier && (
@@ -325,13 +325,13 @@
 //                     onBlur={() => setTouched(true)}
 //                     placeholder="Min. 6 characters"
 //                     style={{
-//                       border: '1.5px solid rgba(83,74,183,0.15)',
+//                       border: '1.5px solid rgba(5,150,105,0.15)',
 //                       color: '#1E1A4E',
 //                       background: '#faf9ff',
 //                     }}
 //                     className="h-11 w-full rounded-[10px] pl-10 pr-11 text-[13.5px] outline-none transition placeholder:text-[#7C7A9A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(127,119,221,0.15)]"
-//                     onFocus={(e) => (e.target.style.borderColor = '#7F77DD')}
-//                     onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(83,74,183,0.15)')}
+//                     onFocus={(e) => (e.target.style.borderColor = '#34d399')}
+//                     onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)')}
 //                   />
 //                   <button
 //                     type="button"
@@ -339,7 +339,7 @@
 //                     className="absolute right-3 transition"
 //                     style={{ color: '#7C7A9A' }}
 //                     tabIndex={-1}
-//                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#534AB7')}
+//                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#059669')}
 //                     onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#7C7A9A')}
 //                   >
 //                     {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -357,14 +357,14 @@
 //                     type="checkbox"
 //                     checked={remember}
 //                     onChange={(e) => setRemember(e.target.checked)}
-//                     className="h-4 w-4 rounded accent-[#534AB7]"
+//                     className="h-4 w-4 rounded accent-[#059669]"
 //                   />
 //                   <span className="text-[12.5px] font-medium" style={{ color: '#7C7A9A' }}>Remember me</span>
 //                 </label>
 //                 <button
 //                   type="button"
 //                   className="text-[12.5px] font-semibold transition hover:opacity-75"
-//                   style={{ color: '#534AB7' }}
+//                   style={{ color: '#059669' }}
 //                   onClick={() => alert('Forgot password flow (template placeholder).')}
 //                 >
 //                   Forgot password?
@@ -377,7 +377,7 @@
 //                 disabled={loading}
 //                 className="w-full rounded-[10px] py-[13px] text-[14px] font-bold tracking-[0.3px] text-white transition hover:-translate-y-px hover:opacity-93 active:translate-y-0 disabled:opacity-70"
 //                 style={{
-//                   background: 'linear-gradient(135deg, #7F77DD 0%, #3C3489 100%)',
+//                   background: 'linear-gradient(135deg, #34d399 0%, #047857 100%)',
 //                   boxShadow: '0 4px 16px rgba(83,74,183,0.4)',
 //                 }}
 //               >
@@ -399,12 +399,12 @@
 
 //             {/* Powered by */}
 //             <div className="mt-4 flex items-center justify-center gap-1.5">
-//               <span className="h-1 w-1 rounded-full bg-[#AFA9EC]" />
+//               <span className="h-1 w-1 rounded-full bg-[#6ee7b7]" />
 //               <span className="text-[11.5px]" style={{ color: '#7C7A9A' }}>Powered by</span>
-//               <span className="text-[11.5px] font-bold tracking-[0.2px]" style={{ color: '#534AB7' }}>
+//               <span className="text-[11.5px] font-bold tracking-[0.2px]" style={{ color: '#059669' }}>
 //                 Yencode Technologies
 //               </span>
-//               <span className="h-1 w-1 rounded-full bg-[#AFA9EC]" />
+//               <span className="h-1 w-1 rounded-full bg-[#6ee7b7]" />
 //             </div>
 
 //           </div>
@@ -574,12 +574,12 @@ export function LoginPage() {
             className="h-full w-full object-cover brightness-[0.55] transition-transform duration-[8000ms] hover:scale-[1.04]"
           />
 
-          {/* Overlay 1: purple-blue diagonal gradient (top-left to mid) */}
+          {/* Overlay 1: green diagonal gradient (top-left to mid) */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(135deg, rgba(38,33,92,0.75) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
+                'linear-gradient(135deg, rgba(6,78,59,0.75) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
             }}
           />
 
@@ -596,7 +596,7 @@ export function LoginPage() {
           {/* <div className="absolute left-10 top-9 flex items-center gap-2.5">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-[11px] text-white"
-              style={{ background: '#7F77DD', boxShadow: '0 4px 16px rgba(127,119,221,0.5)' }}
+              style={{ background: '#34d399', boxShadow: '0 4px 16px rgba(52,211,153,0.5)' }}
             >
               <HomeIcon size={20} />
             </div>
@@ -675,7 +675,7 @@ export function LoginPage() {
               <div
                 className="flex h-12 w-12 items-center justify-center rounded-[13px] text-white"
                 style={{
-                  background: 'linear-gradient(135deg, #7F77DD, #3C3489)',
+                  background: 'linear-gradient(135deg, #34d399, #047857)',
                   boxShadow: '0 4px 16px rgba(83,74,183,0.35)',
                 }}
               >
@@ -712,13 +712,13 @@ export function LoginPage() {
                     onBlur={() => setTouched(true)}
                     placeholder="admin@gmail.com or mobile"
                     style={{
-                      border: '1.5px solid rgba(83,74,183,0.15)',
+                      border: '1.5px solid rgba(5,150,105,0.15)',
                       color: '#1E1A4E',
                       background: '#faf9ff',
                     }}
                     className="h-11 w-full rounded-[10px] pl-10 pr-4 text-[13.5px] outline-none transition placeholder:text-[#7C7A9A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(127,119,221,0.15)]"
-                    onFocus={(e) => (e.target.style.borderColor = '#7F77DD')}
-                    onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(83,74,183,0.15)')}
+                    onFocus={(e) => (e.target.style.borderColor = '#34d399')}
+                    onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)')}
                   />
                 </div>
                 {errors.identifier && (
@@ -742,13 +742,13 @@ export function LoginPage() {
                     onBlur={() => setTouched(true)}
                     placeholder="Min. 6 characters"
                     style={{
-                      border: '1.5px solid rgba(83,74,183,0.15)',
+                      border: '1.5px solid rgba(5,150,105,0.15)',
                       color: '#1E1A4E',
                       background: '#faf9ff',
                     }}
                     className="h-11 w-full rounded-[10px] pl-10 pr-11 text-[13.5px] outline-none transition placeholder:text-[#7C7A9A] focus:bg-white focus:shadow-[0_0_0_3px_rgba(127,119,221,0.15)]"
-                    onFocus={(e) => (e.target.style.borderColor = '#7F77DD')}
-                    onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(83,74,183,0.15)')}
+                    onFocus={(e) => (e.target.style.borderColor = '#34d399')}
+                    onBlurCapture={(e) => (e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)')}
                   />
                   <button
                     type="button"
@@ -756,7 +756,7 @@ export function LoginPage() {
                     className="absolute right-3 transition"
                     style={{ color: '#7C7A9A' }}
                     tabIndex={-1}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#534AB7')}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#059669')}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#7C7A9A')}
                   >
                     {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -774,14 +774,14 @@ export function LoginPage() {
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="h-4 w-4 rounded accent-[#534AB7]"
+                    className="h-4 w-4 rounded accent-[#059669]"
                   />
                   <span className="text-[12.5px] font-medium" style={{ color: '#7C7A9A' }}>Remember me</span>
                 </label>
                 <button
                   type="button"
                   className="text-[12.5px] font-semibold transition hover:opacity-75"
-                  style={{ color: '#534AB7' }}
+                  style={{ color: '#059669' }}
                   onClick={() => alert('Forgot password flow (template placeholder).')}
                 >
                   Forgot password?
@@ -794,7 +794,7 @@ export function LoginPage() {
                 disabled={loading}
                 className="w-full rounded-[10px] py-[13px] text-[14px] font-bold tracking-[0.3px] text-white transition hover:-translate-y-px hover:opacity-93 active:translate-y-0 disabled:opacity-70"
                 style={{
-                  background: 'linear-gradient(135deg, #7F77DD 0%, #3C3489 100%)',
+                  background: 'linear-gradient(135deg, #34d399 0%, #047857 100%)',
                   boxShadow: '0 4px 16px rgba(83,74,183,0.4)',
                 }}
               >
@@ -816,12 +816,12 @@ export function LoginPage() {
 
             {/* Powered by */}
             <div className="mt-4 flex items-center justify-center gap-1.5">
-              <span className="h-1 w-1 rounded-full bg-[#AFA9EC]" />
+              <span className="h-1 w-1 rounded-full bg-[#6ee7b7]" />
               <span className="text-[11.5px]" style={{ color: '#7C7A9A' }}>Powered by</span>
-              <span className="text-[11.5px] font-bold tracking-[0.2px]" style={{ color: '#534AB7' }}>
+              <span className="text-[11.5px] font-bold tracking-[0.2px]" style={{ color: '#059669' }}>
                 Yencode Technologies
               </span>
-              <span className="h-1 w-1 rounded-full bg-[#AFA9EC]" />
+              <span className="h-1 w-1 rounded-full bg-[#6ee7b7]" />
             </div>
 
           </div>

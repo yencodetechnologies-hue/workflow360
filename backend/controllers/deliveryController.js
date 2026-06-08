@@ -9,8 +9,9 @@ const InventoryLedger = require('../models/InventoryLedger')
 const User = require('../models/User')
 const Order = require('../models/Order')
 const PDFDocument = require('pdfkit')
-const { populateLineDetails, populateBillerReturnLines } = require('../utils/deliveryLineDetails')
+const { populateLineDetails, populateBillerReturnLines, enrichListRows } = require('../utils/deliveryLineDetails')
 const { renderChallanPdf } = require('../utils/renderChallanPdf')
+const { renderReturnChallanPdf, buildReturnLines } = require('../utils/renderReturnChallanPdf')
 const {
   deliveryGodownIds,
   ensureDeliveryDriver,
@@ -20,6 +21,12 @@ const {
   notifyOutForDelivery,
   notifyReturnPickupAssigned,
 } = require('../utils/deliveryWorkflow')
+const { publicBaseUrl } = require('../utils/publicBaseUrl')
+const {
+  validGodownId,
+  godownCanAccessDelivery,
+  godownAccessDeniedMessage,
+} = require('../utils/godownAccess')
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
@@ -30,13 +37,8 @@ function makeVerifyToken() {
   return crypto.randomBytes(24).toString('base64url')
 }
 
-function publicBaseUrl() {
-  const u = process.env.FRONTEND_PUBLIC_URL || 'http://localhost:5173'
-  return String(u).replace(/\/$/, '')
-}
-
-function shareUrls(d) {
-  const base = publicBaseUrl()
+function shareUrls(d, req) {
+  const base = publicBaseUrl(req)
   return {
     deliveryVerifyUrl: `${base}/p/delivery/${encodeURIComponent(d.deliveryVerifyToken || '')}`,
     billerReturnUrl: `${base}/p/biller/${encodeURIComponent(d.billerReturnVerifyToken || '')}`,
@@ -88,6 +90,12 @@ function returnedQtyByProduct(delivery) {
 
 function godownIdForLine(line, delivery) {
   return line.godownId || delivery.fromGodownId
+}
+
+function deliveryStockLocked(delivery) {
+  return ['OUT_FOR_DELIVERY', 'DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN', 'COMPLETED'].includes(
+    delivery.status,
+  )
 }
 
 function godownIdForProduct(delivery, productId) {
@@ -350,13 +358,18 @@ function deliveryAccessOk(req, delivery) {
     const assigned = String(delivery.assignedDeliveryUserId || '') === String(req.user.id)
     return assigned || vehicleMatchesUser(delivery, req.user)
   }
-  if (req.user.role === 'GODOWN' && req.user.godownId) {
-    return deliveryGodownIds(delivery).includes(String(req.user.godownId))
+  if (req.user.role === 'GODOWN') {
+    return godownCanAccessDelivery(req, delivery)
   }
   if (req.user.role === 'BILLER') {
     return String(delivery.billerUserId || '') === String(req.user.id)
   }
   return false
+}
+
+function deliveryAccessDeniedMessage(req, delivery) {
+  if (req.user.role === 'GODOWN') return godownAccessDeniedMessage(req, delivery)
+  return 'Forbidden'
 }
 
 function pickupLocationFromGodown(g, godownId) {
@@ -381,24 +394,49 @@ function dropLocationFromDelivery(d) {
 function slimDriverLines(lines) {
   return (lines || []).map((l) => ({
     productId: l.productId,
+    godownId: l.godownId,
+    godownName: l.godownName,
     particulars: l.particulars,
     sku: l.sku,
     qty: l.qty,
     unit: l.unit,
+    dispatchedQty: l.dispatchedQty,
+    returnedQty: l.returnedQty,
   }))
 }
 
+function pickupLocationsFromLines(delivery, enrichedLines, godownMap) {
+  const idSet = new Set()
+  for (const line of enrichedLines || []) {
+    if (line.godownId) idSet.add(String(line.godownId))
+  }
+  for (const line of delivery.lines || []) {
+    const gid = godownIdForLine(line, delivery)
+    if (gid) idSet.add(String(gid))
+  }
+  if (!idSet.size && delivery.fromGodownId) {
+    idSet.add(String(delivery.fromGodownId))
+  }
+  return [...idSet].map((gid) => pickupLocationFromGodown(godownMap.get(gid), gid))
+}
+
+async function loadGodownMapForDeliveries(list) {
+  const allGodownIds = new Set()
+  for (const d of list) {
+    for (const id of deliveryGodownIds(d)) allGodownIds.add(String(id))
+  }
+  if (!allGodownIds.size) return new Map()
+  const godowns = await Godown.find({ _id: { $in: [...allGodownIds] } }).lean()
+  return new Map(godowns.map((g) => [String(g._id), g]))
+}
+
 async function mapDriverListRows(list) {
-  const godownIds = [...new Set(list.map((d) => String(d.fromGodownId)))]
-  const godowns = godownIds.length
-    ? await Godown.find({ _id: { $in: godownIds } }).lean()
-    : []
-  const godownMap = new Map(godowns.map((g) => [String(g._id), g]))
+  const godownMap = await loadGodownMapForDeliveries(list)
 
   return Promise.all(
     list.map(async (d) => {
-      const g = godownMap.get(String(d.fromGodownId))
       const enriched = await populateLineDetails(d)
+      const pickupLocations = pickupLocationsFromLines(d, enriched, godownMap)
       return {
         id: String(d._id),
         deliveryNo: d.deliveryNo,
@@ -408,7 +446,8 @@ async function mapDriverListRows(list) {
         returnExpectedAt: d.returnExpectedAt,
         contactPhone: d.contactPhone,
         vehicleLabel: d.vehicleLabel,
-        pickupLocation: pickupLocationFromGodown(g, d.fromGodownId),
+        pickupLocation: pickupLocations[0] || pickupLocationFromGodown(null, d.fromGodownId),
+        pickupLocations,
         dropLocation: dropLocationFromDelivery(d),
         lines: slimDriverLines(enriched),
       }
@@ -416,7 +455,8 @@ async function mapDriverListRows(list) {
   )
 }
 
-function mapListRow(d) {
+async function mapListRow(d, enrichment = {}) {
+  const dispatchComplete = await dispatchCompleteAsync(d)
   return {
     id: String(d._id),
     deliveryNo: d.deliveryNo,
@@ -433,6 +473,11 @@ function mapListRow(d) {
     status: d.status,
     phase: d.phase,
     lines: d.lines,
+    godownNames: enrichment.godownNames,
+    primaryGodownName: enrichment.primaryGodownName,
+    linesSummary: enrichment.linesSummary,
+    productCount: enrichment.productCount,
+    totalQty: enrichment.totalQty,
     dispatchedTagIds: d.dispatchedTagIds,
     pickedUpTagIds: d.pickedUpTagIds,
     deliveredTagIds: d.deliveredTagIds,
@@ -450,6 +495,12 @@ function mapListRow(d) {
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
     damageTotal: d.damageTotal,
     missingTotal: d.missingTotal,
+    qtyProgress: {
+      dispatchComplete,
+    },
+    scanProgress: {
+      dispatchComplete,
+    },
   }
 }
 
@@ -569,39 +620,16 @@ async function createDelivery(req, res) {
     if (orderId) {
       const order = await Order.findById(orderId)
       if (order) {
-        if (!order.fromGodownId) order.fromGodownId = primaryGodownId
+        order.fromGodownId = primaryGodownId
         order.status = 'ALLOCATED'
         await order.save()
       }
     }
 
-    const dispatchResult = await applyDispatchToLines(delivery, req.user.id, new Map(), {
-      lines: normalizedLines,
-    })
-    if (!dispatchResult.ok || dispatchResult.count === 0) {
-      await Delivery.findByIdAndDelete(delivery._id)
-      if (orderId) {
-        const order = await Order.findById(orderId)
-        if (order && order.status === 'ALLOCATED') {
-          order.status = 'CREATED'
-          await order.save()
-        }
-      }
-      return res.status(dispatchResult.ok ? 400 : dispatchResult.status).json({
-        message:
-          dispatchResult.message ||
-          'Failed to reduce godown stock for delivery lines. Check product stock and try again.',
-      })
-    }
-
-    delivery.lines = normalizedLines
-    delivery.markModified('lines')
-    await delivery.save()
-
     await syncOrderStatus(delivery, 'PROCESSED')
     await notifyDeliveryProcessed(delivery)
 
-    const urls = shareUrls(delivery)
+    const urls = shareUrls(delivery, req)
     return res.status(201).json({
       id: String(delivery._id),
       deliveryNo: delivery.deliveryNo,
@@ -797,8 +825,10 @@ async function applyConstrainedLineUpdate(delivery, userId, desiredByKey) {
         returnedQty: 0,
       }
       delivery.lines.push(line)
-      const dispatchResult = await applyDispatchToLines(delivery, userId, new Map(), { lines: [line] })
-      if (!dispatchResult.ok) return dispatchResult
+      if (deliveryStockLocked(delivery)) {
+        const dispatchResult = await applyDispatchToLines(delivery, userId, new Map(), { lines: [line] })
+        if (!dispatchResult.ok) return dispatchResult
+      }
       continue
     }
 
@@ -808,8 +838,10 @@ async function applyConstrainedLineUpdate(delivery, userId, desiredByKey) {
     if (desiredQty > oldQty) {
       const delta = desiredQty - oldQty
       line.qty = desiredQty
-      const dispatchResult = await applyDispatchToLines(delivery, userId, new Map([[pid, delta]]))
-      if (!dispatchResult.ok) return dispatchResult
+      if (deliveryStockLocked(delivery)) {
+        const dispatchResult = await applyDispatchToLines(delivery, userId, new Map([[pid, delta]]))
+        if (!dispatchResult.ok) return dispatchResult
+      }
     } else {
       const reduceBy = oldQty - desiredQty
       const outstanding = Math.max(0, (Number(line.dispatchedQty) || 0) - (Number(line.returnedQty) || 0))
@@ -831,7 +863,9 @@ async function updateDelivery(req, res) {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     const isAdmin = req.user.role === 'ADMIN'
     if (req.user.role === 'BILLER' && String(delivery.billerUserId || '') !== String(req.user.id)) {
@@ -906,17 +940,6 @@ async function updateDelivery(req, res) {
 
         delivery.fromGodownId = parsed.primaryGodownId
         delivery.lines = parsed.normalizedLines
-
-        const dispatchResult = await applyDispatchToLines(delivery, req.user.id, new Map(), {
-          lines: parsed.normalizedLines,
-        })
-        if (!dispatchResult.ok || dispatchResult.count === 0) {
-          return res.status(dispatchResult.ok ? 400 : dispatchResult.status).json({
-            message:
-              dispatchResult.message ||
-              'Failed to reduce godown stock for delivery lines. Check product stock and try again.',
-          })
-        }
         delivery.markModified('lines')
       } else {
         const increaseNeed = new Map()
@@ -948,7 +971,7 @@ async function updateDelivery(req, res) {
 
     await delivery.save()
 
-    const urls = shareUrls(delivery)
+    const urls = shareUrls(delivery, req)
     return res.json({
       id: String(delivery._id),
       deliveryNo: delivery.deliveryNo,
@@ -977,8 +1000,11 @@ async function listDeliveries(req, res) {
     }
     q.$or = or
   }
-  if (req.user.role === 'GODOWN' && req.user.godownId) {
-    q.$or = [{ fromGodownId: req.user.godownId }, { 'lines.godownId': req.user.godownId }]
+  if (req.user.role === 'GODOWN') {
+    const gid = validGodownId(req.user.godownId)
+    if (!gid) return res.json([])
+    const objId = new mongoose.Types.ObjectId(gid)
+    q.$or = [{ fromGodownId: objId }, { 'lines.godownId': objId }]
   }
   if (req.user.role === 'BILLER') q.billerUserId = req.user.id
   if (req.user.role === 'ADMIN' && fromGodownId) q.fromGodownId = fromGodownId
@@ -987,18 +1013,22 @@ async function listDeliveries(req, res) {
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }
-  return res.json(list.map(mapListRow))
+  const enrichments = await enrichListRows(list)
+  return res.json(await Promise.all(list.map((d, i) => mapListRow(d, enrichments[i]))))
 }
 
 async function getDelivery(req, res) {
   const d = await Delivery.findById(req.params.id).lean()
   if (!d) return res.status(404).json({ message: 'Not found' })
 
-  if (!deliveryAccessOk(req, d)) return res.status(403).json({ message: 'Forbidden' })
+  if (!deliveryAccessOk(req, d)) {
+    return res.status(403).json({ message: deliveryAccessDeniedMessage(req, d) })
+  }
 
   if (req.user.role === 'DELIVERY') {
-    const g = await Godown.findById(d.fromGodownId).lean()
+    const godownMap = await loadGodownMapForDeliveries([d])
     const lines = await populateLineDetails(d)
+    const pickupLocations = pickupLocationsFromLines(d, lines, godownMap)
     const required = requiredQtyByProduct(d)
     const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
     const returnPickupCounts = await scannedCountsByProduct(d.returnPickedUpTagIds || [])
@@ -1016,7 +1046,8 @@ async function getDelivery(req, res) {
       phase: d.phase || 'FORWARD',
       vehicleLabel: d.vehicleLabel,
       challanNo: d.challanNo,
-      pickupLocation: pickupLocationFromGodown(g, d.fromGodownId),
+      pickupLocation: pickupLocations[0] || pickupLocationFromGodown(null, d.fromGodownId),
+      pickupLocations,
       dropLocation: dropLocationFromDelivery(d),
       lines: slimDriverLines(lines),
       dispatchedTagIds: d.dispatchedTagIds,
@@ -1034,9 +1065,10 @@ async function getDelivery(req, res) {
     })
   }
 
-  const urls = shareUrls(d)
+  const urls = shareUrls(d, req)
   const required = requiredQtyByProduct(d)
   const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
+  const deliverCounts = await scannedCountsByProduct(d.deliveredTagIds || [])
   const returnPickupCounts = await scannedCountsByProduct(d.returnPickedUpTagIds || [])
   const dispatchedQtyMap = dispatchedQtyByProduct(d)
   const returnedQtyMap = returnedQtyByProduct(d)
@@ -1094,6 +1126,8 @@ async function getDelivery(req, res) {
     qtyProgress: {
       dispatchComplete: dispatchQtyComplete(d) || countsMatchRequired(required, dispatchCounts),
       dispatchedByProduct: Object.fromEntries(dispatchedQtyMap),
+      deliveredByProduct: Object.fromEntries(deliverCounts),
+      deliverComplete: countsMatchRequired(required, deliverCounts),
       returnedByProduct: Object.fromEntries(returnedQtyMap),
     },
     scanProgress: {
@@ -1139,7 +1173,9 @@ function isAdjacentStatusTransition(from, to) {
   return Math.abs(i - j) === 1
 }
 
-function validatePatchStatusTransition(from, to) {
+function validatePatchStatusTransition(from, to, role) {
+  if (role === 'ADMIN') return { ok: true }
+
   if (to === 'OUT_FOR_DELIVERY') {
     return {
       ok: false,
@@ -1264,13 +1300,16 @@ async function updateDeliveryStatus(req, res) {
 
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     const previousStatus = delivery.status
     if (previousStatus === status) {
       return res.json({ ok: true, status: delivery.status, previousStatus })
     }
 
-    const transitionCheck = validatePatchStatusTransition(previousStatus, status)
+    const transitionCheck = validatePatchStatusTransition(previousStatus, status, req.user.role)
     if (!transitionCheck.ok) {
       return res.status(transitionCheck.status).json({ message: transitionCheck.message })
     }
@@ -1281,14 +1320,6 @@ async function updateDeliveryStatus(req, res) {
         return res.status(reverseResult.status).json({ message: reverseResult.message })
       }
       if (reverseResult.count > 0) delivery.markModified('lines')
-    }
-
-    if (status === 'PROCESSED' && previousStatus !== 'PROCESSED' && !dispatchQtyComplete(delivery)) {
-      const dispatchResult = await applyDispatchToLines(delivery, req.user.id)
-      if (!dispatchResult.ok) {
-        return res.status(dispatchResult.status).json({ message: dispatchResult.message })
-      }
-      if (dispatchResult.count > 0) delivery.markModified('lines')
     }
 
     delivery.status = status
@@ -1319,7 +1350,7 @@ async function regenerateDeliveryTokens(req, res) {
     delivery.deliveryVerifyToken = makeVerifyToken()
     delivery.billerReturnVerifyToken = makeVerifyToken()
     await delivery.save()
-    const urls = shareUrls(delivery)
+    const urls = shareUrls(delivery, req)
     return res.json({
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
       billerReturnUrl: urls.billerReturnUrl,
@@ -1333,14 +1364,8 @@ async function markPacked(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
-
-    const dispatchDone = await dispatchCompleteAsync(delivery)
-    if (!dispatchDone) {
-      return res.status(400).json({
-        message: 'Dispatch must be complete (confirm dispatch qty or RFID scans) before marking packed',
-        scanProgress: scanProgress(delivery, delivery.dispatchedTagIds),
-      })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
     }
 
     delivery.status = 'PACKED'
@@ -1355,6 +1380,18 @@ async function markPacked(req, res) {
   }
 }
 
+async function assignOutForDeliveryVehicle(delivery, userId, vehicleNumber) {
+  const vehicle = String(vehicleNumber).trim().toUpperCase()
+  const driver = await ensureDeliveryDriver(vehicle)
+
+  delivery.vehicleLabel = vehicle
+  delivery.vehicleVerifiedAt = new Date()
+  delivery.vehicleVerifiedByUserId = userId
+  delivery.assignedDeliveryUserId = driver._id
+
+  return { vehicle, driver }
+}
+
 async function outForDelivery(req, res) {
   try {
     const { vehicleNumber } = req.body || {}
@@ -1364,27 +1401,47 @@ async function outForDelivery(req, res) {
 
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
+
+    if (req.user.role === 'ADMIN') {
+      return updateOutForDeliveryVehicle(req, res, delivery, vehicleNumber)
+    }
+
+    if (delivery.status === 'OUT_FOR_DELIVERY') {
+      return updateOutForDeliveryVehicle(req, res, delivery, vehicleNumber)
+    }
 
     if (!['PROCESSED', 'PACKED'].includes(delivery.status)) {
-      return res.status(409).json({ message: 'Delivery must be processed or packed before out for delivery' })
+      return res.status(409).json({
+        message: 'Delivery must be processed or packed before out for delivery',
+      })
+    }
+
+    if (!dispatchQtyComplete(delivery)) {
+      const required = requiredQtyByProduct(delivery)
+      const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds || [])
+      const rfidDispatchComplete = countsMatchRequired(required, dispatchCounts)
+      if (!rfidDispatchComplete) {
+        const dispatchResult = await applyDispatchToLines(delivery, req.user.id)
+        if (!dispatchResult.ok) {
+          return res.status(dispatchResult.status).json({ message: dispatchResult.message })
+        }
+        if (dispatchResult.count > 0) delivery.markModified('lines')
+      }
     }
 
     const dispatchDone = await dispatchCompleteAsync(delivery)
     if (!dispatchDone) {
       return res.status(400).json({
-        message: 'Dispatch must be complete (confirm dispatch qty or RFID scans) before out for delivery',
+        message: 'Dispatch must be complete (RFID scans) before out for delivery',
         scanProgress: scanProgress(delivery, delivery.dispatchedTagIds),
       })
     }
 
-    const vehicle = String(vehicleNumber).trim().toUpperCase()
-    const driver = await ensureDeliveryDriver(vehicle)
+    const { driver } = await assignOutForDeliveryVehicle(delivery, req.user.id, vehicleNumber)
 
-    delivery.vehicleLabel = vehicle
-    delivery.vehicleVerifiedAt = new Date()
-    delivery.vehicleVerifiedByUserId = req.user.id
-    delivery.assignedDeliveryUserId = driver._id
     delivery.status = 'OUT_FOR_DELIVERY'
     delivery.outForDeliveryAt = new Date()
     delivery.phase = 'FORWARD'
@@ -1406,6 +1463,61 @@ async function outForDelivery(req, res) {
   }
 }
 
+async function updateOutForDeliveryVehicle(req, res, existingDelivery, vehicleNumber) {
+  try {
+    const delivery = existingDelivery || (await Delivery.findById(req.params.id))
+    if (!delivery) return res.status(404).json({ message: 'Not found' })
+    if (!existingDelivery && !deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
+
+    const number = vehicleNumber ?? req.body?.vehicleNumber
+    if (!number || !String(number).trim()) {
+      return res.status(400).json({ message: 'vehicleNumber required' })
+    }
+
+    const isAdminUser = req.user.role === 'ADMIN'
+
+    if (!isAdminUser && delivery.status !== 'OUT_FOR_DELIVERY') {
+      return res.status(409).json({
+        message: 'Vehicle can only be changed while the delivery is out for delivery',
+      })
+    }
+
+    if (['COMPLETED', 'CANCELLED'].includes(delivery.status)) {
+      return res.status(409).json({ message: 'Cannot change vehicle on a completed or cancelled delivery' })
+    }
+
+    const { driver } = await assignOutForDeliveryVehicle(delivery, req.user.id, number)
+
+    const promoteToOutForDelivery = isAdminUser && ['PROCESSED', 'PACKED'].includes(delivery.status)
+    if (promoteToOutForDelivery) {
+      delivery.status = 'OUT_FOR_DELIVERY'
+      delivery.outForDeliveryAt = delivery.outForDeliveryAt || new Date()
+      delivery.phase = 'FORWARD'
+    }
+
+    await delivery.save()
+
+    if (promoteToOutForDelivery) {
+      await syncOrderStatus(delivery, 'OUT_FOR_DELIVERY')
+      await notifyOutForDelivery(delivery, driver._id)
+    }
+
+    return res.json({
+      ok: true,
+      status: delivery.status,
+      vehicleLabel: delivery.vehicleLabel,
+      vehicleVerifiedAt: delivery.vehicleVerifiedAt,
+      outForDeliveryAt: delivery.outForDeliveryAt,
+      assignedDeliveryUserId: String(delivery.assignedDeliveryUserId),
+      driverId: String(driver._id),
+    })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Update vehicle failed' })
+  }
+}
+
 async function vehicleVerify(req, res) {
   return outForDelivery(req, res)
 }
@@ -1419,7 +1531,9 @@ async function assignReturnPickup(req, res) {
 
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     if (delivery.status !== 'DELIVERED') {
       return res.status(409).json({ message: 'Return pickup can only be assigned for DELIVERED deliveries' })
@@ -1458,7 +1572,9 @@ async function scan(req, res, action) {
 
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     const normalizedTag = String(tagId).trim()
     if (action === 'DISPATCH' && delivery.dispatchedTagIds.includes(normalizedTag)) {
@@ -1679,37 +1795,23 @@ async function confirmDispatch(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     if (!['PROCESSED', 'PACKED'].includes(delivery.status)) {
       return res.status(409).json({ message: 'Cannot confirm dispatch in current status' })
     }
 
-    const bodyLines = Array.isArray(req.body?.lines) ? req.body.lines : []
-    const qtyByProduct = new Map()
-    for (const bl of bodyLines) {
-      if (!bl?.productId || Number(bl.qty) <= 0) continue
-      const pid = String(bl.productId)
-      qtyByProduct.set(pid, (qtyByProduct.get(pid) || 0) + Number(bl.qty))
-    }
-
-    const dispatchResult = await applyDispatchToLines(delivery, req.user.id, qtyByProduct)
-    if (!dispatchResult.ok) {
-      return res.status(dispatchResult.status).json({ message: dispatchResult.message })
-    }
-
-    if (!dispatchResult.count) {
-      return res.status(400).json({ message: 'Nothing to dispatch (all lines already fully dispatched)' })
-    }
-
-    if (dispatchQtyComplete(delivery) && delivery.status === 'PROCESSED') {
+    // Qty-based stock leaves the godown when the vehicle goes out for delivery.
+    // Confirm dispatch here only marks the delivery as packed and ready.
+    if (delivery.status === 'PROCESSED') {
       delivery.status = 'PACKED'
       delivery.packedAt = new Date()
       await syncOrderStatus(delivery, 'PACKED')
       await notifyDeliveryPacked(delivery)
     }
 
-    delivery.markModified('lines')
     await delivery.save()
 
     const stockByGodown = await stockByGodownForDelivery(delivery)
@@ -1732,7 +1834,9 @@ async function confirmReturn(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     if (!['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'].includes(delivery.status)) {
       return res.status(409).json({ message: 'Cannot confirm return in current status' })
@@ -1785,15 +1889,12 @@ async function markDelivered(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
-
-    if (delivery.status !== 'OUT_FOR_DELIVERY') {
-      return res.status(409).json({ message: 'Delivery must be out for delivery' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
     }
 
-    const dispatchDone = await dispatchCompleteAsync(delivery)
-    if (!dispatchDone) {
-      return res.status(400).json({ message: 'Dispatch must be complete before marking delivered' })
+    if (!['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DISPATCHED'].includes(delivery.status)) {
+      return res.status(409).json({ message: 'Cannot mark delivered in current status' })
     }
 
     delivery.status = 'DELIVERED'
@@ -1811,7 +1912,9 @@ async function closeReturn(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-    if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+    if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
 
     if (delivery.status !== 'PENDING_RETURN') {
       return res.status(409).json({
@@ -1906,23 +2009,73 @@ async function enrollTag(req, res) {
 }
 
 async function challanPdf(req, res) {
-  const delivery = await Delivery.findById(req.params.id)
-    .populate('lines.productId')
-    .populate('fromGodownId', 'name')
-    .lean()
+  const delivery = await Delivery.findById(req.params.id).lean()
   if (!delivery) return res.status(404).json({ message: 'Not found' })
-  if (!deliveryAccessOk(req, delivery)) return res.status(403).json({ message: 'Forbidden' })
+  if (!deliveryAccessOk(req, delivery)) {
+      return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+    }
+
+  const [enrichedLines, godownMap] = await Promise.all([
+    populateLineDetails(delivery),
+    loadGodownMapForDeliveries([delivery]),
+  ])
+  const pickupLocations = pickupLocationsFromLines(delivery, enrichedLines, godownMap)
+  const pdfDelivery = {
+    ...delivery,
+    lines: enrichedLines,
+    pickupLocations,
+    godownLabel: pickupLocations.map((p) => p.name).filter(Boolean).join(', ') || undefined,
+  }
 
   const doc = new PDFDocument({ size: 'A4', margin: 40 })
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader('Content-Disposition', `inline; filename="challan-${delivery.deliveryNo}.pdf"`)
   doc.pipe(res)
 
-  renderChallanPdf(doc, delivery)
+  renderChallanPdf(doc, pdfDelivery)
+  doc.end()
+}
+
+async function returnChallanPdf(req, res) {
+  const delivery = await Delivery.findById(req.params.id)
+    .populate('lines.productId')
+    .populate('fromGodownId', 'name')
+    .lean()
+  if (!delivery) return res.status(404).json({ message: 'Not found' })
+  if (!deliveryAccessOk(req, delivery)) {
+    return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
+  }
+
+  const [billerMissingLines, billerDamagedLines] = await Promise.all([
+    populateBillerReturnLines(delivery.billerMissingLines),
+    populateBillerReturnLines(delivery.billerDamagedLines),
+  ])
+
+  const pdfDelivery = {
+    ...delivery,
+    billerMissingLines,
+    billerDamagedLines,
+  }
+
+  const returnLines = buildReturnLines(pdfDelivery)
+  if (!returnLines.length) {
+    return res.status(400).json({ message: 'No return items recorded for this delivery' })
+  }
+
+  const doc = new PDFDocument({ size: 'A4', margin: 40 })
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader(
+    'Content-Disposition',
+    `inline; filename="return-challan-${delivery.deliveryNo}.pdf"`,
+  )
+  doc.pipe(res)
+
+  renderReturnChallanPdf(doc, pdfDelivery)
   doc.end()
 }
 
 module.exports = {
+  dispatchCompleteAsync,
   createDelivery,
   updateDelivery,
   listDeliveries,
@@ -1932,6 +2085,7 @@ module.exports = {
   regenerateDeliveryTokens,
   markPacked,
   outForDelivery,
+  updateOutForDeliveryVehicle,
   vehicleVerify,
   assignReturnPickup,
   dispatchScan,
@@ -1945,4 +2099,5 @@ module.exports = {
   closeReturn,
   enrollTag,
   challanPdf,
+  returnChallanPdf,
 }

@@ -12,7 +12,14 @@ const STATUS_CHAIN: DeliveryStatus[] = [
   'COMPLETED',
 ]
 
+function normalizeWorkflowStatus(status: string): string {
+  if (status === 'DISPATCHED') return 'OUT_FOR_DELIVERY'
+  return status
+}
+
 function isAdjacentInChain(from: string, to: string): boolean {
+  from = normalizeWorkflowStatus(from)
+  to = normalizeWorkflowStatus(to)
   if (from === to) return true
   if (to === 'CANCELLED') return from !== 'COMPLETED'
   if (from === 'CANCELLED') return to === 'PROCESSED'
@@ -23,8 +30,26 @@ function isAdjacentInChain(from: string, to: string): boolean {
   return Math.abs(i - j) === 1
 }
 
-export function transitionKind(from: string, to: string): TransitionKind {
-  if (from === to) return 'patch'
+export function transitionKind(from: string, to: string, options?: { forAdmin?: boolean }): TransitionKind {
+  from = normalizeWorkflowStatus(from)
+  to = normalizeWorkflowStatus(to)
+
+  if (options?.forAdmin) {
+    if (from === to) {
+      if (to === 'OUT_FOR_DELIVERY') return 'vehicleOut'
+      if (to === 'RETURN_PICKUP') return 'vehicleReturn'
+      return 'patch'
+    }
+    if (to === 'OUT_FOR_DELIVERY') return 'vehicleOut'
+    if (to === 'RETURN_PICKUP') return 'vehicleReturn'
+    return 'patch'
+  }
+
+  if (from === to) {
+    if (to === 'OUT_FOR_DELIVERY') return 'vehicleOut'
+    if (to === 'RETURN_PICKUP') return 'vehicleReturn'
+    return 'patch'
+  }
   if (to === 'CANCELLED') return 'patch'
   if (to === 'OUT_FOR_DELIVERY') return 'vehicleOut'
   if (to === 'RETURN_PICKUP' && from === 'DELIVERED') return 'vehicleReturn'
@@ -34,15 +59,24 @@ export function transitionKind(from: string, to: string): TransitionKind {
 }
 
 export function allowedNextStatuses(current: string): DeliveryStatus[] {
-  const adjacent = STATUS_CHAIN.filter((s) => isAdjacentInChain(current, s) && s !== current)
+  const normalized = normalizeWorkflowStatus(current)
+  const adjacent = STATUS_CHAIN.filter((s) => isAdjacentInChain(normalized, s) && s !== normalized)
   const extras: DeliveryStatus[] = []
-  if (current !== 'COMPLETED' && current !== 'CANCELLED') extras.push('CANCELLED')
-  if (current === 'CANCELLED') extras.push('PROCESSED')
-  return [...new Set([current as DeliveryStatus, ...adjacent, ...extras])]
+  if (normalized !== 'COMPLETED' && normalized !== 'CANCELLED') extras.push('CANCELLED')
+  if (normalized === 'CANCELLED') extras.push('PROCESSED')
+  const currentOption =
+    normalized === current ? (current as DeliveryStatus) : ('OUT_FOR_DELIVERY' as DeliveryStatus)
+  return [...new Set([currentOption, ...adjacent, ...extras])]
 }
 
-export function statusOptionsForSelect(current: string): { value: DeliveryStatus; label: string }[] {
+export function statusOptionsForSelect(
+  current: string,
+  options?: { forGodown?: boolean },
+): { value: DeliveryStatus; label: string }[] {
   const allowed = new Set(allowedNextStatuses(current))
+  if (options?.forGodown && ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY'].includes(normalizeWorkflowStatus(current))) {
+    allowed.add('DELIVERED')
+  }
   return DELIVERY_STATUS_OPTIONS.filter((o) => allowed.has(o.value))
 }
 

@@ -35,13 +35,13 @@
 //               <Link
 //                 to={item.to}
 //                 style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.15s' }}
-//                 onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#6366f1')}
+//                 onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#10b981')}
 //                 onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#94a3b8')}
 //               >
 //                 {item.label}
 //               </Link>
 //             ) : (
-//               <span style={{ fontWeight: isLast ? 600 : 400, color: isLast ? '#6366f1' : '#94a3b8' }}>
+//               <span style={{ fontWeight: isLast ? 600 : 400, color: isLast ? '#10b981' : '#94a3b8' }}>
 //                 {item.label}
 //               </span>
 //             )}
@@ -137,7 +137,7 @@
 //               width: 44,
 //               height: 44,
 //               borderRadius: 12,
-//               background: 'rgb(49, 46, 129)',
+//               background: '#065f46',
 //               display: 'flex',
 //               alignItems: 'center',
 //               justifyContent: 'center',
@@ -226,7 +226,7 @@
 //               cursor: 'pointer',
 //               transition: 'border-color 0.15s',
 //             }}
-//             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#c7d2fe')}
+//             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#6ee7b7')}
 //             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0')}
 //           >
 //             {/* avatar */}
@@ -235,7 +235,7 @@
 //                 width: 36,
 //                 height: 36,
 //                 borderRadius: 10,
-//                 background: 'rgb(49, 46, 129)',
+//                 background: '#065f46',
 //                 display: 'flex',
 //                 alignItems: 'center',
 //                 justifyContent: 'center',
@@ -342,13 +342,13 @@ function BreadcrumbTrail({ items }: { items: Breadcrumb[] }) {
               <Link
                 to={item.to}
                 style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.15s' }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#6366f1')}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#10b981')}
                 onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#94a3b8')}
               >
                 {item.label}
               </Link>
             ) : (
-              <span style={{ fontWeight: isLast ? 600 : 400, color: isLast ? '#6366f1' : '#94a3b8' }}>
+              <span style={{ fontWeight: isLast ? 600 : 400, color: isLast ? '#10b981' : '#94a3b8' }}>
                 {item.label}
               </span>
             )}
@@ -442,7 +442,7 @@ export function Topbar() {
               width: 44,
               height: 44,
               borderRadius: 12,
-              background: 'rgb(49, 46, 129)',
+              background: '#065f46',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
@@ -475,8 +475,8 @@ export function Topbar() {
                   fontWeight: 700,
                   letterSpacing: '0.07em',
                   textTransform: 'uppercase',
-                  background: '#ede9fe',
-                  color: '#6d28d9',
+                  background: '#d1fae5',
+                  color: '#047857',
                   borderRadius: 999,
                   padding: '2px 10px',
                   whiteSpace: 'nowrap',
@@ -534,7 +534,7 @@ export function Topbar() {
               transition: 'border-color 0.15s',
             }}
             className="lg:pr-3"
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#c7d2fe')}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#6ee7b7')}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0')}
           >
             {/* avatar */}
@@ -543,7 +543,7 @@ export function Topbar() {
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: 'rgb(49, 46, 129)',
+                background: '#065f46',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

@@ -1,5 +1,5 @@
 
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { logout, useAuth } from '../../auth/store'
 import { useGodownScope } from '../../hooks/useGodownScope'
 import { navItemsForRole } from './navItems'
@@ -75,6 +75,25 @@ function LogoutIcon() {
   )
 }
 
+function BillerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="18" height="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21h18" />
+      <path d="M6 21V10l6-4 6 4v11" />
+      <path d="M10 14h4" />
+    </svg>
+  )
+}
+
+function DeliveryPersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="18" height="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M20 21a8 8 0 10-16 0" />
+    </svg>
+  )
+}
+
 // map route → icon
 function iconForPath(to: string) {
   if (to === '/' || to === '/dashboard') return <DashboardIcon />
@@ -83,6 +102,8 @@ function iconForPath(to: string) {
   if (to.startsWith('/products')) return <ProductIcon />
   if (to.startsWith('/deliveries')) return <DeliveryIcon />
   if (to.startsWith('/reports')) return <ReportsIcon />
+  if (to.startsWith('/masters/billers')) return <BillerIcon />
+  if (to.startsWith('/masters/delivery-persons')) return <DeliveryPersonIcon />
   return <DashboardIcon />
 }
 
@@ -91,7 +112,9 @@ function iconForPath(to: string) {
 export function Sidebar() {
   const auth = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { isGodown, godownId, godownName } = useGodownScope()
+  const isDeliveriesRoute = pathname.startsWith('/deliveries')
 
   const role = auth.status === 'authenticated' ? auth.user.role : 'ADMIN'
   const navItems = navItemsForRole(role, godownId)
@@ -137,9 +160,9 @@ export function Sidebar() {
 
   const itemActive: React.CSSProperties = {
     ...itemBase,
-    background: '#312e81',
+    background: '#065f46',
     color: '#fff',
-    borderLeft: '3px solid #818cf8',
+    borderLeft: '3px solid #34d399',
     paddingLeft: 13, // compensate for 3px border
   }
 
@@ -152,7 +175,7 @@ export function Sidebar() {
     //     width: 250,
     //     display: 'flex',
     //     flexDirection: 'column',
-    //     background: '#1e1b4b',
+    //     background: '#064e3b',
     //     borderRight: '1px solid rgba(255,255,255,0.08)',
     //     fontFamily: 'inherit',
     //   }}
@@ -166,7 +189,7 @@ export function Sidebar() {
     zIndex: 40,
     width: 250,
     flexDirection: 'column',
-    background: '#1e1b4b',
+    background: '#064e3b',
     borderRight: '1px solid rgba(255,255,255,0.08)',
     fontFamily: 'inherit',
   }}
@@ -188,7 +211,7 @@ export function Sidebar() {
             width: 40,
             height: 40,
             borderRadius: 12,
-            background: '#6366f1',
+            background: '#10b981',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -210,7 +233,7 @@ export function Sidebar() {
         {/* text */}
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
-            Godown Manager
+            {isDeliveriesRoute ? 'Delivery Manager' : 'Godown Manager'}
           </div>
           <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
             {isGodown && godownName ? godownName : 'Admin Console'}
@@ -235,7 +258,7 @@ export function Sidebar() {
                 onMouseEnter={(e) => {
                   const el = e.currentTarget as HTMLElement
                   if (!el.classList.contains('active-nav')) {
-                    el.style.background = 'rgba(99,102,241,0.12)'
+                    el.style.background = 'rgba(16,185,129,0.12)'
                     el.style.color = '#fff'
                   }
                 }}
@@ -273,8 +296,8 @@ export function Sidebar() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {[
-                { label: 'Billers', to: '/masters/billers' },
-                { label: 'Delivery Persons', to: '/masters/delivery-persons' },
+                { label: 'Billers', to: '/masters/billers', icon: <BillerIcon /> },
+                { label: 'Delivery Persons', to: '/masters/delivery-persons', icon: <DeliveryPersonIcon /> },
               ].map((item) => (
                 <NavLink
                   key={item.to}
@@ -286,7 +309,7 @@ export function Sidebar() {
                     const el = e.currentTarget as HTMLElement
                     const isActive = el.getAttribute('aria-current') === 'page'
                     if (!isActive) {
-                      el.style.background = 'rgba(99,102,241,0.12)'
+                      el.style.background = 'rgba(16,185,129,0.12)'
                       el.style.color = '#fff'
                     }
                   }}
@@ -299,6 +322,7 @@ export function Sidebar() {
                     }
                   }}
                 >
+                  <span style={{ flexShrink: 0, opacity: 0.85 }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </NavLink>
               ))}
@@ -371,7 +395,7 @@ export function Sidebar() {
               width: 36,
               height: 36,
               borderRadius: '50%',
-              background: '#6366f1',
+              background: '#10b981',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

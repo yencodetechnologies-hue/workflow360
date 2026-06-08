@@ -73,9 +73,10 @@ function CopyIcon() {
 // ── Qty stepper ─────────────────────────────────────────────────────────────
 function QtyStepper({ value, max, onChange }: { value: number; max: number; onChange: (n: number) => void }) {
   const clamp = (n: number) => Math.max(0, Math.min(max, n))
+  const remaining = Math.max(0, max - value)
   const btn: React.CSSProperties = {
     width: 34, height: 34, border: 'none', background: 'none', cursor: 'pointer',
-    fontSize: 18, color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 18, color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center',
     borderRadius: 8, transition: 'background 0.15s',
   }
   return (
@@ -89,7 +90,9 @@ function QtyStepper({ value, max, onChange }: { value: number; max: number; onCh
         />
         <button type="button" style={{ ...btn, opacity: value >= max ? 0.3 : 1 }} disabled={value >= max} onClick={() => onChange(clamp(value + 1))}>+</button>
       </div>
-      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>In stock: {max}</span>
+      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+        {value > 0 ? `${remaining} left · ${max} in stock` : `In stock: ${max}`}
+      </span>
     </div>
   )
 }
@@ -101,7 +104,7 @@ function WizardStepper({ step }: { step: number }) {
     <div style={{ marginBottom: 24 }}>
       {/* progress bar */}
       <div style={{ height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #7F77DD, #534AB7)', borderRadius: 99, transition: 'width 0.4s ease' }} />
+        <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #34d399, #059669)', borderRadius: 99, transition: 'width 0.4s ease' }} />
       </div>
       {/* step indicators */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4 }}>
@@ -113,12 +116,12 @@ function WizardStepper({ step }: { step: number }) {
               {/* circle */}
               <div style={{
                 width: 44, height: 44, borderRadius: '50%',
-                background: done || active ? 'linear-gradient(135deg, #7F77DD, #534AB7)' : '#fff',
+                background: done || active ? 'linear-gradient(135deg, #34d399, #059669)' : '#fff',
                 border: done || active ? 'none' : '2px solid #e2e8f0',
                 color: done || active ? '#fff' : '#94a3b8',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: active ? '0 4px 14px rgba(83,74,183,0.35)' : 'none',
-                outline: active ? '3px solid rgba(83,74,183,0.15)' : 'none',
+                outline: active ? '3px solid rgba(5,150,105,0.15)' : 'none',
                 transition: 'all 0.25s',
               }}>
                 {done ? <CheckIcon /> : <StepIcon step={s.id} />}
@@ -174,8 +177,8 @@ function LinkCard({ label, description, url }: { label: string; description: str
 function SummaryChip({ label, value }: { label: string; value: string }) {
   if (!value) return null
   return (
-    <div style={{ borderRadius: 10, background: '#F0EFFD', border: '1px solid #CECBF6', padding: '8px 12px' }}>
-      <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#534AB7' }}>{label}</div>
+    <div style={{ borderRadius: 10, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '8px 12px' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#059669' }}>{label}</div>
       <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   )
@@ -379,6 +382,16 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
   const filteredCatalog = useMemo(() => { const q = productSearch.trim().toLowerCase(); if (!q) return activeProducts; return activeProducts.filter((c) => (c.particulars?.toLowerCase().includes(q) ?? false) || (c.sku?.toLowerCase().includes(q) ?? false)) }, [activeProducts, productSearch])
   const activeGodown = godowns.find((g) => g.id === activeGodownId)
   const pickedByGodownId = useMemo(() => { const m = new Map<string, { lines: number; units: number }>(); for (const line of linesPayload) { const cur = m.get(line.godownId) ?? { lines: 0, units: 0 }; cur.lines += 1; cur.units += line.qty; m.set(line.godownId, cur) }; return m }, [linesPayload])
+  const stockSummaryByGodownId = useMemo(() => {
+    const m = new Map<string, { products: number; units: number }>()
+    for (const [gid, products] of Object.entries(godownProducts)) {
+      m.set(gid, {
+        products: products.length,
+        units: products.reduce((sum, p) => sum + p.stockQty, 0),
+      })
+    }
+    return m
+  }, [godownProducts])
   const selectGodownForProducts = (gid: string) => { setActiveGodownId(gid); setProductSearch(''); if (!godownProducts[gid]) void loadGodownProducts(gid) }
   const branchOptions = useMemo(() => Array.from(new Set(godowns.map(godownBranch))).sort((a, b) => a.localeCompare(b)), [godowns])
   const godownsInBranch = useMemo(() => branchFilter ? godowns.filter((g) => godownBranch(g) === branchFilter) : godowns, [godowns, branchFilter])
@@ -446,7 +459,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
         onClick={() => void handleNext()}
         style={{
           padding: '9px 24px', borderRadius: 10, border: 'none',
-          background: nextDisabled ? '#AFA9EC' : 'linear-gradient(135deg, #7F77DD, #534AB7)',
+          background: nextDisabled ? '#6ee7b7' : 'linear-gradient(135deg, #34d399, #059669)',
           fontSize: 13, fontWeight: 700, color: '#fff',
           cursor: nextDisabled ? 'not-allowed' : 'pointer',
           boxShadow: nextDisabled ? 'none' : '0 4px 14px rgba(83,74,183,0.35)',
@@ -484,7 +497,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
       ) : (
         <div>
           {/* ── Header ── */}
-          <div style={{ margin: '-20px -24px 0', padding: '22px 24px 20px', background: 'linear-gradient(135deg, #534AB7 0%, #26215C 100%)' }}>
+          <div style={{ margin: '-20px -24px 0', padding: '22px 24px 20px', background: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)' }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{isEditMode ? 'Edit delivery' : 'New delivery'}</h2>
             <p style={{ marginTop: 4, fontSize: 13, color: 'rgba(255,255,255,0.80)', margin: '4px 0 0' }}>
               {isEditMode
@@ -510,8 +523,8 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
 
                 {billers.length === 0 || createBillerMode ? (
                   // new biller form
-                  <div style={{ border: '1px solid #CECBF6', borderRadius: 14, background: '#EEEDFE', padding: 18 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#534AB7', marginBottom: 14 }}>
+                  <div style={{ border: '1px solid #a7f3d0', borderRadius: 14, background: '#ecfdf5', padding: 18 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 14 }}>
                       {billers.length === 0 ? 'No billers yet — create one' : 'New biller'} <span style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8' }}>(default password: 123456)</span>
                     </p>
                     <div className="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
@@ -522,7 +535,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                     </div>
                     <Input label="Address" value={newBiller.siteAddress} onChange={(e) => setNewBiller((f) => ({ ...f, siteAddress: e.target.value }))} />
                     {billers.length > 0 && (
-                      <button onClick={() => setCreateBillerMode(false)} style={{ marginTop: 10, background: 'none', border: 'none', fontSize: 12, color: '#534AB7', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                      <button onClick={() => setCreateBillerMode(false)} style={{ marginTop: 10, background: 'none', border: 'none', fontSize: 12, color: '#059669', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         ← Select existing biller
                       </button>
                     )}
@@ -537,11 +550,11 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                         <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 4 }}>Selected</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{selectedBiller.siteName || selectedBiller.contactName || 'Biller'}</div>
                         {selectedBiller.siteAddress && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{selectedBiller.siteAddress}</div>}
-                        {selectedBiller.contactPhone && <div style={{ fontSize: 12, color: '#534AB7', marginTop: 2, fontWeight: 600 }}>{selectedBiller.contactPhone}</div>}
+                        {selectedBiller.contactPhone && <div style={{ fontSize: 12, color: '#059669', marginTop: 2, fontWeight: 600 }}>{selectedBiller.contactPhone}</div>}
                       </div>
                     )}
                     {canCreateBiller && !isEditMode && (
-                      <button onClick={() => setCreateBillerMode(true)} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, border: '1px dashed #AFA9EC', background: '#EEEDFE', fontSize: 12, fontWeight: 600, color: '#534AB7', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <button onClick={() => setCreateBillerMode(true)} style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, border: '1px dashed #6ee7b7', background: '#ecfdf5', fontSize: 12, fontWeight: 600, color: '#059669', cursor: 'pointer', fontFamily: 'inherit' }}>
                         + Register new biller
                       </button>
                     )}
@@ -558,7 +571,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                   <Select label="Branch / location" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} options={[{ value: '', label: 'All branches' }, ...branchOptions.map((b) => ({ value: b, label: b }))]} />
                   {selectedGodownIds.length > 0 && (
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#F0EFFD', border: '1px solid #CECBF6', fontSize: 13, fontWeight: 700, color: '#534AB7' }}>
+                      <div style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: '#ecfdf5', border: '1px solid #a7f3d0', fontSize: 13, fontWeight: 700, color: '#059669' }}>
                         {selectedGodownIds.length} godown{selectedGodownIds.length > 1 ? 's' : ''} selected
                       </div>
                     </div>
@@ -570,22 +583,22 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                     return (
                       <button key={g.id} type="button" onClick={() => toggleGodown(g.id)} style={{
                         textAlign: 'left', borderRadius: 14, padding: 14, cursor: 'pointer', fontFamily: 'inherit',
-                        border: selected ? '2px solid #534AB7' : '1px solid #e2e8f0',
-                        background: selected ? '#EEEDFE' : '#fff',
+                        border: selected ? '2px solid #059669' : '1px solid #e2e8f0',
+                        background: selected ? '#ecfdf5' : '#fff',
                         boxShadow: selected ? '0 2px 10px rgba(83,74,183,0.12)' : 'none',
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                          <div style={{ width: 38, height: 38, borderRadius: 10, background: selected ? '#534AB7' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: selected ? '#fff' : '#64748b' }}>
+                          <div style={{ width: 38, height: 38, borderRadius: 10, background: selected ? '#059669' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: selected ? '#fff' : '#64748b' }}>
                             <StepIcon step={2} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{g.name}</div>
                             {g.code && <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#94a3b8' }}>{g.code}</div>}
-                            <div style={{ fontSize: 11, color: '#534AB7', fontWeight: 600, marginTop: 2 }}>Branch: {godownBranch(g)}</div>
+                            <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginTop: 2 }}>Branch: {godownBranch(g)}</div>
                           </div>
                           {selected && (
-                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#534AB7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
                               <CheckIcon />
                             </div>
                           )}
@@ -597,9 +610,9 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                 {godownsInBranch.length === 0 && <p style={{ marginTop: 10, fontSize: 13, color: '#94a3b8' }}>No godowns in this branch.</p>}
 
                 {canCreateGodown && !isEditMode && (
-                  <div style={{ marginTop: 14, border: '1px dashed #AFA9EC', borderRadius: 12, background: '#EEEDFE', padding: 14 }}>
+                  <div style={{ marginTop: 14, border: '1px dashed #6ee7b7', borderRadius: 12, background: '#ecfdf5', padding: 14 }}>
                     {!createGodownOpen ? (
-                      <button onClick={() => setCreateGodownOpen(true)} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 600, color: '#534AB7', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                      <button onClick={() => setCreateGodownOpen(true)} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 600, color: '#059669', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         + Add new godown
                       </button>
                     ) : (
@@ -635,7 +648,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                 ) : (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-[210px_1fr]" style={{ minHeight: 320 }}>
                     {/* LEFT: godown list — scroll area is bounded, Add godown pinned at bottom */}
-                    <div style={{ border: '1px solid rgba(83,74,183,0.13)', borderRadius: 12, background: '#F0EFFD40', padding: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div style={{ border: '1px solid rgba(5,150,105,0.13)', borderRadius: 12, background: '#ecfdf540', padding: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#7C7A9A', marginBottom: 8, padding: '0 4px', flexShrink: 0 }}>1. Branch &amp; godown</p>
                       <div style={{ marginBottom: 8, flexShrink: 0 }}>
                         <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ ...sInp, height: 32, fontSize: 12 }}>
@@ -651,11 +664,16 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                             const isActive = activeGodownId === g.id
                             const picked = pickedByGodownId.get(g.id)
                             return (
-                              <button key={g.id} type="button" onClick={() => selectGodownForProducts(g.id)} style={{ textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: isActive ? '2px solid #534AB7' : '1px solid rgba(83,74,183,0.13)', background: '#fff', cursor: 'pointer', boxShadow: isActive ? '0 2px 8px rgba(83,74,183,0.15)' : 'none', fontFamily: 'inherit' }}>
+                              <button key={g.id} type="button" onClick={() => selectGodownForProducts(g.id)} style={{ textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: isActive ? '2px solid #059669' : '1px solid rgba(5,150,105,0.13)', background: '#fff', cursor: 'pointer', boxShadow: isActive ? '0 2px 8px rgba(5,150,105,0.15)' : 'none', fontFamily: 'inherit' }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, color: '#1E1A4E' }}>{g.name}</div>
-                                <div style={{ fontSize: 10, color: '#534AB7' }}>{godownBranch(g)}</div>
-                                <div style={{ fontSize: 10, color: '#7C7A9A' }}>{godownProducts[g.id]?.length ?? 0} in stock</div>
-                                {picked && <div style={{ fontSize: 10, fontWeight: 700, color: '#534AB7' }}>{picked.lines} picked · {picked.units} units</div>}
+                                <div style={{ fontSize: 10, color: '#059669' }}>{godownBranch(g)}</div>
+                                <div style={{ fontSize: 10, color: '#7C7A9A' }}>
+                                  {stockSummaryByGodownId.get(g.id)?.products ?? 0} products
+                                  {(stockSummaryByGodownId.get(g.id)?.units ?? 0) > 0
+                                    ? ` · ${stockSummaryByGodownId.get(g.id)?.units} units`
+                                    : ''}
+                                </div>
+                                {picked && <div style={{ fontSize: 10, fontWeight: 700, color: '#059669' }}>{picked.lines} picked · {picked.units} units</div>}
                               </button>
                             )
                           })}
@@ -665,7 +683,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                           {availableInBranch.map((g) => (
                             <button key={g.id} type="button" onClick={() => addGodownToSelection(g.id)} style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', padding: '8px 10px', borderRadius: 9, border: '1px dashed rgba(83,74,183,0.2)', background: '#fff', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>
                               <span><span style={{ fontWeight: 600, color: '#1E1A4E', display: 'block' }}>{g.name}</span><span style={{ fontSize: 10, color: '#7C7A9A' }}>{godownBranch(g)}</span></span>
-                              <span style={{ fontSize: 18, fontWeight: 700, color: '#534AB7' }}>+</span>
+                              <span style={{ fontSize: 18, fontWeight: 700, color: '#059669' }}>+</span>
                             </button>
                           ))}
                         </>}
@@ -674,7 +692,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                       {canCreateGodown && !isEditMode && (
                         <div style={{ flexShrink: 0, borderTop: '1px solid rgba(83,74,183,0.1)', paddingTop: 8, marginTop: 6 }}>
                           {!createGodownOpen ? (
-                            <button type="button" onClick={() => setCreateGodownOpen(true)} style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: '1px solid rgba(83,74,183,0.13)', background: '#fff', fontSize: 13, fontWeight: 600, color: '#1E1A4E', cursor: 'pointer', fontFamily: 'inherit' }}>
+                            <button type="button" onClick={() => setCreateGodownOpen(true)} style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: '1px solid rgba(5,150,105,0.13)', background: '#fff', fontSize: 13, fontWeight: 600, color: '#1E1A4E', cursor: 'pointer', fontFamily: 'inherit' }}>
                               + Add godown
                             </button>
                           ) : (
@@ -698,13 +716,13 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       {activeGodownId ? (
                         <>
-                          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(83,74,183,0.08)', background: 'linear-gradient(to right, #EEEDFE, #fff)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#534AB7', marginBottom: 2 }}>2. Select products from</div>
+                          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(83,74,183,0.08)', background: 'linear-gradient(to right, #ecfdf5, #fff)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#059669', marginBottom: 2 }}>2. Select products from</div>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#1E1A4E' }}>{activeGodown?.name}</div>
                           </div>
                           <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(83,74,183,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                             <Input placeholder="Search product or SKU…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="h-9" />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#534AB7', whiteSpace: 'nowrap' }}>{linesPayload.length} lines · {totalUnits} units</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{linesPayload.length} lines · {totalUnits} units</span>
                           </div>
                           <div style={{ flex: 1, overflowY: 'auto', padding: 10 }}>
                             {productsLoading && !godownProducts[activeGodownId] ? (
@@ -718,12 +736,12 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                                   const qty = lineQty[key] ?? 0
                                   const selected = qty > 0
                                   return (
-                                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', borderRadius: 10, border: selected ? '1.5px solid #AFA9EC' : '1px solid rgba(83,74,183,0.1)', background: selected ? '#EEEDFE60' : '#F0EFFD30', transition: 'all 0.12s' }}>
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', borderRadius: 10, border: selected ? '1.5px solid #6ee7b7' : '1px solid rgba(83,74,183,0.1)', background: selected ? '#ecfdf560' : '#ecfdf530', transition: 'all 0.12s' }}>
                                       <div style={{ minWidth: 0, flex: 1 }}>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: '#1E1A4E' }}>{c.particulars}</div>
                                         <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#7C7A9A' }}>{c.sku || '—'}</div>
                                       </div>
-                                      <QtyStepper value={qty} max={c.stockQty + qty} onChange={(n) => setLineQty((m) => ({ ...m, [key]: n }))} />
+                                      <QtyStepper value={qty} max={c.stockQty} onChange={(n) => setLineQty((m) => ({ ...m, [key]: n }))} />
                                     </div>
                                   )
                                 })}

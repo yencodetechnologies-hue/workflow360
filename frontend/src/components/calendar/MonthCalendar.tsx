@@ -1,4 +1,4 @@
-Ôªø// import type { CalendarDay } from '../../types/reports'
+// import type { CalendarDay } from '../../types/reports'
 
 // const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -82,7 +82,7 @@
 //                 minHeight: 58,
 //                 borderRadius: 9,
 //                 border: isToday
-//                   ? '2px solid #6366f1'
+//                   ? '2px solid #10b981'
 //                   : isSelected
 //                   ? '2px solid #7c6cf6'
 //                   : hasDeliveries
@@ -114,7 +114,7 @@
 //               <div style={{
 //                 fontSize: 12,
 //                 fontWeight: isToday ? 700 : 500,
-//                 color: isToday ? '#4f46e5' : '#111827',
+//                 color: isToday ? '#059669' : '#111827',
 //                 lineHeight: 1,
 //               }}>
 //                 {cell.day}
@@ -190,7 +190,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
 
       {/*
         Grid: 7 equal columns, 2px gap.
-        No min-width on cells ‚Äî they shrink to fit whatever width is available.
+        No min-width on cells ù they shrink to fit whatever width is available.
         This is the key: 1fr columns with no content forcing a min-width.
       */}
       <div style={{
@@ -200,7 +200,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
         width: '100%',
       }}>
 
-        {/* Weekday headers ‚Äî single letter on mobile to save space */}
+        {/* Weekday headers ù single letter on mobile to save space */}
         {WEEKDAYS.map((w, i) => (
           <div key={w + i} style={{
             padding: '4px 0',
@@ -231,22 +231,22 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
               type="button"
               onClick={() => onSelectDate(cell.key)}
               style={{
-                /* No fixed width/padding ‚Äî let the 1fr column own it */
+                /* No fixed width/padding ù let the 1fr column own it */
                 minHeight: 44,
                 width: '100%',
                 boxSizing: 'border-box',
                 borderRadius: 7,
                 border: isToday
-                  ? '2px solid #6366f1'
+                  ? '2px solid #10b981'
                   : isSelected
-                    ? '2px solid #7c6cf6'
+                    ? '2px solid #10b981'
                     : hasDeliveries
-                      ? '1px solid #c7d2fe'
-                      : '1px solid #ede9fe',
+                      ? '1px solid #a7f3d0'
+                      : '1px solid #d1fae5',
                 background: isSelected
-                  ? '#ede9fe'
+                  ? '#d1fae5'
                   : hasDeliveries
-                    ? '#eef2ff'
+                    ? '#ecfdf5'
                     : '#ffffff',
                 padding: '4px 2px',
                 textAlign: 'center',
@@ -263,15 +263,15 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
               onMouseEnter={(e) => {
                 const el = e.currentTarget as HTMLElement
                 if (!isToday && !isSelected) {
-                  el.style.background = '#f0eeff'
-                  el.style.borderColor = '#a5b4fc'
+                  el.style.background = '#ecfdf5'
+                  el.style.borderColor = '#6ee7b7'
                 }
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget as HTMLElement
                 if (!isToday && !isSelected) {
-                  el.style.background = hasDeliveries ? '#eef2ff' : '#ffffff'
-                  el.style.borderColor = hasDeliveries ? '#c7d2fe' : '#ede9fe'
+                  el.style.background = hasDeliveries ? '#ecfdf5' : '#ffffff'
+                  el.style.borderColor = hasDeliveries ? '#a7f3d0' : '#d1fae5'
                 }
               }}
             >
@@ -279,23 +279,23 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
               <div style={{
                 fontSize: 11,
                 fontWeight: isToday ? 700 : 500,
-                color: isToday ? '#4f46e5' : '#111827',
+                color: isToday ? '#059669' : '#111827',
                 lineHeight: 1,
               }}>
                 {cell.day}
               </div>
 
-              {/* Delivery dot ‚Äî just a colored dot on mobile, no text */}
+              {/* Delivery dot ù just a colored dot on mobile, no text */}
               {hasDeliveries && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                   <div style={{
                     width: 5, height: 5, borderRadius: '50%',
-                    background: '#4338ca', flexShrink: 0,
+                    background: '#059669', flexShrink: 0,
                   }} />
                   <div style={{
                     fontSize: 8,
                     fontWeight: 600,
-                    color: '#4338ca',
+                    color: '#047857',
                     lineHeight: 1,
                   }}>
                     {total}

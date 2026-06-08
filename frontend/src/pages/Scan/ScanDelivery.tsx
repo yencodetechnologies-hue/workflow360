@@ -188,7 +188,7 @@ export function ScanDeliveryPage({ action }: { action: ScanAction }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {action === 'dispatch' && delivery?.status === 'PACKED' ? (
-              <p className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+              <p className="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-900">
                 Dispatch complete. Use &quot;Out for delivery&quot; on the delivery detail or queue to assign a vehicle.
               </p>
             ) : null}

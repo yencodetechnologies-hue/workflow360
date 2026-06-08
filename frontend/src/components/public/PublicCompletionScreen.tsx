@@ -32,7 +32,7 @@ function CheckIcon() {
 
 function LineCheckIcon() {
   return (
-    <svg className="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg className="h-5 w-5 shrink-0 text-primary-600" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="10" className="fill-emerald-50 stroke-emerald-200" strokeWidth="1.5" />
       <path d="M8 12.5 10.5 15 16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -64,9 +64,9 @@ export function PublicCompletionScreen({
   const dateLabel = completedAtLabel ?? (variant === 'thankYou' ? 'Verified on' : 'Completed on')
   return (
     <div className="mx-auto w-full max-w-lg animate-fade-in">
-      <div className="animate-slide-up rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100 sm:p-8">
+      <div className="animate-slide-up rounded-2xl bg-white p-6 shadow-xl ring-1 ring-primary-100 sm:p-8">
         <div className="text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-200">
             <CheckIcon />
           </div>
 
@@ -113,7 +113,7 @@ export function PublicCompletionScreen({
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Items</h2>
             <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
               {lines.map((l, i) => (
-                <li key={l.productId ?? l.sku ?? i} className="flex items-start gap-3 p-3">
+                <li key={`line-${i}`} className="flex items-start gap-3 p-3">
                   <LineCheckIcon />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-slate-900">{l.particulars || l.productId || 'Item'}</div>

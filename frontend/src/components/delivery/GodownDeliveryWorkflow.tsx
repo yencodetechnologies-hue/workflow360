@@ -4,7 +4,9 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
 import { apiFetch } from '../../lib/api'
+import { postDeliveryVehicle } from '../../lib/deliveryVehicleApi'
 import { getToken, useAuth } from '../../auth/store'
+import { isDispatchComplete, isOutForDeliveryStatus, lineFulfilledQty } from '../../lib/deliveryStatus'
 import { scanPathForDelivery } from '../../lib/scanMode'
 import { ReturnPickupVehicleModal } from './ReturnPickupVehicleModal'
 import { VehicleNumberModal } from './VehicleNumberModal'
@@ -21,16 +23,25 @@ export type GodownWorkflowLine = {
 export type GodownWorkflowDelivery = {
   id: string
   status: string
+  vehicleLabel?: string
+  returnPickupVehicleLabel?: string
   lines?: GodownWorkflowLine[]
   scanProgress?: { dispatchComplete?: boolean }
-  qtyProgress?: { dispatchComplete?: boolean }
+  qtyProgress?: {
+    dispatchComplete?: boolean
+    deliveredByProduct?: Record<string, number>
+    returnedByProduct?: Record<string, number>
+  }
+  deliveryVerifiedAt?: string
+  deliveryLineChecks?: Array<{ productId: string; qtyAck?: number; ok?: boolean }>
+  deliveredTagIds?: string[]
   billerReturnUrl?: string
   billerReturnSubmittedAt?: string
 }
 
 type Props = {
   delivery: GodownWorkflowDelivery
-  onUpdated?: () => void
+  onUpdated?: (patch?: Partial<GodownWorkflowDelivery>) => void
   onError?: (message: string) => void
   compact?: boolean
 }
@@ -49,18 +60,21 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
   const [returnQty, setReturnQty] = useState<Record<string, string>>({})
 
   const role = auth.status === 'authenticated' ? auth.user.role : ''
+  const godownLinked = auth.status === 'authenticated' && !!auth.user.godownId
   if (role !== 'GODOWN') return null
 
   const lines = delivery.lines || []
-  const dispatchComplete =
-    delivery.qtyProgress?.dispatchComplete ?? delivery.scanProgress?.dispatchComplete ?? false
+  const dispatchComplete = isDispatchComplete(delivery)
 
-  const run = async (fn: () => Promise<void>) => {
+  const controlsDisabled = busy || !godownLinked
+
+  const run = async (fn: () => Promise<Partial<GodownWorkflowDelivery> | undefined>) => {
+    if (!godownLinked) return
     setBusy(true)
     try {
-      await fn()
+      const patch = await fn()
       notifyStockChanged()
-      onUpdated?.()
+      onUpdated?.(patch)
     } catch (e: unknown) {
       const msg =
         e && typeof e === 'object' && 'message' in e
@@ -76,57 +90,67 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
     run(async () => {
       const token = getToken()
       if (!token) return
-      await apiFetch(`/deliveries/${delivery.id}/confirm-dispatch`, {
+      const res = await apiFetch<{
+        status: string
+        lines?: GodownWorkflowLine[]
+        qtyProgress?: { dispatchComplete?: boolean }
+      }>(`/deliveries/${delivery.id}/confirm-dispatch`, {
         token,
         method: 'POST',
         body: JSON.stringify({}),
       })
-    })
-
-  const markPacked = () =>
-    run(async () => {
-      const token = getToken()
-      if (!token) return
-      await apiFetch(`/deliveries/${delivery.id}/mark-packed`, { token, method: 'POST' })
+      return { status: res.status, lines: res.lines, qtyProgress: res.qtyProgress }
     })
 
   const outForDelivery = (vehicleNumber: string) =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      await apiFetch(`/deliveries/${delivery.id}/out-for-delivery`, {
-        token,
-        method: 'POST',
-        body: JSON.stringify({ vehicleNumber }),
-      })
+      const res = await postDeliveryVehicle(delivery.id, token, vehicleNumber, delivery.status)
       setVehicleOpen(false)
+      return { status: res.status, vehicleLabel: res.vehicleLabel }
     })
 
   const assignReturnPickup = (vehicleNumber: string) =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      await apiFetch(`/deliveries/${delivery.id}/assign-return-pickup`, {
-        token,
-        method: 'POST',
-        body: JSON.stringify({ vehicleNumber }),
-      })
+      const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string }>(
+        `/deliveries/${delivery.id}/assign-return-pickup`,
+        {
+          token,
+          method: 'POST',
+          body: JSON.stringify({ vehicleNumber }),
+        },
+      )
       setReturnPickupOpen(false)
+      return { status: res.status, returnPickupVehicleLabel: res.returnPickupVehicleLabel }
     })
 
   const markDelivered = () =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      await apiFetch(`/deliveries/${delivery.id}/mark-delivered`, { token, method: 'POST' })
+      const res = await apiFetch<{ status: string }>(`/deliveries/${delivery.id}/mark-delivered`, {
+        token,
+        method: 'POST',
+      })
+      return { status: res.status }
     })
+
+  const fulfillmentContext = {
+    deliveryVerifiedAt: delivery.deliveryVerifiedAt,
+    deliveryLineChecks: delivery.deliveryLineChecks,
+    qtyProgress: delivery.qtyProgress,
+    deliveredTagIds: delivery.deliveredTagIds,
+  }
 
   const openReturnModal = () => {
     const initial: Record<string, string> = {}
     for (const l of lines) {
-      const dispatched = l.dispatchedQty ?? 0
+      const fulfilled = lineFulfilledQty(delivery.status, l, fulfillmentContext)
       const returned = l.returnedQty ?? 0
-      const remaining = Math.max(0, dispatched - returned)
+      const remaining = Math.max(0, fulfilled - returned)
       if (remaining > 0) initial[l.productId] = String(remaining)
     }
     setReturnQty(initial)
@@ -145,15 +169,19 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
         })
         .filter(Boolean) as Array<{ productId: string; qty: number }>
       if (!bodyLines.length) {
-        onError?.('Enter return quantity for at least one product')
-        return
+        throw new Error('Enter return quantity for at least one product')
       }
-      await apiFetch(`/deliveries/${delivery.id}/confirm-return`, {
+      const res = await apiFetch<{
+        status: string
+        lines?: GodownWorkflowLine[]
+        qtyProgress?: { returnedByProduct?: Record<string, number> }
+      }>(`/deliveries/${delivery.id}/confirm-return`, {
         token,
         method: 'POST',
         body: JSON.stringify({ lines: bodyLines }),
       })
       setReturnOpen(false)
+      return { status: res.status, lines: res.lines, qtyProgress: res.qtyProgress }
     })
 
   const closeReturn = () =>
@@ -161,6 +189,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       const token = getToken()
       if (!token) return
       await apiFetch(`/deliveries/${delivery.id}/close-return`, { token, method: 'POST' })
+      return { status: 'COMPLETED' }
     })
 
   const btnSize = compact ? ('sm' as const) : undefined
@@ -170,8 +199,8 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
 
   if (status === 'PROCESSED' && !dispatchComplete) {
     buttons.push(
-      <Button key="dispatch" size={btnSize} variant="secondary" disabled={busy} onClick={() => void confirmDispatch()}>
-        Confirm dispatch
+      <Button key="packed" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => void confirmDispatch()}>
+        Mark packed
       </Button>,
     )
     buttons.push(
@@ -179,7 +208,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
         key="scan"
         size={btnSize}
         variant="secondary"
-        disabled={busy}
+        disabled={controlsDisabled}
         onClick={() => nav(scanPathForDelivery(role, status, delivery.id))}
       >
         RFID scan
@@ -187,25 +216,24 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
     )
   }
 
-  if (status === 'PROCESSED' && dispatchComplete) {
+  if (status === 'PACKED' || (status === 'PROCESSED' && dispatchComplete)) {
     buttons.push(
-      <Button key="packed" size={btnSize} variant="secondary" disabled={busy} onClick={() => void markPacked()}>
-        Mark packed
-      </Button>,
-    )
-  }
-
-  if ((status === 'PROCESSED' || status === 'PACKED') && dispatchComplete) {
-    buttons.push(
-      <Button key="ofd" size={btnSize} disabled={busy} onClick={() => setVehicleOpen(true)}>
+      <Button key="ofd" size={btnSize} disabled={controlsDisabled} onClick={() => setVehicleOpen(true)}>
         Out for delivery
       </Button>,
     )
   }
 
-  if (status === 'OUT_FOR_DELIVERY') {
+  if (['PROCESSED', 'PACKED'].includes(status) || isOutForDeliveryStatus(status)) {
+    if (isOutForDeliveryStatus(status)) {
+      buttons.push(
+        <Button key="ofd-edit" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => setVehicleOpen(true)}>
+          Change vehicle
+        </Button>,
+      )
+    }
     buttons.push(
-      <Button key="delivered" size={btnSize} variant="secondary" disabled={busy} onClick={() => void markDelivered()}>
+      <Button key="delivered" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => void markDelivered()}>
         Mark delivered
       </Button>,
     )
@@ -213,7 +241,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
 
   if (status === 'DELIVERED') {
     buttons.push(
-      <Button key="assign-rp" size={btnSize} disabled={busy} onClick={() => setReturnPickupOpen(true)}>
+      <Button key="assign-rp" size={btnSize} disabled={controlsDisabled} onClick={() => setReturnPickupOpen(true)}>
         Assign return pickup
       </Button>,
     )
@@ -221,7 +249,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
 
   if (status === 'RETURN_PICKUP' || status === 'PENDING_RETURN') {
     buttons.push(
-      <Button key="return" size={btnSize} variant="secondary" disabled={busy} onClick={openReturnModal}>
+      <Button key="return" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={openReturnModal}>
         Record return
       </Button>,
     )
@@ -230,7 +258,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
         key="scan-ret"
         size={btnSize}
         variant="secondary"
-        disabled={busy}
+        disabled={controlsDisabled}
         onClick={() => nav(`/scan/return/${delivery.id}`)}
       >
         RFID return scan
@@ -242,7 +270,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
           key="scan-rp"
           size={btnSize}
           variant="secondary"
-          disabled={busy}
+          disabled={controlsDisabled}
           onClick={() => nav(`/scan/return-pickup/${delivery.id}`)}
         >
           RFID return pickup scan
@@ -253,7 +281,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
 
   if (status === 'PENDING_RETURN') {
     buttons.push(
-      <Button key="complete" size={btnSize} disabled={busy} onClick={() => void closeReturn()}>
+      <Button key="complete" size={btnSize} disabled={controlsDisabled} onClick={() => void closeReturn()}>
         Complete return
       </Button>,
     )
@@ -306,17 +334,19 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
 
       <VehicleNumberModal
         open={vehicleOpen}
-        title="Out for delivery"
-        description="Enter vehicle number for the driver."
+        title={status === 'OUT_FOR_DELIVERY' ? 'Change vehicle' : 'Out for delivery'}
+        description="Enter or update the vehicle number for the driver."
         confirmLabel="Confirm"
-        busy={busy}
+        busy={controlsDisabled}
+        initialValue={delivery.vehicleLabel}
         onClose={() => setVehicleOpen(false)}
         onConfirm={outForDelivery}
       />
 
       <ReturnPickupVehicleModal
         open={returnPickupOpen}
-        busy={busy}
+        busy={controlsDisabled}
+        initialValue={delivery.returnPickupVehicleLabel}
         onClose={() => setReturnPickupOpen(false)}
         onConfirm={assignReturnPickup}
       />
@@ -324,9 +354,9 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       <Modal open={returnOpen} title="Record return quantities" onClose={() => setReturnOpen(false)}>
         <div className="space-y-3">
           {lines.map((l) => {
-            const dispatched = l.dispatchedQty ?? 0
+            const fulfilled = lineFulfilledQty(delivery.status, l, fulfillmentContext)
             const returned = l.returnedQty ?? 0
-            const max = Math.max(0, dispatched - returned)
+            const max = Math.max(0, fulfilled - returned)
             if (max <= 0) return null
             return (
               <div key={l.productId}>
@@ -343,7 +373,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
           })}
         </div>
         <div className="mt-4 flex gap-2">
-          <Button onClick={() => void confirmReturn()} disabled={busy}>
+          <Button onClick={() => void confirmReturn()} disabled={controlsDisabled}>
             Confirm return
           </Button>
           <Button variant="secondary" onClick={() => setReturnOpen(false)}>

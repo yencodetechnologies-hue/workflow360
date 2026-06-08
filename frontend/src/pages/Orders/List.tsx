@@ -29,18 +29,22 @@ type OrderRow = {
 }
 
 function badgeVariant(status: string) {
-  if (status === 'CREATED') return 'blue'
+  if (status === 'CREATED') return 'green'
   if (status === 'ALLOCATED') return 'green'
   if (status === 'DISPATCHED') return 'amber'
   return 'slate'
 }
 
+const GODOWN_ACTIVE_STATUSES = ['CREATED', 'ALLOCATED', 'DISPATCHED', 'DELIVERED'] as const
+const BILLER_UPCOMING_STATUSES = ['CREATED', 'ALLOCATED'] as const
+
 export function OrdersListPage() {
   const auth = useAuth()
-  const { godownName } = useGodownScope()
+  const { godownName, isGodown } = useGodownScope()
+  const isGodownUser = isGodown
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [godowns, setGodowns] = useState<GodownRow[]>([])
-  const [tab, setTab] = useState<OrderTab>('upcoming')
+  const [tab, setTab] = useState<OrderTab>(isGodownUser ? 'all' : 'upcoming')
   const [q, setQ] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,8 +89,11 @@ export function OrdersListPage() {
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
+    const upcomingStatuses: readonly string[] = isGodownUser
+      ? GODOWN_ACTIVE_STATUSES
+      : BILLER_UPCOMING_STATUSES
     return orders.filter((o) => {
-      if (tab === 'upcoming' && !['CREATED', 'ALLOCATED'].includes(o.status)) return false
+      if (tab === 'upcoming' && !upcomingStatuses.includes(o.status)) return false
       if (!s) return true
       return (
         o.customerName.toLowerCase().includes(s) ||
@@ -94,7 +101,7 @@ export function OrdersListPage() {
         (o.siteAddress?.toLowerCase().includes(s) ?? false)
       )
     })
-  }, [orders, q, tab])
+  }, [orders, q, tab, isGodownUser])
 
   return (
     <div className="fade-in space-y-6">
@@ -193,7 +200,7 @@ export function OrdersListPage() {
           <div className="mb-4 flex flex-wrap gap-2">
             {(
               [
-                { id: 'upcoming' as const, label: 'Upcoming' },
+                { id: 'upcoming' as const, label: isGodownUser ? 'Active' : 'Upcoming' },
                 { id: 'all' as const, label: 'All' },
               ] as const
             ).map((t) => (
@@ -203,7 +210,7 @@ export function OrdersListPage() {
                 onClick={() => setTab(t.id)}
                 className={
                   tab === t.id
-                    ? 'rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white'
+                    ? 'rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white'
                     : 'rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200'
                 }
               >
@@ -275,11 +282,23 @@ export function OrdersListPage() {
           )}
 
           <p className="mt-4 text-xs text-slate-500">
-            Deliveries created from orders appear under{' '}
-            <Link to="/deliveries" className="font-medium text-violet-600 hover:underline">
-              Deliveries
-            </Link>
-            .
+            {isGodownUser ? (
+              <>
+                Standalone deliveries (without a linked order) appear under{' '}
+                <Link to="/deliveries" className="font-medium text-primary-600 hover:underline">
+                  Deliveries
+                </Link>
+                , not here.
+              </>
+            ) : (
+              <>
+                Deliveries created from orders appear under{' '}
+                <Link to="/deliveries" className="font-medium text-primary-600 hover:underline">
+                  Deliveries
+                </Link>
+                .
+              </>
+            )}
           </p>
         </CardContent>
       </Card>

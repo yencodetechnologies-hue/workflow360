@@ -213,7 +213,7 @@ export function AdminEditProfilePage() {
         <Button
           onClick={handleSave}
           disabled={saving || loading}
-          className="group inline-flex h-14 items-center justify-center rounded-2xl border-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-6 text-white shadow-lg shadow-violet-500/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-violet-500/30 active:scale-[0.99]"
+          className="group inline-flex h-14 items-center justify-center rounded-2xl border-0 bg-gradient-to-r from-primary-600 via-primary-600 to-primary-600 px-6 text-white shadow-lg shadow-primary-500/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary-500/30 active:scale-[0.99]"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
@@ -241,27 +241,27 @@ export function AdminEditProfilePage() {
       ) : null}
 
       {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        <div className="rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">
           {success}
         </div>
       ) : null}
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-violet-600" />
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-primary-600" />
         </div>
       ) : null}
 
       {!loading ? (
         <Card className="overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.12)]">
-          <div className="relative h-40 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600">
+          <div className="relative h-40 bg-gradient-to-r from-primary-600 via-primary-600 to-primary-600">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_40%)]" />
           </div>
 
           <CardContent className="p-8">
             <div className="mb-10 flex flex-col gap-5 border-b border-slate-100 pb-8 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-5">
-                <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-700 shadow-inner">
+                <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-gradient-to-br from-primary-100 to-primary-100 text-primary-700 shadow-inner">
                   <span className="text-3xl font-bold">
                     {(form.email || form.loginId || 'U').charAt(0).toUpperCase()}
                   </span>
@@ -276,10 +276,10 @@ export function AdminEditProfilePage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <div className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700">
+                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700">
                   {roleBadge(form.role)}
                 </div>
-                <div className="rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700">
                   {auth.status === 'authenticated' ? 'Signed in' : 'Guest'}
                 </div>
               </div>
@@ -368,7 +368,7 @@ export function AdminEditProfilePage() {
 
             <div className="mt-10 rounded-3xl border border-slate-200 bg-slate-50 p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
                   <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <path
                       d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"

@@ -12,7 +12,7 @@
 
 // const tones: Record<NonNullable<Props['tone']>, string> = {
 //   neutral: 'bg-slate-900/5 text-slate-700 ring-slate-200',
-//   good: 'bg-emerald-500/10 text-emerald-700 ring-emerald-200',
+//   good: 'bg-primary-500/10 text-primary-700 ring-primary-200',
 //   warn: 'bg-amber-500/10 text-amber-800 ring-amber-200',
 //   bad: 'bg-rose-500/10 text-rose-700 ring-rose-200',
 // }
@@ -59,14 +59,14 @@ type Props = {
 }
 
 const iconBgMap: Record<NonNullable<Props['tone']>, string> = {
-  neutral: '#ede9fe',
+  neutral: '#d1fae5',
   good:    '#d1fae5',
   warn:    '#fef3c7',
   bad:     '#fee2e2',
 }
 
 const bubbleBgMap: Record<NonNullable<Props['tone']>, string> = {
-  neutral: '#ede9fe',
+  neutral: '#d1fae5',
   good:    '#d1fae5',
   warn:    '#fef3c7',
   bad:     '#fee2e2',

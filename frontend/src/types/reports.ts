@@ -114,6 +114,45 @@ export type MissingProductRow = {
   deliveries: Array<{ id: string; deliveryNo: string; qty: number }>
 }
 
+export type ReturnMetric = 'missing' | 'damage' | 'return'
+
+export type BillerReturnRow = {
+  billerUserId: string
+  billerName?: string
+  siteName?: string
+  deliveryCount: number
+  missingOrderCount: number
+  returnSubmittedCount: number
+  pendingReturnCount: number
+  missingQty: number
+  damageQty: number
+  missingTotal: number
+  damageTotal: number
+  returnedQty: number
+  dispatchedQty: number
+  outstandingQty: number
+}
+
+export type ProductReturnDeliveryLine = {
+  id: string
+  deliveryNo: string
+  customerName?: string
+  deliveryAt?: string
+  qty: number
+  note?: string
+  dispatchedQty?: number
+  outstandingQty?: number
+}
+
+export type ProductReturnRow = {
+  productId: string
+  particulars?: string
+  sku?: string
+  totalQty: number
+  deliveryCount: number
+  deliveries: ProductReturnDeliveryLine[]
+}
+
 export type StockReportRow = {
   godownId: string
   godownName?: string
@@ -128,6 +167,7 @@ export type ReportTab =
   | 'issues-godown'
   | 'issues-delivery'
   | 'issues-customer'
+  | 'issues-biller'
   | 'missing'
   | 'missing-products'
   | 'stock'

@@ -15,7 +15,14 @@ export async function apiFetch<T>(
 
   const res = await fetch(url, { ...opts, headers })
   const text = await res.text()
-  const data = text ? (JSON.parse(text) as any) : null
+  let data: any = null
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw { message: `Server returned non-JSON response (${res.status})`, status: res.status }
+    }
+  }
   if (!res.ok) {
     const err: ApiError = { message: data?.message || res.statusText || 'Request failed', status: res.status }
     throw err

@@ -76,7 +76,7 @@
 //             setForm({ name: '', sku: '', category: '', specification: '', rate: '', sNo: '', imagePath: '' })
 //             setOpen(true)
 //           }}
-//           className="inline-flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-[13.5px] font-semibold px-5 h-[42px] rounded-xl shadow-md shadow-indigo-200 transition-colors whitespace-nowrap border-0 cursor-pointer"
+//           className="inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white text-[13.5px] font-semibold px-5 h-[42px] rounded-xl shadow-md shadow-primary-200 transition-colors whitespace-nowrap border-0 cursor-pointer"
 //         >
 //           <span className="text-[17px] leading-none">+</span>
 //           Add Product
@@ -102,7 +102,7 @@
 //               value={q}
 //               onChange={(e) => setQ(e.target.value)}
 //               placeholder="Search products..."
-//               className="w-full h-[38px] pl-9 pr-3 rounded-lg border border-slate-200 bg-white text-[13px] text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+//               className="w-full h-[38px] pl-9 pr-3 rounded-lg border border-slate-200 bg-white text-[13px] text-slate-700 placeholder-slate-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
 //             />
 //           </div>
 
@@ -165,7 +165,7 @@
 //                 {rows.map((p) => (
 //                   <tr
 //                     key={p.id}
-//                     className="border-b border-slate-100 bg-white hover:bg-indigo-50/20 transition-colors duration-100"
+//                     className="border-b border-slate-100 bg-white hover:bg-primary-50/20 transition-colors duration-100"
 //                   >
 //                     {/* S.NO */}
 //                     <td className="px-4 py-3.5 align-middle text-[14px] font-semibold text-slate-700">
@@ -221,7 +221,7 @@
 
 //                     {/* RATE */}
 //                     <td className="px-4 py-3.5 align-middle">
-//                       <span className="text-[14.5px] font-bold text-indigo-500">
+//                       <span className="text-[14.5px] font-bold text-primary-500">
 //                         ₹{p.rate}
 //                       </span>
 //                     </td>
@@ -294,7 +294,7 @@
 
 //             <button
 //               disabled={saving || !form.name.trim() || !form.sNo.trim()}
-//               className="h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white text-[13.5px] font-semibold border-0 cursor-pointer disabled:cursor-not-allowed transition-colors"
+//               className="h-10 px-5 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white text-[13.5px] font-semibold border-0 cursor-pointer disabled:cursor-not-allowed transition-colors"
 //               onClick={async () => {
 //                 setSaving(true)
 //                 setSaveError(null)
@@ -466,9 +466,9 @@ export function ProductsListPage() {
           onClick={() => { setEditingId(null); setSaveError(null); setForm({ name: '', sku: '', category: '', specification: '', rate: '', sNo: '', imagePath: '' }); setOpen(true) }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: '#4f46e5', color: '#fff', fontSize: 13, fontWeight: 600,
+            background: '#059669', color: '#fff', fontSize: 13, fontWeight: 600,
             padding: '10px 20px', borderRadius: 12, border: 'none', cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(79,70,229,0.25)',
+            boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
           }}
         >
           <span style={{ fontSize: 17, lineHeight: 1 }}>+</span>
@@ -595,7 +595,7 @@ export function ProductsListPage() {
             <button className="h-10 px-5 rounded-xl border border-slate-200 bg-white text-[13.5px] font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer" onClick={() => setOpen(false)}>Cancel</button>
             <button
               disabled={saving || !form.name.trim() || !form.sNo.trim()}
-              className="h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white text-[13.5px] font-semibold border-0 cursor-pointer disabled:cursor-not-allowed transition-colors"
+              className="h-10 px-5 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white text-[13.5px] font-semibold border-0 cursor-pointer disabled:cursor-not-allowed transition-colors"
               onClick={async () => {
                 setSaving(true); setSaveError(null)
                 const body = { s_no: form.sNo.trim(), particulars: form.name.trim(), category: form.category.trim() || 'General', specification: form.specification.trim() || '—', rate: form.rate.trim() || '—', sku: form.sku.trim() || `SKU-${form.sNo.trim()}`, unit: 'pcs', reorderLevel: 0, image_path: form.imagePath.trim() || undefined }

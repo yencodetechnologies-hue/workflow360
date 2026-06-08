@@ -19,6 +19,18 @@ export type DriverLocationBlock = {
   phone?: string
 }
 
+export type DriverDeliveryLine = {
+  productId: string
+  godownId?: string
+  godownName?: string
+  particulars?: string
+  sku?: string
+  qty: number
+  unit?: string
+  dispatchedQty?: number
+  returnedQty?: number
+}
+
 export type DriverDeliveryListRow = {
   id: string
   deliveryNo: string
@@ -28,15 +40,50 @@ export type DriverDeliveryListRow = {
   returnExpectedAt?: string
   contactPhone?: string
   vehicleLabel?: string
+  fromGodownId?: string
   pickupLocation: DriverPickupLocation
+  pickupLocations?: DriverPickupLocation[]
   dropLocation: DriverDropLocation
-  lines: Array<{
-    productId: string
-    particulars?: string
-    sku?: string
-    qty: number
-    unit?: string
-  }>
+  lines: DriverDeliveryLine[]
+}
+
+export function godownNameByIdFromPickups(
+  pickupLocations?: DriverPickupLocation[],
+): Record<string, string> {
+  const map: Record<string, string> = {}
+  for (const loc of pickupLocations ?? []) {
+    if (loc.godownId && loc.name) map[loc.godownId] = loc.name
+  }
+  return map
+}
+
+/** Merge API pickup locations with godown groups so every source godown gets a pickup stop. */
+export function resolvePickupLocations(
+  row: Pick<DriverDeliveryListRow, 'pickupLocations' | 'pickupLocation'>,
+  godownGroups: Array<{ godownId: string; godownName: string }>,
+): DriverPickupLocation[] {
+  const fromApi =
+    row.pickupLocations?.length ? row.pickupLocations : row.pickupLocation ? [row.pickupLocation] : []
+  const byId = new Map<string, DriverPickupLocation>()
+  for (const loc of fromApi) {
+    if (loc.godownId) byId.set(loc.godownId, loc)
+  }
+  for (const group of godownGroups) {
+    const existing = byId.get(group.godownId)
+    if (existing) {
+      if (existing.name === 'Godown' && group.godownName !== 'Godown') {
+        byId.set(group.godownId, { ...existing, name: group.godownName })
+      }
+      continue
+    }
+    byId.set(group.godownId, {
+      godownId: group.godownId,
+      name: group.godownName,
+      address: '',
+    })
+  }
+  const merged = [...byId.values()]
+  return merged.length ? merged : fromApi
 }
 
 type LegacyDriverDeliveryPayload = Partial<DriverDeliveryListRow> & {
@@ -63,6 +110,12 @@ export function normalizeDriverDeliveryRow(raw: LegacyDriverDeliveryPayload): Dr
       contactPhone: raw.contactPhone,
     } satisfies DriverDropLocation)
 
+  const pickupLocations = Array.isArray(raw.pickupLocations) && raw.pickupLocations.length
+    ? raw.pickupLocations
+    : pickupLocation
+      ? [pickupLocation]
+      : []
+
   return {
     id: String(raw.id ?? ''),
     deliveryNo: String(raw.deliveryNo ?? ''),
@@ -72,7 +125,9 @@ export function normalizeDriverDeliveryRow(raw: LegacyDriverDeliveryPayload): Dr
     returnExpectedAt: raw.returnExpectedAt,
     contactPhone: raw.contactPhone,
     vehicleLabel: raw.vehicleLabel,
-    pickupLocation,
+    fromGodownId: raw.fromGodownId ? String(raw.fromGodownId) : undefined,
+    pickupLocation: pickupLocations[0] ?? pickupLocation,
+    pickupLocations,
     dropLocation,
     lines,
   }

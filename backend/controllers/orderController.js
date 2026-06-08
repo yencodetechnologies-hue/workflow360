@@ -111,8 +111,12 @@ async function listOrders(req, res) {
     const status = req.query.status
 
     let filter = {}
-    if (req.user.role === 'GODOWN' && req.user.godownId) {
-      filter = await buildGodownOrderFilter(req.user.godownId)
+    if (req.user.role === 'GODOWN') {
+      const gid = req.user.godownId ? String(req.user.godownId) : ''
+      if (!gid || !mongoose.Types.ObjectId.isValid(gid)) {
+        return res.json([])
+      }
+      filter = await buildGodownOrderFilter(gid)
     }
     if (status) filter.status = status
 

@@ -81,6 +81,28 @@ async function findActiveGodownByMobile(normalizedPhone) {
   return candidates.find((gd) => normalizePhone(gd.mobile) === normalizedPhone) || null
 }
 
+async function ensureGodownLinked(user) {
+  if (user.role !== 'GODOWN') return user
+
+  const raw = user.godownId ? String(user.godownId) : ''
+  if (raw && isValidGodownObjectId(raw)) return user
+
+  const phone = normalizePhone(user.contactPhone)
+  if (!phone) return user
+
+  const g = await findActiveGodownByMobile(phone)
+  if (!g) return user
+
+  try {
+    const synced = await syncGodownLoginUser(g, { passwordHash: user.passwordHash })
+    return synced || user
+  } catch (err) {
+    if (err.code !== 'CONTACT_PHONE_CONFLICT') throw err
+    const linked = await User.findOne({ role: 'GODOWN', godownId: String(g._id) })
+    return linked?.active ? linked : user
+  }
+}
+
 async function loginViaGodownFallback(normalizedPhone, password) {
   const g = await findActiveGodownByMobile(normalizedPhone)
   if (!g || !g.passwordHash) return null
@@ -152,6 +174,8 @@ async function login(req, res) {
     if (!user || !user.active || !passwordOk) {
       return res.status(401).json({ message: 'Invalid credentials' })
     }
+
+    user = await ensureGodownLinked(user)
 
     const token = signToken(user)
     return res.json({ token, user: await mapUser(user) })

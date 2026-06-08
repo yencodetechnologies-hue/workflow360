@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../../components/ui/Modal'
 import { Input } from '../../components/ui/Input'
 import { apiFetch } from '../../lib/api'
-import { getToken } from '../../auth/store'
+import { getToken, useAuth } from '../../auth/store'
 
 type UserRow = {
   id: string
@@ -40,6 +40,43 @@ const tCell: React.CSSProperties = {
   verticalAlign: 'middle',
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+      <path
+        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function BillerRowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+      <path d="M3 21h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M6 21V10l6-4 6 4v11" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M10 14h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+const iconActionBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  border: '1px solid #e2e8f0',
+  background: '#fff',
+  color: '#64748b',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+}
+
 const actionBtn = (variant: 'default' | 'danger'): React.CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -59,21 +96,26 @@ const actionBtn = (variant: 'default' | 'danger'): React.CSSProperties => ({
 // ── main ───────────────────────────────────────────────────────────────────
 
 export function BillersPage() {
+  const auth = useAuth()
+  const isAdmin = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
+
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
 
-  // const [form, setForm] = useState({
-  //   siteName: '', contactName: '', contactPhone: '', email: '', password: '',
-  // })
-  const [saving, setSaving] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addForm, setAddForm] = useState({
+    siteName: '', contactName: '', contactPhone: '', siteAddress: '', email: '', password: '',
+  })
+  const [addSaving, setAddSaving] = useState(false)
 
   const [editOpen, setEditOpen] = useState(false)
   const [editing, setEditing] = useState<UserRow | null>(null)
   const [editForm, setEditForm] = useState({
     siteName: '', contactName: '', contactPhone: '', siteAddress: '',
   })
+  const [editSaving, setEditSaving] = useState(false)
 
   const load = () => {
     const token = getToken()
@@ -111,7 +153,35 @@ export function BillersPage() {
     setEditOpen(true)
   }
 
- 
+  const openAdd = () => {
+    setAddForm({ siteName: '', contactName: '', contactPhone: '', siteAddress: '', email: '', password: '' })
+    setAddOpen(true)
+  }
+
+  const handleAdd = () => {
+    const token = getToken()
+    if (!token || !addForm.siteName.trim()) return
+    setAddSaving(true)
+    apiFetch('/users/billers', {
+      token,
+      method: 'POST',
+      body: JSON.stringify({
+        siteName: addForm.siteName.trim(),
+        siteAddress: addForm.siteAddress.trim() || undefined,
+        contactName: addForm.contactName.trim() || undefined,
+        contactPhone: addForm.contactPhone.trim() || undefined,
+        email: addForm.email.trim() || undefined,
+        password: addForm.password || undefined,
+      }),
+    })
+      .then(() => {
+        setAddOpen(false)
+        setAddForm({ siteName: '', contactName: '', contactPhone: '', siteAddress: '', email: '', password: '' })
+        load()
+      })
+      .catch((e: any) => setError(e?.message || 'Create failed'))
+      .finally(() => setAddSaving(false))
+  }
 
   const handleDeactivate = (b: UserRow) => {
     if (!confirm(`Deactivate ${b.email}?`)) return
@@ -153,6 +223,15 @@ export function BillersPage() {
       .catch((e: any) => setError(e?.message || 'Reset failed'))
   }
 
+  const handleDelete = (b: UserRow) => {
+    const label = b.siteName || b.email
+    if (!confirm(`Permanently delete biller "${label}"? This cannot be undone.`)) return
+    const token = getToken(); if (!token) return
+    apiFetch(`/users/${b.id}`, { token, method: 'DELETE' })
+      .then(() => load())
+      .catch((e: any) => setError(e?.message || 'Delete failed'))
+  }
+
   // ── render ────────────────────────────────────────────────────────────────
 
   return (
@@ -160,11 +239,29 @@ export function BillersPage() {
     <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* ── PAGE HEADER ── */}
-      <div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Masters: Billers</h1>
-        <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
-          Create biller accounts (site, contact, login).
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Masters: Billers</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
+            Create biller accounts (site, contact, login).
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={openAdd}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 22px', borderRadius: 12, border: 'none',
+              background: '#059669', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer',
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add Biller
+          </button>
+        )}
       </div>
 
       {/* ── MAIN CARD ── */}
@@ -201,14 +298,11 @@ export function BillersPage() {
                 color: '#374151', background: '#f8fafc', outline: 'none',
                 boxSizing: 'border-box', transition: 'border-color 0.15s',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
             />
           </div>
         </div>
-
-        {/* ── ADD BILLER FORM ── */}
-     
 
         {/* ── ERROR ── */}
         {error && (
@@ -225,7 +319,9 @@ export function BillersPage() {
         ) : rows.length === 0 ? (
           <div style={{ padding: '40px 22px', textAlign: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>No billers found</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Add your first biller above.</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+              {isAdmin ? 'Click "Add Biller" to create your first biller account.' : 'No billers match your search.'}
+            </div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -253,7 +349,24 @@ export function BillersPage() {
                   >
                     {/* SITE */}
                     <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>
-                      {b.siteName || '—'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            background: '#ecfdf5',
+                            color: '#059669',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <BillerRowIcon />
+                        </span>
+                        <span>{b.siteName || '—'}</span>
+                      </div>
                     </td>
 
                     {/* CONTACT */}
@@ -263,7 +376,7 @@ export function BillersPage() {
                     <td style={tCell}>{b.contactPhone || '—'}</td>
 
                     {/* EMAIL */}
-                    <td style={{ ...tCell, fontFamily: 'monospace', fontSize: 12, color: '#4f46e5' }}>
+                    <td style={{ ...tCell, fontFamily: 'monospace', fontSize: 12, color: '#059669' }}>
                       {b.email}
                     </td>
 
@@ -292,9 +405,9 @@ export function BillersPage() {
                           style={actionBtn('default')}
                           onMouseEnter={(e) => {
                             const el = e.currentTarget as HTMLElement
-                            el.style.background = '#f0eeff'
-                            el.style.borderColor = '#c4b5fd'
-                            el.style.color = '#4f46e5'
+                            el.style.background = '#ecfdf5'
+                            el.style.borderColor = '#a7f3d0'
+                            el.style.color = '#059669'
                           }}
                           onMouseLeave={(e) => {
                             const el = e.currentTarget as HTMLElement
@@ -310,9 +423,9 @@ export function BillersPage() {
                           style={actionBtn('default')}
                           onMouseEnter={(e) => {
                             const el = e.currentTarget as HTMLElement
-                            el.style.background = '#f0eeff'
-                            el.style.borderColor = '#c4b5fd'
-                            el.style.color = '#4f46e5'
+                            el.style.background = '#ecfdf5'
+                            el.style.borderColor = '#a7f3d0'
+                            el.style.color = '#059669'
                           }}
                           onMouseLeave={(e) => {
                             const el = e.currentTarget as HTMLElement
@@ -345,6 +458,29 @@ export function BillersPage() {
 >
   {b.active === false ? 'Activate' : 'Deactivate'}
 </button>
+
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            title="Delete biller"
+                            onClick={() => handleDelete(b)}
+                            style={iconActionBtn}
+                            onMouseEnter={(e) => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.background = '#fef2f2'
+                              el.style.borderColor = '#fecaca'
+                              el.style.color = '#dc2626'
+                            }}
+                            onMouseLeave={(e) => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.background = '#fff'
+                              el.style.borderColor = '#e2e8f0'
+                              el.style.color = '#64748b'
+                            }}
+                          >
+                            <TrashIcon />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -355,6 +491,46 @@ export function BillersPage() {
         )}
       </div>
 
+      {/* ── ADD MODAL ── */}
+      <Modal
+        open={addOpen}
+        title="Add biller"
+        onClose={() => setAddOpen(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setAddOpen(false)}
+              style={{
+                height: 38, padding: '0 18px', borderRadius: 10,
+                border: '1px solid #e2e8f0', background: '#fff',
+                fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+              }}
+            >Cancel</button>
+            <button
+              type="button"
+              disabled={addSaving || !addForm.siteName.trim()}
+              onClick={handleAdd}
+              style={{
+                height: 38, padding: '0 18px', borderRadius: 10, border: 'none',
+                background: addSaving || !addForm.siteName.trim() ? '#6ee7b7' : '#059669',
+                fontSize: 13, fontWeight: 600, color: '#fff',
+                cursor: addSaving || !addForm.siteName.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >{addSaving ? 'Adding…' : 'Add biller'}</button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input label="Site name" value={addForm.siteName} onChange={(e) => setAddForm((f) => ({ ...f, siteName: e.target.value }))} placeholder="Outlet / site" />
+          <Input label="Contact name" value={addForm.contactName} onChange={(e) => setAddForm((f) => ({ ...f, contactName: e.target.value }))} placeholder="Person name" />
+          <Input label="Contact phone" value={addForm.contactPhone} onChange={(e) => setAddForm((f) => ({ ...f, contactPhone: e.target.value }))} placeholder="Mobile number" />
+          <Input label="Site address" value={addForm.siteAddress} onChange={(e) => setAddForm((f) => ({ ...f, siteAddress: e.target.value }))} placeholder="Street, area" />
+          <Input label="Email (login)" value={addForm.email} onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))} placeholder="Optional — auto-generated if blank" />
+          <Input type="password" label="Password" value={addForm.password} onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))} placeholder="Optional — defaults to 123456" autoComplete="new-password" />
+        </div>
+      </Modal>
+
       {/* ── EDIT MODAL ── */}
       <Modal
         open={editOpen}
@@ -363,6 +539,7 @@ export function BillersPage() {
         footer={
           <div className="flex justify-end gap-2">
             <button
+              type="button"
               onClick={() => setEditOpen(false)}
               style={{
                 height: 38, padding: '0 18px', borderRadius: 10,
@@ -371,10 +548,11 @@ export function BillersPage() {
               }}
             >Cancel</button>
             <button
-              disabled={saving || !editing}
+              type="button"
+              disabled={editSaving || !editing}
               onClick={() => {
                 const token = getToken(); if (!token || !editing) return
-                setSaving(true)
+                setEditSaving(true)
                 apiFetch(`/users/${editing.id}`, {
                   token, method: 'PATCH',
                   body: JSON.stringify({
@@ -386,15 +564,15 @@ export function BillersPage() {
                 })
                   .then(() => { setEditOpen(false); setEditing(null); load() })
                   .catch((e: any) => setError(e?.message || 'Update failed'))
-                  .finally(() => setSaving(false))
+                  .finally(() => setEditSaving(false))
               }}
               style={{
                 height: 38, padding: '0 18px', borderRadius: 10, border: 'none',
-                background: saving || !editing ? '#a5b4fc' : '#4f46e5',
+                background: editSaving || !editing ? '#6ee7b7' : '#059669',
                 fontSize: 13, fontWeight: 600, color: '#fff',
-                cursor: saving || !editing ? 'not-allowed' : 'pointer',
+                cursor: editSaving || !editing ? 'not-allowed' : 'pointer',
               }}
-            >{saving ? 'Saving…' : 'Save'}</button>
+            >{editSaving ? 'Saving…' : 'Save'}</button>
           </div>
         }
       >
@@ -405,7 +583,7 @@ export function BillersPage() {
           <Input label="Site address" value={editForm.siteAddress} onChange={(e) => setEditForm((f) => ({ ...f, siteAddress: e.target.value }))} />
           {editing && (
             <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
-              Login email: <span style={{ fontFamily: 'monospace', color: '#4f46e5' }}>{editing.email}</span> (cannot be changed here)
+              Login email: <span style={{ fontFamily: 'monospace', color: '#059669' }}>{editing.email}</span> (cannot be changed here)
             </p>
           )}
         </div>

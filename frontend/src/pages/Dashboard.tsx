@@ -426,22 +426,22 @@
 // // }
 
 // // function dotColor(index: number) {
-// //   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+// //   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 // //   return colors[index % colors.length]
 // // }
 
 // // function progressColor(index: number) {
-// //   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+// //   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 // //   return colors[index % colors.length]
 // // }
 
 // // function deliveryDotColor(status: string) {
 // //   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return '#22c55e'
-// //   if (status === 'PROCESSED' || status === 'UPCOMING') return '#6366f1'
+// //   if (status === 'PROCESSED' || status === 'UPCOMING') return '#10b981'
 // //   if (status === 'PENDING_RETURN' || status === 'DELIVERED' || status === 'PENDING') return '#f59e0b'
 // //   if (status === 'COMPLETED') return '#94a3b8'
 // //   if (status === 'CANCELLED' || status === 'RETURNED') return '#ef4444'
-// //   return '#6366f1'
+// //   return '#10b981'
 // // }
 
 // // // ── skeleton ───────────────────────────────────────────────────────────────
@@ -474,14 +474,14 @@
 // //               style={{
 // //                 width: '100%',
 // //                 height: `${Math.max(pct, 3)}%`,
-// //                 background: isPeak ? '#6366f1' : '#dde1f8',
+// //                 background: isPeak ? '#10b981' : '#d1fae5',
 // //                 borderRadius: '5px 5px 0 0',
 // //                 transition: 'height 0.4s ease',
 // //               }}
 // //             />
 // //             <span style={{
 // //               fontSize: 11,
-// //               color: isPeak ? '#4f46e5' : '#94a3b8',
+// //               color: isPeak ? '#059669' : '#94a3b8',
 // //               fontWeight: isPeak ? 700 : 400,
 // //               whiteSpace: 'nowrap',
 // //             }}>
@@ -569,7 +569,7 @@
 // //       : '— No change from yesterday'
 
 // //   const donutSegments = [
-// //     { value: kpis.byStatus.upcoming, color: '#60a5fa' },
+// //     { value: kpis.byStatus.upcoming, color: '#34d399' },
 // //     { value: kpis.byStatus.dispatched, color: '#34d399' },
 // //     { value: kpis.byStatus.pendingReturn, color: '#fbbf24' },
 // //     { value: kpis.byStatus.completed, color: 'rgba(255,255,255,0.22)' },
@@ -590,7 +590,7 @@
 // //   }
 
 // //   const darkCard: React.CSSProperties = {
-// //     background: '#312e81',
+// //     background: '#065f46',
 // //     borderRadius: 14,
 // //     padding: '18px 20px',
 // //   }
@@ -693,7 +693,7 @@
 // //             style={{
 // //               display: 'flex', alignItems: 'center', gap: 6,
 // //               padding: '8px 18px', borderRadius: 10,
-// //               border: 'none', background: '#4f46e5',
+// //               border: 'none', background: '#059669',
 // //               fontSize: 13, fontWeight: 600, color: '#ffffff', cursor: 'pointer',
 // //               whiteSpace: 'nowrap',
 // //             }}
@@ -797,9 +797,9 @@
 // //           </div>
 // //           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
 // //             This week total:{' '}
-// //             <span style={{ fontWeight: 700, color: '#4f46e5' }}>{trendTotal}</span>
+// //             <span style={{ fontWeight: 700, color: '#059669' }}>{trendTotal}</span>
 // //             {'   '}Peak day:{' '}
-// //             <span style={{ fontWeight: 700, color: '#4f46e5' }}>
+// //             <span style={{ fontWeight: 700, color: '#059669' }}>
 // //               {trend[peakIndex]?.label ?? '—'} ({trend[peakIndex]?.total ?? 0})
 // //             </span>
 // //           </div>
@@ -855,7 +855,7 @@
 // //           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
 // //             <h2 style={sectionTitle}>Godown stock overview</h2>
 // //             <button onClick={() => nav('/godowns')} style={{
-// //               fontSize: 12, fontWeight: 600, color: '#4f46e5',
+// //               fontSize: 12, fontWeight: 600, color: '#059669',
 // //               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
 // //             }}>View all</button>
 // //           </div>
@@ -881,7 +881,7 @@
 // //                       </div>
 // //                     </div>
 // //                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-// //                       <div style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{formatNumber(g.stockQty)}</div>
+// //                       <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{formatNumber(g.stockQty)}</div>
 // //                       <div style={{ fontSize: 10, color: '#94a3b8' }}>units</div>
 // //                     </div>
 // //                   </div>
@@ -1068,22 +1068,22 @@
 // }
 
 // function dotColor(index: number) {
-//   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+//   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 //   return colors[index % colors.length]
 // }
 
 // function progressColor(index: number) {
-//   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+//   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 //   return colors[index % colors.length]
 // }
 
 // function deliveryDotColor(status: string) {
 //   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return '#22c55e'
-//   if (status === 'PROCESSED' || status === 'UPCOMING') return '#6366f1'
+//   if (status === 'PROCESSED' || status === 'UPCOMING') return '#10b981'
 //   if (status === 'PENDING_RETURN' || status === 'DELIVERED' || status === 'PENDING') return '#f59e0b'
 //   if (status === 'COMPLETED') return '#94a3b8'
 //   if (status === 'CANCELLED' || status === 'RETURNED') return '#ef4444'
-//   return '#6366f1'
+//   return '#10b981'
 // }
 
 // // ── skeleton ───────────────────────────────────────────────────────────────
@@ -1112,13 +1112,13 @@
 //             <div style={{
 //               width: '100%',
 //               height: `${Math.max(pct, 3)}%`,
-//               background: isPeak ? '#6366f1' : '#dde1f8',
+//               background: isPeak ? '#10b981' : '#d1fae5',
 //               borderRadius: '4px 4px 0 0',
 //               transition: 'height 0.4s ease',
 //             }} />
 //             <span style={{
 //               fontSize: 11,
-//               color: isPeak ? '#4f46e5' : '#94a3b8',
+//               color: isPeak ? '#059669' : '#94a3b8',
 //               fontWeight: isPeak ? 700 : 400,
 //               whiteSpace: 'nowrap',
 //             }}>{labels[i]}</span>
@@ -1182,7 +1182,7 @@
 //     : '— No change from yesterday'
 
 //   const donutSegments = [
-//     { value: kpis.byStatus.upcoming, color: '#60a5fa' },
+//     { value: kpis.byStatus.upcoming, color: '#34d399' },
 //     { value: kpis.byStatus.dispatched, color: '#34d399' },
 //     { value: kpis.byStatus.pendingReturn, color: '#fbbf24' },
 //     { value: kpis.byStatus.completed, color: 'rgba(255,255,255,0.22)' },
@@ -1200,7 +1200,7 @@
 //   }
 
 //   const darkCard: React.CSSProperties = {
-//     background: '#312e81',
+//     background: '#065f46',
 //     borderRadius: 14,
 //     padding: '18px 20px',
 //   }
@@ -1276,7 +1276,7 @@
 //           <button onClick={() => setCreateOpen(true)} style={{
 //             display: 'flex', alignItems: 'center', gap: 6,
 //             padding: '8px 18px', borderRadius: 10,
-//             border: 'none', background: '#4f46e5',
+//             border: 'none', background: '#059669',
 //             fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer',
 //           }}>
 //             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -1314,7 +1314,7 @@
 //         ) : (
 //           <>
 //             <StatCard tone="neutral" label="Total deliveries today" value={String(kpis.today)} delta={todayDelta}
-//               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 4v4h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>}
+//               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 4v4h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>}
 //             />
 //             <StatCard tone="good" label="Dispatched" value={String(kpis.running)} delta="— Awaiting dispatch"
 //               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" /></svg>}
@@ -1337,8 +1337,8 @@
 //             {pill('Last 7 days')}
 //           </div>
 //           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-//             This week total: <span style={{ fontWeight: 700, color: '#4f46e5' }}>{trendTotal}</span>
-//             {'   '}Peak day: <span style={{ fontWeight: 700, color: '#4f46e5' }}>
+//             This week total: <span style={{ fontWeight: 700, color: '#059669' }}>{trendTotal}</span>
+//             {'   '}Peak day: <span style={{ fontWeight: 700, color: '#059669' }}>
 //               {trend[peakIndex]?.label ?? '—'} ({trend[peakIndex]?.total ?? 0})
 //             </span>
 //           </div>
@@ -1391,7 +1391,7 @@
 //           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
 //             <h2 style={sectionTitle}>Godown stock overview</h2>
 //             <button onClick={() => nav('/godowns')} style={{
-//               fontSize: 12, fontWeight: 600, color: '#4f46e5',
+//               fontSize: 12, fontWeight: 600, color: '#059669',
 //               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
 //             }}>View all</button>
 //           </div>
@@ -1411,7 +1411,7 @@
 //                           </div>
 //                         </div>
 //                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-//                           <div style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{formatNumber(g.stockQty)}</div>
+//                           <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{formatNumber(g.stockQty)}</div>
 //                           <div style={{ fontSize: 10, color: '#94a3b8' }}>units</div>
 //                         </div>
 //                       </div>
@@ -1428,7 +1428,7 @@
 //         <div style={card}>
 //           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
 //             <h2 style={sectionTitle}>Recent deliveries</h2>
-//             {pill('Latest', { background: '#ede9fe', color: '#7c3aed', border: 'none' })}
+//             {pill('Latest', { background: '#d1fae5', color: '#047857', border: 'none' })}
 //           </div>
 //           <div style={{ display: 'flex', flexDirection: 'column' }}>
 //             {loading
@@ -1962,22 +1962,22 @@
 // }
 
 // function dotColor(index: number) {
-//   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+//   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 //   return colors[index % colors.length]
 // }
 
 // function progressColor(index: number) {
-//   const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+//   const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
 //   return colors[index % colors.length]
 // }
 
 // function deliveryDotColor(status: string) {
 //   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return '#22c55e'
-//   if (status === 'PROCESSED' || status === 'UPCOMING') return '#6366f1'
+//   if (status === 'PROCESSED' || status === 'UPCOMING') return '#10b981'
 //   if (status === 'PENDING_RETURN' || status === 'DELIVERED' || status === 'PENDING') return '#f59e0b'
 //   if (status === 'COMPLETED') return '#94a3b8'
 //   if (status === 'CANCELLED' || status === 'RETURNED') return '#ef4444'
-//   return '#6366f1'
+//   return '#10b981'
 // }
 
 // // ── skeleton ───────────────────────────────────────────────────────────────
@@ -2010,14 +2010,14 @@
 //               style={{
 //                 width: '100%',
 //                 height: `${Math.max(pct, 3)}%`,
-//                 background: isPeak ? '#6366f1' : '#dde1f8',
+//                 background: isPeak ? '#10b981' : '#d1fae5',
 //                 borderRadius: '5px 5px 0 0',
 //                 transition: 'height 0.4s ease',
 //               }}
 //             />
 //             <span style={{
 //               fontSize: 11,
-//               color: isPeak ? '#4f46e5' : '#94a3b8',
+//               color: isPeak ? '#059669' : '#94a3b8',
 //               fontWeight: isPeak ? 700 : 400,
 //               whiteSpace: 'nowrap',
 //             }}>
@@ -2105,7 +2105,7 @@
 //       : '— No change from yesterday'
 
 //   const donutSegments = [
-//     { value: kpis.byStatus.upcoming, color: '#60a5fa' },
+//     { value: kpis.byStatus.upcoming, color: '#34d399' },
 //     { value: kpis.byStatus.dispatched, color: '#34d399' },
 //     { value: kpis.byStatus.pendingReturn, color: '#fbbf24' },
 //     { value: kpis.byStatus.completed, color: 'rgba(255,255,255,0.22)' },
@@ -2126,7 +2126,7 @@
 //   }
 
 //   const darkCard: React.CSSProperties = {
-//     background: '#312e81',
+//     background: '#065f46',
 //     borderRadius: 14,
 //     padding: '18px 20px',
 //   }
@@ -2229,7 +2229,7 @@
 //             style={{
 //               display: 'flex', alignItems: 'center', gap: 6,
 //               padding: '8px 18px', borderRadius: 10,
-//               border: 'none', background: '#4f46e5',
+//               border: 'none', background: '#059669',
 //               fontSize: 13, fontWeight: 600, color: '#ffffff', cursor: 'pointer',
 //               whiteSpace: 'nowrap',
 //             }}
@@ -2333,9 +2333,9 @@
 //           </div>
 //           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
 //             This week total:{' '}
-//             <span style={{ fontWeight: 700, color: '#4f46e5' }}>{trendTotal}</span>
+//             <span style={{ fontWeight: 700, color: '#059669' }}>{trendTotal}</span>
 //             {'   '}Peak day:{' '}
-//             <span style={{ fontWeight: 700, color: '#4f46e5' }}>
+//             <span style={{ fontWeight: 700, color: '#059669' }}>
 //               {trend[peakIndex]?.label ?? '—'} ({trend[peakIndex]?.total ?? 0})
 //             </span>
 //           </div>
@@ -2391,7 +2391,7 @@
 //           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
 //             <h2 style={sectionTitle}>Godown stock overview</h2>
 //             <button onClick={() => nav('/godowns')} style={{
-//               fontSize: 12, fontWeight: 600, color: '#4f46e5',
+//               fontSize: 12, fontWeight: 600, color: '#059669',
 //               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
 //             }}>View all</button>
 //           </div>
@@ -2417,7 +2417,7 @@
 //                       </div>
 //                     </div>
 //                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-//                       <div style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{formatNumber(g.stockQty)}</div>
+//                       <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{formatNumber(g.stockQty)}</div>
 //                       <div style={{ fontSize: 10, color: '#94a3b8' }}>units</div>
 //                     </div>
 //                   </div>
@@ -2582,7 +2582,7 @@ function badgeStyle(status: string): React.CSSProperties {
   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED')
     return { background: '#dcfce7', color: '#16a34a' }
   if (status === 'PROCESSED' || status === 'UPCOMING')
-    return { background: '#e0e7ff', color: '#4338ca' }
+    return { background: '#d1fae5', color: '#047857' }
   if (status === 'PACKED') return { background: '#f1f5f9', color: '#475569' }
   if (status === 'RETURN_PICKUP' || status === 'PENDING_RETURN' || status === 'DELIVERED')
     return { background: '#fef9c3', color: '#b45309' }
@@ -2604,22 +2604,22 @@ function statusLabel(status: string) {
 }
 
 function dotColor(index: number) {
-  const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+  const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
   return colors[index % colors.length]
 }
 
 function progressColor(index: number) {
-  const colors = ['#6366f1', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6']
+  const colors = ['#10b981', '#059669', '#22c55e', '#047857', '#34d399', '#14b8a6']
   return colors[index % colors.length]
 }
 
 function deliveryDotColor(status: string) {
   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return '#22c55e'
-  if (status === 'PROCESSED' || status === 'UPCOMING') return '#6366f1'
+  if (status === 'PROCESSED' || status === 'UPCOMING') return '#10b981'
   if (status === 'PENDING_RETURN' || status === 'DELIVERED' || status === 'PENDING') return '#f59e0b'
   if (status === 'COMPLETED') return '#94a3b8'
   if (status === 'CANCELLED' || status === 'RETURNED') return '#ef4444'
-  return '#6366f1'
+  return '#10b981'
 }
 
 // ── skeleton ───────────────────────────────────────────────────────────────
@@ -2648,13 +2648,13 @@ function BarChart({ values, labels, peakIndex }: { values: number[]; labels: str
             <div style={{
               width: '100%',
               height: `${Math.max(pct, 3)}%`,
-              background: isPeak ? '#6366f1' : '#dde1f8',
+              background: isPeak ? '#10b981' : '#d1fae5',
               borderRadius: '4px 4px 0 0',
               transition: 'height 0.4s ease',
             }} />
             <span style={{
               fontSize: 11,
-              color: isPeak ? '#4f46e5' : '#94a3b8',
+              color: isPeak ? '#059669' : '#94a3b8',
               fontWeight: isPeak ? 700 : 400,
               whiteSpace: 'nowrap',
             }}>{labels[i]}</span>
@@ -2718,7 +2718,7 @@ export function DashboardPage() {
     : '— No change from yesterday'
 
   const donutSegments = [
-    { value: kpis.byStatus.upcoming, color: '#60a5fa' },
+    { value: kpis.byStatus.upcoming, color: '#34d399' },
     { value: kpis.byStatus.dispatched, color: '#34d399' },
     { value: kpis.byStatus.pendingReturn, color: '#fbbf24' },
     { value: kpis.byStatus.completed, color: 'rgba(255,255,255,0.22)' },
@@ -2736,7 +2736,7 @@ export function DashboardPage() {
   }
 
   const darkCard: React.CSSProperties = {
-    background: '#312e81',
+    background: '#065f46',
     borderRadius: 14,
     padding: '18px 20px',
   }
@@ -2814,7 +2814,7 @@ export function DashboardPage() {
           <button onClick={() => setCreateOpen(true)} style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '8px 18px', borderRadius: 10,
-            border: 'none', background: '#4f46e5',
+            border: 'none', background: '#059669',
             fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer',
           }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -2852,7 +2852,7 @@ export function DashboardPage() {
         ) : (
           <>
             <StatCard tone="neutral" label="Total deliveries today" value={String(kpis.today)} delta={todayDelta}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 4v4h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 4v4h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>}
             />
             <StatCard tone="good" label="Dispatched" value={String(kpis.running)} delta="— Awaiting dispatch"
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M22 2L11 13" /><path d="M22 2L15 22l-4-9-9-4 20-7z" /></svg>}
@@ -2875,8 +2875,8 @@ export function DashboardPage() {
             {pill('Last 7 days')}
           </div>
           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-            This week total: <span style={{ fontWeight: 700, color: '#4f46e5' }}>{trendTotal}</span>
-            {'   '}Peak day: <span style={{ fontWeight: 700, color: '#4f46e5' }}>
+            This week total: <span style={{ fontWeight: 700, color: '#059669' }}>{trendTotal}</span>
+            {'   '}Peak day: <span style={{ fontWeight: 700, color: '#059669' }}>
               {trend[peakIndex]?.label ?? '—'} ({trend[peakIndex]?.total ?? 0})
             </span>
           </div>
@@ -2929,7 +2929,7 @@ export function DashboardPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={sectionTitle}>Godown stock overview</h2>
             <button onClick={() => nav('/godowns')} style={{
-              fontSize: 12, fontWeight: 600, color: '#4f46e5',
+              fontSize: 12, fontWeight: 600, color: '#059669',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             }}>View all</button>
           </div>
@@ -2949,7 +2949,7 @@ export function DashboardPage() {
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{formatNumber(g.stockQty)}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{formatNumber(g.stockQty)}</div>
                           <div style={{ fontSize: 10, color: '#94a3b8' }}>units</div>
                         </div>
                       </div>
@@ -2966,7 +2966,7 @@ export function DashboardPage() {
         <div style={card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={sectionTitle}>Recent deliveries</h2>
-            {pill('Latest', { background: '#ede9fe', color: '#7c3aed', border: 'none' })}
+            {pill('Latest', { background: '#d1fae5', color: '#047857', border: 'none' })}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {loading

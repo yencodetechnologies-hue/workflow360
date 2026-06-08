@@ -276,14 +276,14 @@ export function topbarMetaFromPath(pathname: string): TopbarMeta {
   if (pathname.startsWith('/deliveries')) {
     const crumbs: Breadcrumb[] = [
       { label: 'Home', to: '/' },
-      { label: 'Deliveries', to: '/deliveries' },
+      { label: 'Delivery Manager', to: '/deliveries' },
     ]
     if (pathname.includes('/scan')) crumbs.push({ label: 'Scan' })
     else if (pathname !== '/deliveries') crumbs.push({ label: 'Details' })
     return {
       title:
         pathname === '/deliveries'
-          ? 'Deliveries'
+          ? 'Delivery Manager'
           : pathname.includes('/scan')
           ? 'Scan delivery'
           : 'Delivery details',

@@ -3,6 +3,7 @@ const Delivery = require('../models/Delivery')
 const InventoryLedger = require('../models/InventoryLedger')
 const Product = require('../models/Product')
 const Godown = require('../models/Godown')
+const User = require('../models/User')
 
 function dayRange(dateStr) {
   const [y, m, d] = String(dateStr).split('-').map((x) => Number(x))
@@ -28,6 +29,9 @@ function escapeRegex(s) {
 
 function applyRoleScope(req, q) {
   if (req.user.role === 'DELIVERY') q.assignedDeliveryUserId = req.user.id
+  if (req.user.role === 'BILLER') {
+    q.billerUserId = new mongoose.Types.ObjectId(String(req.user.id))
+  }
   if (req.user.role === 'GODOWN' && req.user.godownId) {
     const gid = new mongoose.Types.ObjectId(String(req.user.godownId))
     q.$or = [{ fromGodownId: gid }, { 'lines.godownId': gid }]
@@ -56,6 +60,14 @@ function applyAdminFilters(req, q) {
   const customerName = String(req.query.customerName || '').trim()
   if (customerName) {
     q.customerName = customerName
+  }
+
+  if (req.user.role !== 'BILLER') {
+    const billerUserId = String(req.query.billerUserId || '').trim()
+    if (billerUserId) {
+      if (!mongoose.Types.ObjectId.isValid(billerUserId)) return { error: 'Invalid billerUserId' }
+      q.billerUserId = new mongoose.Types.ObjectId(billerUserId)
+    }
   }
 
   return null
@@ -125,6 +137,26 @@ function issueMetricsFromDelivery(d) {
   }
 }
 
+function physicalReturnMetrics(d) {
+  let dispatchedQty = 0
+  let returnedQty = 0
+  for (const line of d.lines || []) {
+    dispatchedQty += Number(line.dispatchedQty) || 0
+    returnedQty += Number(line.returnedQty) || 0
+  }
+  return {
+    dispatchedQty,
+    returnedQty,
+    outstandingQty: Math.max(0, dispatchedQty - returnedQty),
+  }
+}
+
+function ensureGodownQueryParam(req) {
+  if (!req.query.godownId && req.user.role === 'GODOWN' && req.user.godownId) {
+    req.query.godownId = String(req.user.godownId)
+  }
+}
+
 async function loadProductMap(productIds) {
   const ids = [...new Set(productIds.filter(Boolean))]
   if (!ids.length) return new Map()
@@ -137,6 +169,13 @@ async function loadGodownMap(godownIds) {
   if (!ids.length) return new Map()
   const godowns = await Godown.find({ _id: { $in: ids } }).lean()
   return new Map(godowns.map((g) => [String(g._id), g]))
+}
+
+async function loadBillerMap(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))]
+  if (!ids.length) return new Map()
+  const users = await User.find({ _id: { $in: ids }, role: 'BILLER' }).lean()
+  return new Map(users.map((u) => [String(u._id), u]))
 }
 
 function mapBillerLines(lines, productMap) {
@@ -491,7 +530,7 @@ async function stockReport(req, res) {
       return res.status(400).json({ message: 'Invalid user godownId' })
     }
     match.godownId = new mongoose.Types.ObjectId(req.user.godownId)
-  } else if (req.user.role === 'ADMIN') {
+  } else if (req.user.role === 'ADMIN' || req.user.role === 'BILLER') {
     const gid = String(req.query.godownId || '').trim()
     if (gid) {
       if (!mongoose.Types.ObjectId.isValid(gid)) return res.status(400).json({ message: 'Invalid godownId' })
@@ -531,6 +570,184 @@ async function stockReport(req, res) {
   )
 }
 
+const RETURN_PHASE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'])
+
+async function returnsByBiller(req, res) {
+  ensureGodownQueryParam(req)
+  const godownId = String(req.query.godownId || '').trim()
+  if (!godownId) return res.status(400).json({ message: 'godownId required' })
+  if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
+
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const byBiller = new Map()
+
+  for (const d of result.deliveries) {
+    if (!d.billerUserId) continue
+    const bid = String(d.billerUserId)
+    if (!byBiller.has(bid)) {
+      byBiller.set(bid, {
+        billerUserId: bid,
+        deliveryCount: 0,
+        missingOrderCount: 0,
+        returnSubmittedCount: 0,
+        pendingReturnCount: 0,
+        missingQty: 0,
+        damageQty: 0,
+        missingTotal: 0,
+        damageTotal: 0,
+        returnedQty: 0,
+        dispatchedQty: 0,
+        outstandingQty: 0,
+      })
+    }
+    const row = byBiller.get(bid)
+    row.deliveryCount += 1
+    if (sumLineQty(d.billerMissingLines) > 0) row.missingOrderCount += 1
+    if (d.billerReturnSubmittedAt) row.returnSubmittedCount += 1
+    if (!d.billerReturnSubmittedAt && RETURN_PHASE_STATUSES.has(d.status)) {
+      row.pendingReturnCount += 1
+    }
+    const metrics = issueMetricsFromDelivery(d)
+    row.missingQty += metrics.missingQty
+    row.damageQty += metrics.damageQty
+    row.missingTotal += metrics.missingTotal
+    row.damageTotal += metrics.damageTotal
+    const physical = physicalReturnMetrics(d)
+    row.returnedQty += physical.returnedQty
+    row.dispatchedQty += physical.dispatchedQty
+    row.outstandingQty += physical.outstandingQty
+  }
+
+  const billerIds = [...byBiller.keys()]
+  const billerMap = await loadBillerMap(billerIds)
+
+  const onlyMissing = String(req.query.onlyMissing || '1') !== '0'
+
+  let rows = [...byBiller.values()]
+    .map((row) => {
+      const b = billerMap.get(row.billerUserId)
+      return {
+        ...row,
+        billerName: b?.contactName || b?.siteName || row.billerUserId,
+        siteName: b?.siteName,
+      }
+    })
+    .sort((a, b) => {
+      if (b.missingOrderCount !== a.missingOrderCount) return b.missingOrderCount - a.missingOrderCount
+      if (b.missingQty !== a.missingQty) return b.missingQty - a.missingQty
+      return (a.billerName || '').localeCompare(b.billerName || '')
+    })
+
+  if (onlyMissing) rows = rows.filter((r) => r.missingOrderCount > 0)
+
+  return res.json(rows)
+}
+
+async function returnsByProduct(req, res) {
+  ensureGodownQueryParam(req)
+  const godownId = String(req.query.godownId || '').trim()
+  if (!godownId) return res.status(400).json({ message: 'godownId required' })
+  if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
+
+  const metric = String(req.query.metric || 'missing').trim()
+  if (!['missing', 'damage', 'return'].includes(metric)) {
+    return res.status(400).json({ message: 'metric must be missing, damage, or return' })
+  }
+
+  if (req.user.role !== 'BILLER') {
+    const billerUserId = String(req.query.billerUserId || '').trim()
+    if (!billerUserId) return res.status(400).json({ message: 'billerUserId required' })
+    if (!mongoose.Types.ObjectId.isValid(billerUserId)) {
+      return res.status(400).json({ message: 'Invalid billerUserId' })
+    }
+  }
+
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const agg = new Map()
+
+  for (const d of result.deliveries) {
+    if (metric === 'missing') {
+      for (const line of d.billerMissingLines || []) {
+        if (!line.qty || line.qty <= 0) continue
+        const pid = String(line.productId)
+        if (!agg.has(pid)) {
+          agg.set(pid, { productId: pid, totalQty: 0, deliveries: [] })
+        }
+        const row = agg.get(pid)
+        row.totalQty += line.qty
+        row.deliveries.push({
+          id: String(d._id),
+          deliveryNo: d.deliveryNo,
+          customerName: d.customerName,
+          deliveryAt: d.deliveryAt,
+          qty: line.qty,
+          note: line.note,
+        })
+      }
+    } else if (metric === 'damage') {
+      for (const line of d.billerDamagedLines || []) {
+        if (!line.qty || line.qty <= 0) continue
+        const pid = String(line.productId)
+        if (!agg.has(pid)) {
+          agg.set(pid, { productId: pid, totalQty: 0, deliveries: [] })
+        }
+        const row = agg.get(pid)
+        row.totalQty += line.qty
+        row.deliveries.push({
+          id: String(d._id),
+          deliveryNo: d.deliveryNo,
+          customerName: d.customerName,
+          deliveryAt: d.deliveryAt,
+          qty: line.qty,
+          note: line.note,
+        })
+      }
+    } else {
+      for (const line of d.lines || []) {
+        const returned = Number(line.returnedQty) || 0
+        if (returned <= 0) continue
+        const pid = String(line.productId)
+        if (!agg.has(pid)) {
+          agg.set(pid, { productId: pid, totalQty: 0, deliveries: [] })
+        }
+        const row = agg.get(pid)
+        row.totalQty += returned
+        const dispatched = Number(line.dispatchedQty) || 0
+        row.deliveries.push({
+          id: String(d._id),
+          deliveryNo: d.deliveryNo,
+          qty: returned,
+          dispatchedQty: dispatched,
+          outstandingQty: Math.max(0, dispatched - returned),
+        })
+      }
+    }
+  }
+
+  const productIds = [...agg.keys()]
+  const productMap = await loadProductMap(productIds)
+
+  const rows = [...agg.values()]
+    .map((r) => {
+      const p = productMap.get(r.productId)
+      return {
+        productId: r.productId,
+        particulars: p?.particulars,
+        sku: p?.sku || p?.s_no,
+        totalQty: r.totalQty,
+        deliveryCount: r.deliveries.length,
+        deliveries: r.deliveries,
+      }
+    })
+    .sort((a, b) => b.totalQty - a.totalQty)
+
+  return res.json(rows)
+}
+
 async function customerHistory(req, res) {
   const q = String(req.query.q || '').trim()
   if (!q) return res.status(400).json({ message: 'q required' })
@@ -567,4 +784,6 @@ module.exports = {
   issuesByGodown,
   issuesByDelivery,
   issuesCustomerReport,
+  returnsByBiller,
+  returnsByProduct,
 }

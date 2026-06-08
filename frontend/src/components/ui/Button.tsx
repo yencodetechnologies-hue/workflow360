@@ -8,14 +8,14 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<NonNullable<Props['variant']>, string> = {
   primary:
-    'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700 focus-visible:ring-violet-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200',
+    'bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 focus-visible:ring-primary-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200',
   secondary:
     'bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300 focus-visible:ring-slate-400 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200',
   ghost: 'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400 transition-all duration-200',
   danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 focus-visible:ring-red-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200',
-  success: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 focus-visible:ring-emerald-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200',
-  gradient: 'bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 focus-visible:ring-violet-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300',
-  glow: 'bg-gradient-to-r from-violet-600 to-purple-600 text-white focus-visible:ring-violet-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300',
+  success: 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 focus-visible:ring-primary-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200',
+  gradient: 'bg-gradient-to-r from-primary-500 via-primary-600 to-primary-600 text-white hover:from-primary-600 hover:via-primary-700 hover:to-primary-700 focus-visible:ring-primary-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300',
+  glow: 'bg-gradient-to-r from-primary-600 to-primary-700 text-white focus-visible:ring-primary-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300',
 }
 
 const sizes: Record<NonNullable<Props['size']>, string> = {

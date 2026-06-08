@@ -35,7 +35,7 @@ export default function App() {
           <Route
             path="/queue"
             element={
-              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+              <ProtectedRoute roles={['ADMIN']}>
                 <QueuePage />
               </ProtectedRoute>
             }

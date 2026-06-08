@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api'
 import { getToken, readState } from '../auth/store'
 import type { GodownRow } from '../pages/Godowns/List'
+import type { ReturnMetric } from '../types/reports'
 
 function todayKey() {
   const d = new Date()
@@ -29,6 +30,12 @@ export function useReportFilters() {
   const godownId = lockedGodownId || searchParams.get('godownId') || ''
   const site = searchParams.get('site') || ''
   const customerName = searchParams.get('customerName') || ''
+  const billerUserId =
+    auth.status === 'authenticated' && auth.user.role === 'BILLER'
+      ? auth.user.id
+      : searchParams.get('billerUserId') || ''
+  const metricRaw = searchParams.get('metric') || 'missing'
+  const metric: ReturnMetric = metricRaw === 'damage' || metricRaw === 'return' ? metricRaw : 'missing'
   const tab = searchParams.get('tab') || 'daily'
 
   const [godowns, setGodowns] = useState<GodownRow[]>([])
@@ -50,17 +57,20 @@ export function useReportFilters() {
     if (godownId) p.set('godownId', godownId)
     if (site) p.set('site', site)
     if (customerName) p.set('customerName', customerName)
+    if (billerUserId) p.set('billerUserId', billerUserId)
+    if (metric && metric !== 'missing') p.set('metric', metric)
     return p.toString()
-  }, [date, dateTo, godownId, site, customerName])
+  }, [date, dateTo, godownId, site, customerName, billerUserId, metric])
 
   const filterQuery = useMemo(() => {
     const p = new URLSearchParams()
     if (godownId) p.set('godownId', godownId)
     if (site) p.set('site', site)
     if (customerName) p.set('customerName', customerName)
+    if (billerUserId) p.set('billerUserId', billerUserId)
     const s = p.toString()
     return s ? `&${s}` : ''
-  }, [godownId, site, customerName])
+  }, [godownId, site, customerName, billerUserId])
 
   const dateQuery = useMemo(() => {
     const p = new URLSearchParams()
@@ -82,6 +92,8 @@ export function useReportFilters() {
       godownId: string
       site: string
       customerName: string
+      billerUserId: string
+      metric: ReturnMetric
       tab: string
     }>) => {
       setSearchParams((prev) => {
@@ -104,6 +116,8 @@ export function useReportFilters() {
     godownId,
     site,
     customerName,
+    billerUserId,
+    metric,
     tab,
     godowns,
     sites,

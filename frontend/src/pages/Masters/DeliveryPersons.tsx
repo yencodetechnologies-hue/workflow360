@@ -169,7 +169,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../../lib/api'
-import { getToken } from '../../auth/store'
+import { getToken, useAuth } from '../../auth/store'
 
 type UserRow = {
   id: string
@@ -218,9 +218,48 @@ const fieldInput: React.CSSProperties = {
   transition: 'border-color 0.15s',
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+      <path
+        d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function DeliveryPersonRowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden>
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M20 21a8 8 0 10-16 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+const iconActionBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  border: '1px solid #e2e8f0',
+  background: '#fff',
+  color: '#64748b',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+}
+
 // ── main ───────────────────────────────────────────────────────────────────
 
 export function DeliveryPersonsPage() {
+  const auth = useAuth()
+  const isAdmin = auth.status === 'authenticated' && auth.user.role === 'ADMIN'
+
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -281,6 +320,15 @@ export function DeliveryPersonsPage() {
       .catch((e: { message?: string }) => setError(e?.message || 'Reset failed'))
   }
 
+  const handleDelete = (p: UserRow) => {
+    const label = p.contactName || p.loginId || 'this delivery person'
+    if (!confirm(`Permanently delete "${label}"? This cannot be undone.`)) return
+    const token = getToken(); if (!token) return
+    apiFetch(`/users/${p.id}`, { token, method: 'DELETE' })
+      .then(() => load())
+      .catch((e: { message?: string }) => setError(e?.message || 'Delete failed'))
+  }
+
   const isDisabled = saving || !form.loginId.trim() || !form.password.trim()
 
   // ── render ────────────────────────────────────────────────────────────────
@@ -338,7 +386,7 @@ export function DeliveryPersonsPage() {
                 paddingLeft: 34,
                 background: '#f8fafc',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -363,7 +411,7 @@ export function DeliveryPersonsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Driver name"
                 style={fieldInput}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
@@ -378,7 +426,7 @@ export function DeliveryPersonsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, loginId: e.target.value.toUpperCase() }))}
                 placeholder="TN09AB1234"
                 style={fieldInput}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
@@ -393,7 +441,7 @@ export function DeliveryPersonsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 placeholder="Mobile number"
                 style={fieldInput}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
@@ -409,7 +457,7 @@ export function DeliveryPersonsPage() {
                 placeholder="••••••••"
                 type="password"
                 style={fieldInput}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#a5b4fc')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#6ee7b7')}
                 onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
               />
             </div>
@@ -422,16 +470,16 @@ export function DeliveryPersonsPage() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               height: 38, padding: '0 20px', borderRadius: 10, border: 'none',
-              background: isDisabled ? '#a5b4fc' : '#4f46e5',
+              background: isDisabled ? '#6ee7b7' : '#059669',
               fontSize: 13, fontWeight: 600, color: '#fff',
               cursor: isDisabled ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',
             }}
             onMouseEnter={(e) => {
-              if (!isDisabled) (e.currentTarget as HTMLElement).style.background = '#4338ca'
+              if (!isDisabled) (e.currentTarget as HTMLElement).style.background = '#047857'
             }}
             onMouseLeave={(e) => {
-              if (!isDisabled) (e.currentTarget as HTMLElement).style.background = '#4f46e5'
+              if (!isDisabled) (e.currentTarget as HTMLElement).style.background = '#059669'
             }}
           >
             {saving ? 'Adding…' : 'Add delivery person'}
@@ -480,11 +528,28 @@ export function DeliveryPersonsPage() {
                   >
                     {/* NAME */}
                     <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>
-                      {p.contactName || '—'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            background: '#E0F2FE',
+                            color: '#0369A1',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <DeliveryPersonRowIcon />
+                        </span>
+                        <span>{p.contactName || '—'}</span>
+                      </div>
                     </td>
 
                     {/* LOGIN ID */}
-                    <td style={{ ...tCell, fontFamily: 'monospace', fontSize: 12, color: '#4f46e5' }}>
+                    <td style={{ ...tCell, fontFamily: 'monospace', fontSize: 12, color: '#059669' }}>
                       {p.loginId || '—'}
                     </td>
 
@@ -509,31 +574,56 @@ export function DeliveryPersonsPage() {
 
                     {/* ACTIONS */}
                     <td style={{ ...tCell, textAlign: 'right' }}>
-                      <button
-                        onClick={() => handleResetPassword(p)}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center',
-                          height: 32, padding: '0 14px', borderRadius: 8,
-                          border: '1px solid #e2e8f0', background: '#fff',
-                          fontSize: 12, fontWeight: 600, color: '#374151',
-                          cursor: 'pointer', transition: 'all 0.15s',
-                          whiteSpace: 'nowrap',
-                        }}
-                        onMouseEnter={(e) => {
-                          const el = e.currentTarget as HTMLElement
-                          el.style.background = '#f0eeff'
-                          el.style.borderColor = '#c4b5fd'
-                          el.style.color = '#4f46e5'
-                        }}
-                        onMouseLeave={(e) => {
-                          const el = e.currentTarget as HTMLElement
-                          el.style.background = '#fff'
-                          el.style.borderColor = '#e2e8f0'
-                          el.style.color = '#374151'
-                        }}
-                      >
-                        Reset password
-                      </button>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleResetPassword(p)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            height: 32, padding: '0 14px', borderRadius: 8,
+                            border: '1px solid #e2e8f0', background: '#fff',
+                            fontSize: 12, fontWeight: 600, color: '#374151',
+                            cursor: 'pointer', transition: 'all 0.15s',
+                            whiteSpace: 'nowrap',
+                          }}
+                          onMouseEnter={(e) => {
+                            const el = e.currentTarget as HTMLElement
+                            el.style.background = '#ecfdf5'
+                            el.style.borderColor = '#a7f3d0'
+                            el.style.color = '#059669'
+                          }}
+                          onMouseLeave={(e) => {
+                            const el = e.currentTarget as HTMLElement
+                            el.style.background = '#fff'
+                            el.style.borderColor = '#e2e8f0'
+                            el.style.color = '#374151'
+                          }}
+                        >
+                          Reset password
+                        </button>
+
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            title="Delete delivery person"
+                            onClick={() => handleDelete(p)}
+                            style={iconActionBtn}
+                            onMouseEnter={(e) => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.background = '#fef2f2'
+                              el.style.borderColor = '#fecaca'
+                              el.style.color = '#dc2626'
+                            }}
+                            onMouseLeave={(e) => {
+                              const el = e.currentTarget as HTMLElement
+                              el.style.background = '#fff'
+                              el.style.borderColor = '#e2e8f0'
+                              el.style.color = '#64748b'
+                            }}
+                          >
+                            <TrashIcon />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

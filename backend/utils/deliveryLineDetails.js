@@ -7,11 +7,22 @@ function parseRate(rateStr) {
   return Number.isFinite(n) ? n : 0
 }
 
+function godownIdForLine(line, delivery) {
+  return line.godownId || delivery.fromGodownId
+}
+
 async function populateLineDetails(delivery) {
   const lines = delivery.lines || []
   const productIds = [...new Set(lines.map((l) => String(l.productId)))]
   const godownIds = [
-    ...new Set(lines.map((l) => (l.godownId ? String(l.godownId) : null)).filter(Boolean)),
+    ...new Set(
+      lines
+        .map((l) => {
+          const gid = godownIdForLine(l, delivery)
+          return gid ? String(gid) : null
+        })
+        .filter(Boolean),
+    ),
   ]
 
   const [products, godowns] = await Promise.all([
@@ -24,7 +35,8 @@ async function populateLineDetails(delivery) {
 
   return lines.map((line) => {
     const p = byProduct.get(String(line.productId))
-    const gid = line.godownId ? String(line.godownId) : undefined
+    const gidRaw = godownIdForLine(line, delivery)
+    const gid = gidRaw ? String(gidRaw) : undefined
     const g = gid ? byGodown.get(gid) : undefined
     return {
       productId: String(line.productId),
@@ -64,4 +76,65 @@ async function populateBillerReturnLines(lines) {
     })
 }
 
-module.exports = { parseRate, populateLineDetails, populateBillerReturnLines }
+/**
+ * Batch-enrich delivery list rows with godown names and product summaries.
+ * @param {object[]} deliveries - lean delivery documents
+ */
+async function enrichListRows(deliveries) {
+  if (!deliveries.length) return []
+
+  const productIds = new Set()
+  const godownIds = new Set()
+
+  for (const d of deliveries) {
+    for (const line of d.lines || []) {
+      if (line.productId) productIds.add(String(line.productId))
+      const gid = godownIdForLine(line, d)
+      if (gid) godownIds.add(String(gid))
+    }
+    if (d.fromGodownId) godownIds.add(String(d.fromGodownId))
+  }
+
+  const [products, godowns] = await Promise.all([
+    productIds.size ? Product.find({ _id: { $in: [...productIds] } }).lean() : [],
+    godownIds.size ? Godown.find({ _id: { $in: [...godownIds] } }).lean() : [],
+  ])
+
+  const byProduct = new Map(products.map((p) => [String(p._id), p]))
+  const byGodown = new Map(godowns.map((g) => [String(g._id), g]))
+
+  return deliveries.map((d) => {
+    const linesSummary = (d.lines || []).map((line) => {
+      const p = byProduct.get(String(line.productId))
+      const gid = godownIdForLine(line, d)
+      const g = gid ? byGodown.get(String(gid)) : undefined
+      return {
+        productId: String(line.productId),
+        particulars: p?.particulars || p?.name,
+        sku: p?.sku || p?.s_no,
+        qty: line.qty,
+        godownName: g?.name,
+      }
+    })
+
+    const godownNames = [...new Set(linesSummary.map((l) => l.godownName).filter(Boolean))]
+    const productCount = linesSummary.length
+    const totalQty = linesSummary.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
+
+    return {
+      godownNames,
+      primaryGodownName: godownNames[0] || undefined,
+      linesSummary,
+      productCount,
+      totalQty,
+    }
+  })
+}
+
+module.exports = {
+  parseRate,
+  godownIdForLine,
+  populateLineDetails,
+  populateBillerReturnLines,
+  enrichListRows,
+}

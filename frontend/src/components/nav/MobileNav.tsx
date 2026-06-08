@@ -81,9 +81,9 @@ export function MobileNav() {
               padding: '10px 4px 8px',
               fontSize: 10,
               fontWeight: isActive ? 700 : 500,
-              color: isActive ? '#4f46e5' : '#94a3b8',
+              color: isActive ? '#059669' : '#94a3b8',
               textDecoration: 'none',
-              borderTop: isActive ? '2px solid #4f46e5' : '2px solid transparent',
+              borderTop: isActive ? '2px solid #059669' : '2px solid transparent',
               transition: 'color 0.15s',
             })}
           >
@@ -92,7 +92,7 @@ export function MobileNav() {
                 <span style={{
                   width: 20, height: 20,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isActive ? '#4f46e5' : '#94a3b8',
+                  color: isActive ? '#059669' : '#94a3b8',
                 }}>
                   {item.icon}
                 </span>

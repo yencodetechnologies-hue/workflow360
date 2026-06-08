@@ -38,9 +38,8 @@ export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
       { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
       { label: 'My godown', to: myGodown, icon: <GodownIcon /> },
       { label: 'Orders', to: '/orders', icon: ordersIcon() },
-      { label: 'Queue', to: '/queue', icon: <DeliveryIcon /> },
-      { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
-      { label: 'Returns', to: '/deliveries?status=PENDING_RETURN', icon: <DeliveryIcon /> },
+      { label: 'Delivery Manager', to: '/deliveries', icon: <DeliveryIcon /> },
+    
       { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
       { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
     ]
@@ -50,7 +49,7 @@ export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
     { label: 'Godowns', to: '/godowns', icon: <GodownIcon /> },
     { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
     { label: 'Products', to: '/products', icon: <ProductIcon /> },
-    { label: 'Deliveries', to: '/deliveries', icon: <DeliveryIcon /> },
+    { label: 'Delivery Manager', to: '/deliveries', icon: <DeliveryIcon /> },
     { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
   ]
 }

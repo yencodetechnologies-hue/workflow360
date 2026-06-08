@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
+const { validGodownId } = require('../utils/godownAccess')
 
 function getTokenFromReq(req) {
   const header = req.headers.authorization || ''
@@ -24,7 +25,7 @@ async function requireAuth(req, res, next) {
       email: user.email,
       loginId: user.loginId,
       role: user.role,
-      godownId: user.godownId,
+      godownId: validGodownId(user.role === 'GODOWN' ? user.godownId : undefined),
       siteName: user.siteName,
       siteAddress: user.siteAddress,
       contactPhone: user.contactPhone,

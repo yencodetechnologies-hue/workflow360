@@ -7,6 +7,7 @@ const {
   updateUser,
   setUserActive,
   resetPassword,
+  deleteUser,
   getMyProfile,
   updateMyProfile
 } = require('../controllers/userController')
@@ -21,15 +22,15 @@ router.post('/billers', requireRole(['ADMIN']), createBiller)
 
 router.use(requireRole(['ADMIN']))
 
+router.get('/me', getMyProfile)
+router.put('/me', updateMyProfile)
+
 router.get('/', listUsers)
 router.post('/', createUser)
 router.patch('/:id/active', setUserActive)
 router.post('/:id/reset-password', resetPassword)
+router.delete('/:id', deleteUser)
 router.patch('/:id', updateUser)
-router.get('/me',  getMyProfile)
-
-/* UPDATE ADMIN PROFILE */
-router.put('/me',  updateMyProfile)
 
 
 module.exports = router

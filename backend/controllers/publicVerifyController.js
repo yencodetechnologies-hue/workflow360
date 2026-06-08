@@ -65,9 +65,12 @@ async function postDeliveryVerify(req, res) {
       })
     }
 
-    for (const pid of allowed) {
-      const row = mapped.find((m) => String(m.productId) === pid)
-      if (!row || !row.ok) return res.status(400).json({ message: 'All line items must be acknowledged with ok: true' })
+    const deliveryLines = delivery.lines || []
+    if (mapped.length !== deliveryLines.length) {
+      return res.status(400).json({ message: 'All line items must be acknowledged with ok: true' })
+    }
+    for (const row of mapped) {
+      if (!row.ok) return res.status(400).json({ message: 'All line items must be acknowledged with ok: true' })
     }
 
     delivery.deliveryVerifierName = String(verifierName).trim()
@@ -93,7 +96,7 @@ async function getBillerReturn(req, res) {
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
     const lines = await populateLineDetails(delivery)
-    const allowedStatuses = ['DELIVERED', 'PENDING_RETURN']
+    const allowedStatuses = ['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN']
     const canSubmit = allowedStatuses.includes(delivery.status) && !delivery.billerReturnSubmittedAt
 
     return res.json({
@@ -124,7 +127,7 @@ async function postBillerReturn(req, res) {
     const delivery = await Delivery.findOne({ billerReturnVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
-    if (!['DELIVERED', 'PENDING_RETURN'].includes(delivery.status)) {
+    if (!['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'].includes(delivery.status)) {
       return res.status(409).json({ message: 'Return cannot be submitted in current status' })
     }
     if (delivery.billerReturnSubmittedAt) return res.status(409).json({ message: 'Already submitted' })

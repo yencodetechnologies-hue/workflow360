@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const Godown = require('../models/Godown')
 const Delivery = require('../models/Delivery')
+const { dispatchCompleteAsync } = require('./deliveryController')
 const { normalizePhone } = require('../utils/phone')
 const { syncGodownLoginUser, deactivateGodownLoginUser } = require('../utils/syncGodownUser')
 
@@ -207,18 +208,25 @@ async function queueByDate(req, res) {
 
   const deliveries = await Delivery.find(q).sort({ deliveryAt: 1 }).lean()
   return res.json(
-    deliveries.map((d) => ({
-      id: String(d._id),
-      deliveryNo: d.deliveryNo,
-      customerName: d.customerName,
-      siteName: d.siteName,
-      siteAddress: d.siteAddress,
-      deliveryAt: d.deliveryAt,
-      returnExpectedAt: d.returnExpectedAt,
-      status: d.status,
-      fromGodownId: String(d.fromGodownId),
-      lines: d.lines,
-    })),
+    await Promise.all(
+      deliveries.map(async (d) => {
+        const dispatchComplete = await dispatchCompleteAsync(d)
+        return {
+          id: String(d._id),
+          deliveryNo: d.deliveryNo,
+          customerName: d.customerName,
+          siteName: d.siteName,
+          siteAddress: d.siteAddress,
+          deliveryAt: d.deliveryAt,
+          returnExpectedAt: d.returnExpectedAt,
+          status: d.status,
+          fromGodownId: String(d.fromGodownId),
+          lines: d.lines,
+          qtyProgress: { dispatchComplete },
+          scanProgress: { dispatchComplete },
+        }
+      }),
+    ),
   )
 }
 

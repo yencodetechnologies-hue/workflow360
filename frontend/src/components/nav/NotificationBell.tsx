@@ -61,7 +61,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Notifications"
-        className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-violet-200"
+        className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-primary-200"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
           <path
@@ -86,7 +86,7 @@ export function NotificationBell() {
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <span className="text-sm font-bold text-slate-900">Notifications</span>
               {unreadCount > 0 ? (
-                <button type="button" className="text-xs font-semibold text-violet-600" onClick={markAllRead}>
+                <button type="button" className="text-xs font-semibold text-primary-600" onClick={markAllRead}>
                   Mark all read
                 </button>
               ) : null}
@@ -103,7 +103,7 @@ export function NotificationBell() {
                         if (!n.readAt) void markRead(n.id)
                         setOpen(false)
                       }}
-                      className={`block px-4 py-3 hover:bg-slate-50 ${!n.readAt ? 'bg-violet-50/50' : ''}`}
+                      className={`block px-4 py-3 hover:bg-slate-50 ${!n.readAt ? 'bg-primary-50/50' : ''}`}
                     >
                       <div className="text-sm font-semibold text-slate-900">{n.title}</div>
                       {n.body ? <div className="mt-0.5 text-xs text-slate-600">{n.body}</div> : null}

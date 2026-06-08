@@ -1,21 +1,24 @@
-﻿import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ReportFiltersBar } from '../components/reports/ReportFiltersBar'
 import { formatNumber } from '../lib/format'
 import { Badge } from '../components/ui/Badge'
+import { StatCard } from '../components/ui/StatCard'
 import { apiFetch } from '../lib/api'
 import { getToken, useAuth } from '../auth/store'
 import { useReportFilters } from '../hooks/useReportFilters'
 import type {
+  BillerReturnRow,
   CustomerIssueReport,
   DailyReport,
   GodownIssueRow,
   IssueDeliveryRow,
+  ProductReturnRow,
   ReportTab,
   StockReportRow,
 } from '../types/reports'
 
-// ── constants ──────────────────────────────────────────────────────────────
+// -- constants --------------------------------------------------------------
 
 const MAIN_TABS: { id: ReportTab; label: string }[] = [
   { id: 'daily', label: 'Daily' },
@@ -25,21 +28,21 @@ const MAIN_TABS: { id: ReportTab; label: string }[] = [
 
 const ISSUE_SUB_TABS: { id: ReportTab; label: string }[] = [
   { id: 'issues-godown', label: 'By godown' },
+  { id: 'issues-biller', label: 'Missing by biller' },
   { id: 'issues-delivery', label: 'By delivery' },
   { id: 'issues-customer', label: 'By customer' },
 ]
 
-const ISSUE_TABS = new Set<ReportTab>(['issues-godown', 'issues-delivery', 'issues-customer'])
+const ISSUE_TABS = new Set<ReportTab>(['issues-godown', 'issues-biller', 'issues-delivery', 'issues-customer'])
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// -- helpers ----------------------------------------------------------------
 
-function formatRupee(n: number | undefined) {
-  if (n == null || Number.isNaN(n)) return '—'
-  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+function formatCurrency(n: number) {
+  return `?${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 }
 
 function badgeVariant(status: string) {
-  if (status === 'PROCESSED' || status === 'UPCOMING') return 'blue'
+  if (status === 'PROCESSED' || status === 'UPCOMING') return 'green'
   if (status === 'OUT_FOR_DELIVERY' || status === 'DISPATCHED') return 'green'
   if (status === 'PACKED') return 'slate'
   if (status === 'RETURN_PICKUP') return 'amber'
@@ -51,7 +54,7 @@ function formatDeliveryDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// ── shared inline table styles ─────────────────────────────────────────────
+// -- shared inline table styles ---------------------------------------------
 
 const tHead: React.CSSProperties = {
   padding: '10px 14px',
@@ -74,7 +77,7 @@ const tCell: React.CSSProperties = {
   verticalAlign: 'middle',
 }
 
-// ── reusable card ──────────────────────────────────────────────────────────
+// -- reusable card ----------------------------------------------------------
 
 function ReportCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -99,7 +102,7 @@ function CardHead({ title, sub }: { title: string; sub?: string }) {
   )
 }
 
-// ── pill tab button ────────────────────────────────────────────────────────
+// -- pill tab button --------------------------------------------------------
 
 function PillTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -111,7 +114,7 @@ function PillTab({ label, active, onClick }: { label: string; active: boolean; o
         fontSize: 13,
         fontWeight: active ? 700 : 500,
         border: active ? 'none' : '1px solid #e2e8f0',
-        background: active ? '#4f46e5' : '#fff',
+        background: active ? '#059669' : '#fff',
         color: active ? '#fff' : '#64748b',
         cursor: 'pointer',
         transition: 'all 0.15s',
@@ -120,9 +123,9 @@ function PillTab({ label, active, onClick }: { label: string; active: boolean; o
       onMouseEnter={(e) => {
         if (!active) {
           const el = e.currentTarget as HTMLElement
-          el.style.background = '#f0eeff'
-          el.style.color = '#4f46e5'
-          el.style.borderColor = '#c4b5fd'
+          el.style.background = '#ecfdf5'
+          el.style.color = '#059669'
+          el.style.borderColor = '#a7f3d0'
         }
       }}
       onMouseLeave={(e) => {
@@ -139,7 +142,7 @@ function PillTab({ label, active, onClick }: { label: string; active: boolean; o
   )
 }
 
-// ── sub-pill tab (smaller, for issue sub-tabs) ─────────────────────────────
+// -- sub-pill tab (smaller, for issue sub-tabs) -----------------------------
 
 function SubPillTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -151,7 +154,7 @@ function SubPillTab({ label, active, onClick }: { label: string; active: boolean
         fontSize: 12,
         fontWeight: active ? 700 : 500,
         border: active ? 'none' : '1px solid #e2e8f0',
-        background: active ? '#6366f1' : '#fff',
+        background: active ? '#10b981' : '#fff',
         color: active ? '#fff' : '#64748b',
         cursor: 'pointer',
         transition: 'all 0.15s',
@@ -160,8 +163,8 @@ function SubPillTab({ label, active, onClick }: { label: string; active: boolean
       onMouseEnter={(e) => {
         if (!active) {
           const el = e.currentTarget as HTMLElement
-          el.style.background = '#f0eeff'
-          el.style.color = '#4f46e5'
+          el.style.background = '#ecfdf5'
+          el.style.color = '#059669'
         }
       }}
       onMouseLeave={(e) => {
@@ -177,7 +180,7 @@ function SubPillTab({ label, active, onClick }: { label: string; active: boolean
   )
 }
 
-// ── metric row for key metrics card ───────────────────────────────────────
+// -- metric row for key metrics card ---------------------------------------
 
 function MetricRow({ label, value, accent }: { label: string; value: number; accent?: string }) {
   return (
@@ -191,7 +194,7 @@ function MetricRow({ label, value, accent }: { label: string; value: number; acc
   )
 }
 
-// ── empty state ────────────────────────────────────────────────────────────
+// -- empty state ------------------------------------------------------------
 
 function Empty({ title, sub }: { title: string; sub: string }) {
   return (
@@ -202,7 +205,7 @@ function Empty({ title, sub }: { title: string; sub: string }) {
   )
 }
 
-// ── product lines expandable panel ────────────────────────────────────────
+// -- product lines expandable panel ----------------------------------------
 
 function ProductLinesPanel({ row }: { row: IssueDeliveryRow }) {
   if (!row.productMissing.length && !row.productDamaged.length) return null
@@ -229,7 +232,7 @@ function ProductLinesPanel({ row }: { row: IssueDeliveryRow }) {
   )
 }
 
-// ── issue delivery table ───────────────────────────────────────────────────
+// -- issue delivery table ---------------------------------------------------
 
 function IssueDeliveryTable({
   rows, expandedId, onToggleExpand,
@@ -244,8 +247,8 @@ function IssueDeliveryTable({
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
         <thead>
           <tr>
-            {['Delivery','Date','Customer','Site','Godown','Status','Missing qty','Damage qty','₹ missing','₹ damage','Tags missing',''].map((h, i) => (
-              <th key={i} style={{ ...tHead, textAlign: i >= 6 && i <= 10 ? 'right' : 'left' }}>{h}</th>
+            {['Delivery','Date','Customer','Site','Godown','Status','Missing qty','Damage qty','Tags missing',''].map((h, i) => (
+              <th key={i} style={{ ...tHead, textAlign: i >= 6 && i <= 8 ? 'right' : 'left' }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -258,20 +261,18 @@ function IssueDeliveryTable({
                 onMouseLeave={(e) => (e.currentTarget.style.background = '')}
               >
                 <td style={tCell}>
-                  <Link to={`/deliveries/${m.id}`} style={{ fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}
+                  <Link to={`/deliveries/${m.id}`} style={{ fontWeight: 600, color: '#059669', textDecoration: 'none' }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'underline')}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'none')}
                   >{m.deliveryNo}</Link>
                 </td>
                 <td style={{ ...tCell, whiteSpace: 'nowrap' }}>{formatDeliveryDate(m.deliveryAt)}</td>
                 <td style={{ ...tCell, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.customerName}</td>
-                <td style={{ ...tCell, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.siteName || '—'}</td>
-                <td style={{ ...tCell, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.godownName || '—'}</td>
+                <td style={{ ...tCell, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.siteName || '?'}</td>
+                <td style={{ ...tCell, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.godownName || '?'}</td>
                 <td style={tCell}><Badge variant={badgeVariant(m.status)}>{m.status}</Badge></td>
                 <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(m.missingQty)}</td>
                 <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(m.damageQty)}</td>
-                <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(m.missingTotal)}</td>
-                <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(m.damageTotal)}</td>
                 <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(m.missingTagCount ?? m.missingCount)}</td>
                 <td style={{ ...tCell }}>
                   {(m.productMissing.length || m.productDamaged.length) ? (
@@ -279,7 +280,7 @@ function IssueDeliveryTable({
                       onClick={() => onToggleExpand(expandedId === m.id ? null : m.id)}
                       style={{
                         padding: '4px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
-                        background: '#fff', fontSize: 12, fontWeight: 600, color: '#4f46e5',
+                        background: '#fff', fontSize: 12, fontWeight: 600, color: '#059669',
                         cursor: 'pointer',
                       }}
                     >{expandedId === m.id ? 'Hide' : 'Products'}</button>
@@ -288,7 +289,7 @@ function IssueDeliveryTable({
               </tr>
               {expandedId === m.id && (
                 <tr>
-                  <td colSpan={12} style={{ padding: '0 14px 12px' }}>
+                  <td colSpan={10} style={{ padding: '0 14px 12px' }}>
                     <ProductLinesPanel row={m} />
                   </td>
                 </tr>
@@ -301,12 +302,231 @@ function IssueDeliveryTable({
   )
 }
 
-// ── main component ─────────────────────────────────────────────────────────
+// -- missing report step indicator ------------------------------------------
+
+function MissingStepper({ step, labels }: { step: 1 | 2 | 3; labels: [string, string, string] }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 0, padding: '14px 20px',
+      borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
+      flexWrap: 'wrap',
+    }}>
+      {labels.map((label, i) => {
+        const n = (i + 1) as 1 | 2 | 3
+        const active = step === n
+        const done = step > n
+        return (
+          <Fragment key={label}>
+            {i > 0 ? (
+              <div style={{ flex: '1 1 24px', height: 2, minWidth: 20, maxWidth: 48, background: done || active ? '#10b981' : '#e2e8f0', margin: '0 8px' }} />
+            ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                background: active ? '#059669' : done ? '#d1fae5' : '#f1f5f9',
+                color: active ? '#fff' : done ? '#059669' : '#94a3b8',
+                fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{n}</div>
+              <span style={{
+                fontSize: 12, fontWeight: active ? 700 : 500,
+                color: active ? '#0f172a' : '#64748b', whiteSpace: 'nowrap',
+              }}>{label}</span>
+            </div>
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+// -- missing orders table (per biller) --------------------------------------
+
+function MissingOrdersTable({ rows }: { rows: IssueDeliveryRow[] }) {
+  if (!rows.length) {
+    return <Empty title="No missing orders" sub="This biller has no orders with missing items in the selected period." />
+  }
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+        <thead>
+          <tr>
+            {['Order', 'Date', 'Customer', 'Site', 'Status', 'Missing qty', 'Value (?)', 'Products'].map((h, i) => (
+              <th key={h} style={{ ...tHead, textAlign: i >= 5 && i <= 6 ? 'right' : 'left' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((m) => (
+            <tr key={m.id} style={{ transition: 'background 0.12s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(254,242,242,0.35)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+            >
+              <td style={tCell}>
+                <Link to={`/deliveries/${m.id}`} style={{ fontWeight: 600, color: '#dc2626', textDecoration: 'none' }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'underline')}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'none')}
+                >{m.deliveryNo}</Link>
+              </td>
+              <td style={{ ...tCell, whiteSpace: 'nowrap' }}>{formatDeliveryDate(m.deliveryAt)}</td>
+              <td style={{ ...tCell, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.customerName}</td>
+              <td style={{ ...tCell, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.siteName || '?'}</td>
+              <td style={tCell}><Badge variant={badgeVariant(m.status)}>{m.status}</Badge></td>
+              <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(m.missingQty)}</td>
+              <td style={{ ...tCell, textAlign: 'right' }}>{m.missingTotal != null ? formatCurrency(m.missingTotal) : '?'}</td>
+              <td style={{ ...tCell, fontSize: 12, color: '#64748b', maxWidth: 180 }}>
+                {m.productMissing.slice(0, 2).map((p) => p.particulars || p.sku).join(', ')}
+                {m.productMissing.length > 2 ? ` +${m.productMissing.length - 2}` : ''}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// -- product missing table (per biller, with orders) ------------------------
+
+function ProductMissingTable({
+  rows,
+  expandedId,
+  onToggleExpand,
+}: {
+  rows: ProductReturnRow[]
+  expandedId: string | null
+  onToggleExpand: (id: string | null) => void
+}) {
+  if (!rows.length) {
+    return <Empty title="No missing products" sub="No product-level missing data for this biller and period." />
+  }
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+        <thead>
+          <tr>
+            {['Product', 'SKU', 'Missing qty', 'Orders', ''].map((h, i) => (
+              <th key={i} style={{ ...tHead, textAlign: i === 2 || i === 3 ? 'right' : 'left' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <Fragment key={r.productId}>
+              <tr
+                style={{ transition: 'background 0.12s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(254,242,242,0.25)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+              >
+                <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>{r.particulars || r.productId}</td>
+                <td style={tCell}>{r.sku || '?'}</td>
+                <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(r.totalQty)}</td>
+                <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(r.deliveryCount)}</td>
+                <td style={tCell}>
+                  {r.deliveries.length ? (
+                    <button
+                      onClick={() => onToggleExpand(expandedId === r.productId ? null : r.productId)}
+                      style={{
+                        padding: '4px 12px', borderRadius: 8, border: '1px solid #fecaca',
+                        background: '#fff', fontSize: 12, fontWeight: 600, color: '#dc2626',
+                        cursor: 'pointer',
+                      }}
+                    >{expandedId === r.productId ? 'Hide orders' : 'View orders'}</button>
+                  ) : null}
+                </td>
+              </tr>
+              {expandedId === r.productId && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '0 14px 12px' }}>
+                    <div style={{ background: '#fef2f2', borderRadius: 8, padding: 14, border: '1px solid #fecaca' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                        Missing orders for this product
+                      </div>
+                      {r.deliveries.map((d) => (
+                        <div key={d.id} style={{
+                          display: 'grid', gridTemplateColumns: '1fr auto', gap: 8,
+                          fontSize: 12, color: '#374151', paddingBottom: 8,
+                          borderBottom: '1px solid #fee2e2', marginBottom: 8,
+                        }}>
+                          <div>
+                            <Link to={`/deliveries/${d.id}`} style={{ fontWeight: 600, color: '#dc2626', textDecoration: 'none' }}>
+                              {d.deliveryNo}
+                            </Link>
+                            {d.customerName ? (
+                              <span style={{ color: '#64748b', marginLeft: 8 }}>{d.customerName}</span>
+                            ) : null}
+                            {d.deliveryAt ? (
+                              <span style={{ color: '#94a3b8', marginLeft: 8 }}>{formatDeliveryDate(d.deliveryAt)}</span>
+                            ) : null}
+                          </div>
+                          <span style={{ fontWeight: 700, color: '#dc2626', whiteSpace: 'nowrap' }}>
+                            qty {formatNumber(d.qty)}{d.note ? ` ? ${d.note}` : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// -- breadcrumb for biller drill-down ---------------------------------------
+
+function BillerBreadcrumb({
+  godownName,
+  billerName,
+  hideAllGodowns,
+  onAllGodowns,
+  onGodown,
+}: {
+  godownName?: string
+  billerName?: string
+  hideAllGodowns?: boolean
+  onAllGodowns: () => void
+  onGodown: () => void
+}) {
+  const linkStyle: React.CSSProperties = {
+    background: 'none', border: 'none', padding: 0, fontSize: 13, fontWeight: 600,
+    color: '#059669', cursor: 'pointer', textDecoration: 'underline',
+  }
+  const sep = <span style={{ color: '#94a3b8', margin: '0 6px' }}>/</span>
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, padding: '12px 20px', borderBottom: '1px solid #f1f5f9' }}>
+      {!hideAllGodowns ? (
+        <button type="button" onClick={onAllGodowns} style={linkStyle}>All godowns</button>
+      ) : null}
+      {godownName ? (
+        <>
+          {!hideAllGodowns ? sep : null}
+          {billerName ? (
+            <button type="button" onClick={onGodown} style={linkStyle}>{godownName}</button>
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{godownName}</span>
+          )}
+        </>
+      ) : null}
+      {billerName ? (
+        <>
+          {sep}
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{billerName}</span>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+// -- main component ---------------------------------------------------------
 
 export function ReportsPage() {
   const auth = useAuth()
   const {
-    date, dateTo, godownId, site, customerName, tab, godowns, sites, customers,
+    date, dateTo, godownId, site, customerName, billerUserId, tab, godowns, sites, customers,
     filterQuery, dateQuery, setFilters, lockGodownFilter,
   } = useReportFilters()
 
@@ -322,7 +542,41 @@ export function ReportsPage() {
   const [deliveryIssues, setDeliveryIssues] = useState<IssueDeliveryRow[] | null>(null)
   const [customerReport, setCustomerReport] = useState<CustomerIssueReport | null>(null)
   const [stock, setStock] = useState<StockReportRow[] | null>(null)
+  const [billerReturns, setBillerReturns] = useState<BillerReturnRow[] | null>(null)
+  const [productReturns, setProductReturns] = useState<ProductReturnRow[] | null>(null)
+  const [missingOrders, setMissingOrders] = useState<IssueDeliveryRow[] | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const isBillerRole = auth.status === 'authenticated' && auth.user.role === 'BILLER'
+  const selectedGodownName = godowns.find((g) => g.id === godownId)?.name
+  const selectedBillerName = useMemo(() => {
+    if (isBillerRole && auth.status === 'authenticated') {
+      return auth.user.contactName || auth.user.siteName || 'My returns'
+    }
+    return billerReturns?.find((b) => b.billerUserId === billerUserId)?.billerName || billerUserId
+  }, [isBillerRole, auth, billerReturns, billerUserId])
+
+  const showBillerGodowns = activeTab === 'issues-biller' && !godownId && !lockGodownFilter
+  const showBillerList = activeTab === 'issues-biller' && Boolean(godownId) && !billerUserId && !isBillerRole
+  const showProductList = activeTab === 'issues-biller' && Boolean(godownId) && Boolean(billerUserId)
+
+  const godownsWithMissing = useMemo(
+    () => (godownIssues || []).filter((g) => g.missingQty > 0),
+    [godownIssues],
+  )
+
+  const billerStep: 1 | 2 | 3 = showProductList ? 3 : showBillerList ? 2 : 1
+
+  const selectedBillerStats = useMemo(() => {
+    const b = billerReturns?.find((row) => row.billerUserId === billerUserId)
+    if (b) return b
+    if (!missingOrders?.length) return null
+    return {
+      missingOrderCount: missingOrders.length,
+      missingQty: missingOrders.reduce((s, o) => s + o.missingQty, 0),
+      missingTotal: missingOrders.reduce((s, o) => s + (o.missingTotal || 0), 0),
+    }
+  }, [billerReturns, billerUserId, missingOrders])
 
   useEffect(() => {
     if (activeTab !== 'daily') return
@@ -357,11 +611,58 @@ export function ReportsPage() {
     }
 
     const promises: Promise<void>[] = []
-    if (activeTab === 'issues-godown') promises.push(loadGodown())
+    if (activeTab === 'issues-godown' || (activeTab === 'issues-biller' && !godownId && !lockGodownFilter)) {
+      promises.push(loadGodown())
+    }
     if (activeTab === 'issues-delivery') promises.push(loadDelivery())
     if (activeTab === 'issues-customer') promises.push(loadCustomer())
     Promise.all(promises).finally(() => setLoading(false))
-  }, [date, dateTo, dateQuery, filterQuery, activeTab, customerName, godownId, site])
+  }, [date, dateTo, dateQuery, filterQuery, activeTab, customerName, godownId, site, lockGodownFilter])
+
+  useEffect(() => {
+    if (activeTab !== 'issues-biller') return
+    const token = getToken(); if (!token) return
+
+    if (showBillerList) {
+      setLoading(true); setError(null); setProductReturns(null)
+      apiFetch<BillerReturnRow[]>(`/reports/returns/by-biller?${dateQuery}godownId=${encodeURIComponent(godownId)}${filterQuery.replace(/&?billerUserId=[^&]*/g, '')}`, { token })
+        .then(setBillerReturns)
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'Failed to load biller report')
+          setBillerReturns([])
+        })
+        .finally(() => setLoading(false))
+      return
+    }
+
+    if (showProductList) {
+      setLoading(true); setError(null)
+      const fq = filterQuery.includes('billerUserId')
+        ? filterQuery
+        : `${filterQuery}&billerUserId=${encodeURIComponent(billerUserId)}`
+      const productQ = `/reports/returns/by-product?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&metric=missing`
+      const ordersQ = `/reports/issues/by-delivery?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&limit=200`
+      Promise.all([
+        apiFetch<ProductReturnRow[]>(productQ, { token }),
+        apiFetch<IssueDeliveryRow[]>(ordersQ, { token }),
+      ])
+        .then(([products, orders]) => {
+          setProductReturns(products)
+          setMissingOrders(orders.filter((o) => o.missingQty > 0))
+        })
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'Failed to load missing report')
+          setProductReturns([])
+          setMissingOrders([])
+        })
+        .finally(() => setLoading(false))
+      return
+    }
+
+    setBillerReturns(null)
+    setProductReturns(null)
+    setMissingOrders(null)
+  }, [activeTab, date, dateTo, dateQuery, filterQuery, godownId, billerUserId, showBillerList, showProductList])
 
   useEffect(() => {
     if (activeTab !== 'stock') return
@@ -395,7 +696,7 @@ export function ReportsPage() {
     setFilters({ tab: id })
   }
 
-  // ── shared table styles ────────────────────────────────────────────────
+  // -- shared table styles ------------------------------------------------
 
   const tableWrap: React.CSSProperties = { overflowX: 'auto' }
   const tableEl: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', minWidth: 800 }
@@ -404,15 +705,15 @@ export function ReportsPage() {
     // AppShell provides 20px 24px padding
     <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── PAGE HEADER ── */}
+      {/* -- PAGE HEADER -- */}
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Reports</h1>
         <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
-          Daily deliveries, missing and damage by godown, delivery, or customer, and stock.
+          Daily deliveries, missing and damage by godown, biller, delivery, or customer, and stock.
         </p>
       </div>
 
-      {/* ── FILTERS CARD ── */}
+      {/* -- FILTERS CARD -- */}
       <ReportCard>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f0f9' }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Filters</div>
@@ -426,7 +727,10 @@ export function ReportsPage() {
             godownId={godownId}
             site={site}
             customerName={customerName}
-            onGodownChange={(id) => setFilters({ godownId: id })}
+            onGodownChange={(id) => setFilters({
+              godownId: id,
+              billerUserId: activeTab === 'issues-biller' && !isBillerRole ? '' : billerUserId,
+            })}
             onSiteChange={(s) => setFilters({ site: s })}
             onCustomerChange={(name) => setFilters({ customerName: name })}
             showDate
@@ -441,7 +745,7 @@ export function ReportsPage() {
         </div>
       </ReportCard>
 
-      {/* ── MAIN TAB ROW ── */}
+      {/* -- MAIN TAB ROW -- */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {MAIN_TABS.map((t) => (
           <PillTab
@@ -453,11 +757,11 @@ export function ReportsPage() {
         ))}
       </div>
 
-      {/* ── ISSUE SUB TABS ── */}
+      {/* -- ISSUE SUB TABS -- */}
       {showIssueSection && (
         <div style={{
           display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center',
-          paddingLeft: 12, borderLeft: '2px solid #c4b5fd',
+          paddingLeft: 12, borderLeft: '2px solid #a7f3d0',
         }}>
           {ISSUE_SUB_TABS.map((t) => (
             <SubPillTab
@@ -470,7 +774,7 @@ export function ReportsPage() {
         </div>
       )}
 
-      {/* ── ERROR ── */}
+      {/* -- ERROR -- */}
       {error && (
         <div style={{
           padding: '10px 16px', borderRadius: 10, background: '#fef2f2',
@@ -478,21 +782,21 @@ export function ReportsPage() {
         }}>{error}</div>
       )}
 
-      {/* ── LOADING SPINNER ── */}
+      {/* -- LOADING SPINNER -- */}
       {loading && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
-            border: '3px solid #e2e8f0', borderTopColor: '#6366f1',
+            border: '3px solid #e2e8f0', borderTopColor: '#10b981',
             animation: 'spin 0.7s linear infinite',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
+      {/* ----------------------------------------------
           DAILY TAB
-      ══════════════════════════════════════════════ */}
+      ---------------------------------------------- */}
       {activeTab === 'daily' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 14 }}>
 
@@ -504,7 +808,7 @@ export function ReportsPage() {
             }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Daily delivery report</div>
               <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>
-                {loading ? 'Loading...' : dateTo ? `${date} → ${dateTo}` : date}
+                {loading ? 'Loading...' : dateTo ? `${date} ? ${dateTo}` : date}
               </div>
             </div>
             <div style={tableWrap}>
@@ -512,7 +816,7 @@ export function ReportsPage() {
                 <table style={tableEl}>
                   <thead>
                     <tr>
-                      {['Delivery','Customer','Site','Godown','Status','Dispatch','Return','Lost','Damaged','₹ missing','₹ damage'].map((h, i) => (
+                      {['Delivery','Customer','Site','Godown','Status','Dispatch','Return','Lost','Damaged'].map((h, i) => (
                         <th key={h} style={{ ...tHead, textAlign: i >= 5 ? 'right' : 'left' }}>{h}</th>
                       ))}
                     </tr>
@@ -524,21 +828,19 @@ export function ReportsPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.background = '')}
                       >
                         <td style={tCell}>
-                          <Link to={`/deliveries/${d.id}`} style={{ fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}
+                          <Link to={`/deliveries/${d.id}`} style={{ fontWeight: 600, color: '#059669', textDecoration: 'none' }}
                             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'underline')}
                             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.textDecoration = 'none')}
                           >{d.deliveryNo}</Link>
                         </td>
                         <td style={{ ...tCell, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.customerName}</td>
-                        <td style={{ ...tCell, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.siteName || d.siteAddress || '—'}</td>
-                        <td style={{ ...tCell, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.godownName || '—'}</td>
+                        <td style={{ ...tCell, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.siteName || d.siteAddress || '?'}</td>
+                        <td style={{ ...tCell, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.godownName || '?'}</td>
                         <td style={tCell}><Badge variant={badgeVariant(d.status)}>{d.status}</Badge></td>
                         <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(d.dispatched)}</td>
                         <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(d.returned)}</td>
                         <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(d.lost)}</td>
                         <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(d.damaged)}</td>
-                        <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(d.missingTotal)}</td>
-                        <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(d.damageTotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -564,9 +866,165 @@ export function ReportsPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
-          ISSUES — BY GODOWN
-      ══════════════════════════════════════════════ */}
+      {/* ----------------------------------------------
+          ISSUES ? BY BILLER (drill-down)
+      ---------------------------------------------- */}
+      {activeTab === 'issues-biller' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <ReportCard>
+            <CardHead
+              title="Missing by biller"
+              sub="Drill down from godown ? biller ? missing orders and products."
+            />
+            <MissingStepper
+              step={billerStep}
+              labels={['Select godown', 'Biller missing summary', 'Orders & products']}
+            />
+            <BillerBreadcrumb
+              godownName={selectedGodownName}
+              billerName={showProductList ? selectedBillerName : undefined}
+              hideAllGodowns={lockGodownFilter}
+              onAllGodowns={() => setFilters({ godownId: '', billerUserId: '' })}
+              onGodown={() => setFilters({ billerUserId: '' })}
+            />
+
+            {showBillerGodowns && (
+              <>
+                <div style={{ padding: '0 20px 8px' }}>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '8px 0 0' }}>
+                    Warehouses with biller-reported missing items in the selected period.
+                  </p>
+                </div>
+                {godownsWithMissing.length ? (
+                  <div style={tableWrap}>
+                    <table style={tableEl}>
+                      <thead>
+                        <tr>
+                          {['Godown', 'Missing orders', 'Missing qty', 'Missing value (?)', ''].map((h, i) => (
+                            <th key={i} style={{ ...tHead, textAlign: i >= 1 && i <= 3 ? 'right' : 'left' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {godownsWithMissing.map((g) => (
+                          <tr key={g.godownId} style={{ transition: 'background 0.12s', cursor: 'pointer' }}
+                            onClick={() => setFilters({ godownId: g.godownId })}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(254,242,242,0.35)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                          >
+                            <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>{g.godownName || g.godownId}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{formatNumber(g.issueDeliveryCount)}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{formatNumber(g.missingQty)}</td>
+                            <td style={{ ...tCell, textAlign: 'right' }}>{formatCurrency(g.missingTotal)}</td>
+                            <td style={tCell}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View billers ?</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : !loading ? (
+                  <Empty title="No missing at godowns" sub="No biller-reported missing items for the selected period." />
+                ) : null}
+              </>
+            )}
+
+            {showBillerList && (
+              <>
+                <CardHead title="Billers with missing orders" sub={selectedGodownName || godownId} />
+                {billerReturns?.length ? (
+                  <div style={tableWrap}>
+                    <table style={{ ...tableEl, minWidth: 720 }}>
+                      <thead>
+                        <tr>
+                          {['Biller', 'Site / office', 'Missing orders', 'Missing qty', 'Value (?)', ''].map((h, i) => (
+                            <th key={i} style={{ ...tHead, textAlign: i >= 2 && i <= 4 ? 'right' : 'left' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {billerReturns.map((b) => (
+                          <tr key={b.billerUserId} style={{ transition: 'background 0.12s', cursor: 'pointer' }}
+                            onClick={() => setFilters({ billerUserId: b.billerUserId })}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(254,242,242,0.35)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                          >
+                            <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>{b.billerName || b.billerUserId}</td>
+                            <td style={{ ...tCell, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.siteName || '?'}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(b.missingOrderCount)}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(b.missingQty)}</td>
+                            <td style={{ ...tCell, textAlign: 'right' }}>{formatCurrency(b.missingTotal)}</td>
+                            <td style={tCell}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View details ?</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : !loading ? (
+                  <Empty title="No billers with missing" sub="No biller-reported missing orders for this godown and period." />
+                ) : null}
+              </>
+            )}
+          </ReportCard>
+
+          {showProductList && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                <StatCard
+                  label="Missing orders"
+                  value={formatNumber(selectedBillerStats?.missingOrderCount ?? missingOrders?.length ?? 0)}
+                  tone="bad"
+                />
+                <StatCard
+                  label="Missing quantity"
+                  value={formatNumber(selectedBillerStats?.missingQty ?? 0)}
+                  tone="bad"
+                />
+                <StatCard
+                  label="Missing value"
+                  value={formatCurrency(selectedBillerStats?.missingTotal ?? 0)}
+                  tone="warn"
+                />
+              </div>
+
+              <ReportCard>
+                <CardHead
+                  title="Missing orders"
+                  sub={`${selectedBillerName}${selectedGodownName ? ` ? ${selectedGodownName}` : ''} ? deliveries with biller-reported missing items`}
+                />
+                <div style={{ padding: '0 0 4px' }}>
+                  {missingOrders ? <MissingOrdersTable rows={missingOrders} /> : null}
+                </div>
+              </ReportCard>
+
+              <ReportCard>
+                <CardHead
+                  title="Missing by product"
+                  sub="Products reported missing ? expand to see which orders"
+                />
+                <div style={{ padding: '0 0 4px' }}>
+                  {productReturns ? (
+                    <ProductMissingTable
+                      rows={productReturns}
+                      expandedId={expandedId}
+                      onToggleExpand={setExpandedId}
+                    />
+                  ) : !loading ? (
+                    <Empty title="No missing products" sub="No product-level missing data for this biller." />
+                  ) : null}
+                </div>
+              </ReportCard>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ----------------------------------------------
+          ISSUES ? BY GODOWN
+      ---------------------------------------------- */}
       {activeTab === 'issues-godown' && (
         <ReportCard>
           <CardHead title="Missing & damage by godown" />
@@ -575,8 +1033,8 @@ export function ReportsPage() {
               <table style={tableEl}>
                 <thead>
                   <tr>
-                    {['Godown','Total deliveries','With issues','Missing qty','Damage qty','₹ missing','₹ damage','Tags missing',''].map((h, i) => (
-                      <th key={i} style={{ ...tHead, textAlign: i >= 1 && i <= 7 ? 'right' : 'left' }}>{h}</th>
+                    {['Godown','Total deliveries','With issues','Missing qty','Damage qty','Tags missing',''].map((h, i) => (
+                      <th key={i} style={{ ...tHead, textAlign: i >= 1 && i <= 5 ? 'right' : 'left' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -591,8 +1049,6 @@ export function ReportsPage() {
                       <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(g.issueDeliveryCount)}</td>
                       <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(g.missingQty)}</td>
                       <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(g.damageQty)}</td>
-                      <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(g.missingTotal)}</td>
-                      <td style={{ ...tCell, textAlign: 'right' }}>{formatRupee(g.damageTotal)}</td>
                       <td style={{ ...tCell, textAlign: 'right' }}>{formatNumber(g.missingTagCount)}</td>
                       <td style={tCell}>
                         <button
@@ -600,7 +1056,7 @@ export function ReportsPage() {
                           style={{
                             padding: '4px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
                             background: '#fff', fontSize: 12, fontWeight: 600,
-                            color: '#4f46e5', cursor: 'pointer', whiteSpace: 'nowrap',
+                            color: '#059669', cursor: 'pointer', whiteSpace: 'nowrap',
                           }}
                         >View deliveries</button>
                       </td>
@@ -617,9 +1073,9 @@ export function ReportsPage() {
         </ReportCard>
       )}
 
-      {/* ══════════════════════════════════════════════
-          ISSUES — BY DELIVERY
-      ══════════════════════════════════════════════ */}
+      {/* ----------------------------------------------
+          ISSUES ? BY DELIVERY
+      ---------------------------------------------- */}
       {activeTab === 'issues-delivery' && (
         <ReportCard>
           <CardHead title="Missing & damage by delivery" />
@@ -633,9 +1089,9 @@ export function ReportsPage() {
         </ReportCard>
       )}
 
-      {/* ══════════════════════════════════════════════
-          ISSUES — BY CUSTOMER
-      ══════════════════════════════════════════════ */}
+      {/* ----------------------------------------------
+          ISSUES ? BY CUSTOMER
+      ---------------------------------------------- */}
       {activeTab === 'issues-customer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!customerName.trim() ? (
@@ -655,27 +1111,25 @@ export function ReportsPage() {
                 <CardHead title={customerReport.customerName} />
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: 0,
                 }}>
                   {[
-                    ['Deliveries', customerReport.summary.deliveryCount, undefined],
-                    ['With issues', customerReport.summary.issueDeliveryCount, undefined],
-                    ['Missing qty', customerReport.summary.missingQty, undefined],
-                    ['Damage qty', customerReport.summary.damageQty, undefined],
-                    ['₹ missing', formatRupee(customerReport.summary.missingTotal), undefined],
-                    ['₹ damage', formatRupee(customerReport.summary.damageTotal), undefined],
-                    ['Tags missing', customerReport.summary.missingTagCount, undefined],
-                    ['Dmg/lost tags', customerReport.summary.damagedTagCount + customerReport.summary.lostTagCount, undefined],
+                    ['Deliveries', customerReport.summary.deliveryCount],
+                    ['With issues', customerReport.summary.issueDeliveryCount],
+                    ['Missing qty', customerReport.summary.missingQty],
+                    ['Damage qty', customerReport.summary.damageQty],
+                    ['Tags missing', customerReport.summary.missingTagCount],
+                    ['Dmg/lost tags', customerReport.summary.damagedTagCount + customerReport.summary.lostTagCount],
                   ].map(([label, val], i) => (
                     <div key={String(label)} style={{
                       padding: '14px 18px',
-                      borderBottom: i < 4 ? '1px solid #f1f5f9' : undefined,
-                      borderRight: (i + 1) % 4 !== 0 ? '1px solid #f1f5f9' : undefined,
+                      borderBottom: i < 3 ? '1px solid #f1f5f9' : undefined,
+                      borderRight: (i + 1) % 3 !== 0 ? '1px solid #f1f5f9' : undefined,
                     }}>
                       <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>{label}</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>
-                        {typeof val === 'number' ? formatNumber(val) : val}
+                        {formatNumber(val as number)}
                       </div>
                     </div>
                   ))}
@@ -696,9 +1150,9 @@ export function ReportsPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
+      {/* ----------------------------------------------
           STOCK TAB
-      ══════════════════════════════════════════════ */}
+      ---------------------------------------------- */}
       {activeTab === 'stock' && (
         <ReportCard>
           <CardHead title="Inventory stock" />
@@ -724,8 +1178,8 @@ export function ReportsPage() {
                     >
                       <td style={tCell}>{r.godownName || r.godownId}</td>
                       <td style={tCell}>{r.particulars || r.productId}</td>
-                      <td style={tCell}>{r.sku || '—'}</td>
-                      <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#4f46e5' }}>{formatNumber(r.qty)}</td>
+                      <td style={tCell}>{r.sku || '?'}</td>
+                      <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatNumber(r.qty)}</td>
                     </tr>
                   ))}
                 </tbody>

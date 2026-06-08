@@ -9,6 +9,7 @@ type Props = {
   description?: string
   confirmLabel?: string
   busy?: boolean
+  initialValue?: string
   onClose: () => void
   onConfirm: (vehicleNumber: string) => void | Promise<void>
 }
@@ -19,14 +20,19 @@ export function VehicleNumberModal({
   description,
   confirmLabel = 'Confirm',
   busy = false,
+  initialValue = '',
   onClose,
   onConfirm,
 }: Props) {
   const [vehicleNumber, setVehicleNumber] = useState('')
 
   useEffect(() => {
-    if (!open) setVehicleNumber('')
-  }, [open])
+    if (open) {
+      setVehicleNumber(initialValue.trim())
+    } else {
+      setVehicleNumber('')
+    }
+  }, [open, initialValue])
 
   const handleConfirm = () => {
     const v = vehicleNumber.trim()

@@ -168,6 +168,29 @@ async function resetPassword(req, res) {
   }
 }
 
+async function deleteUser(req, res) {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user id' })
+    }
+    if (String(req.user.id) === String(id)) {
+      return res.status(400).json({ message: 'Cannot delete your own account' })
+    }
+
+    const user = await User.findById(id)
+    if (!user) return res.status(404).json({ message: 'Not found' })
+    if (!['BILLER', 'DELIVERY'].includes(user.role)) {
+      return res.status(403).json({ message: 'Only biller and delivery person accounts can be deleted' })
+    }
+
+    await user.deleteOne()
+    return res.json({ message: 'User deleted', id: String(id) })
+  } catch (err) {
+    return res.status(500).json({ message: err.message || 'Delete failed' })
+  }
+}
+
 
 
 /* =========================================================
@@ -359,5 +382,15 @@ async function updateMyProfile(req, res) {
 
 
 
-module.exports = {   getMyProfile,
-  updateMyProfile,listUsers, listBillers, createUser, createBiller, updateUser, setUserActive, resetPassword }
+module.exports = {
+  getMyProfile,
+  updateMyProfile,
+  listUsers,
+  listBillers,
+  createUser,
+  createBiller,
+  updateUser,
+  setUserActive,
+  resetPassword,
+  deleteUser,
+}

@@ -1,14 +1,31 @@
 import { API_BASE } from './api'
 
-export async function openDeliveryChallanPdf(deliveryId: string, token: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/deliveries/${deliveryId}/challan.pdf`, {
+async function openChallanPdf(deliveryId: string, token: string, path: 'challan.pdf' | 'return-challan.pdf'): Promise<void> {
+  const res = await fetch(`${API_BASE}/deliveries/${deliveryId}/${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error('Failed to generate PDF')
+  if (!res.ok) {
+    let message = 'Failed to generate PDF'
+    try {
+      const data = await res.json()
+      if (data?.message) message = String(data.message)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message)
+  }
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   window.open(url, '_blank', 'noopener,noreferrer')
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+export async function openDeliveryChallanPdf(deliveryId: string, token: string): Promise<void> {
+  return openChallanPdf(deliveryId, token, 'challan.pdf')
+}
+
+export async function openReturnChallanPdf(deliveryId: string, token: string): Promise<void> {
+  return openChallanPdf(deliveryId, token, 'return-challan.pdf')
 }
 
 export function ChallanPdfIcon({ className = 'h-4 w-4' }: { className?: string }) {

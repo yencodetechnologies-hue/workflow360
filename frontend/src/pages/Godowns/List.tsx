@@ -319,7 +319,7 @@
 
 //       {/* ── stat cards ── */}
 //       {/* <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-//         <StatCard label="Total Godowns" value={godowns.length} variant="purple" />
+//         <StatCard label="Total Godowns" value={godowns.length} variant="green" />
 //         <StatCard label="Total Stock Units" value={formatNumber(totalStock)} />
 //         <StatCard label="Search Results" value={rows.length} />
 //       </div> */}
@@ -411,7 +411,7 @@
 //                   <tr
 //                     key={g.id || `row-${idx}`}
 //                     style={{ transition: 'background 0.15s' }}
-//                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
+//                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.06)')}
 //                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
 //                   >
 //                     {/* CODE */}
@@ -668,11 +668,11 @@ const actionBtn: React.CSSProperties = {
 
 // ── stat card ──────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, variant = 'white' }: { label: string; value: string | number; variant?: 'purple' | 'white' }) {
-  if (variant === 'purple') {
+function StatCard({ label, value, variant = 'white' }: { label: string; value: string | number; variant?: 'green' | 'white' }) {
+  if (variant === 'green') {
     return (
       <div style={{
-        background: 'linear-gradient(135deg,#4338ca 0%,rgb(49,46,129) 100%)',
+        background: 'linear-gradient(135deg,#059669 0%,#064e3b 100%)',
         borderRadius: 20, padding: '20px 24px',
         flex: '1 1 140px', minWidth: 0,
         position: 'relative', overflow: 'hidden',
@@ -813,7 +813,7 @@ export function GodownsListPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '10px 22px', borderRadius: 12, border: 'none',
-              background: '#4338ca', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer',
+              background: '#059669', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer',
             }}
           >
             <svg viewBox="0 0 24 24" fill="none" width="14" height="14" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
@@ -832,7 +832,7 @@ export function GodownsListPage() {
 
       {/* ── stat cards ── */}
       <div className="godown-stat-cards" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <StatCard label="Total Godowns" value={godowns.length} variant="purple" />
+        <StatCard label="Total Godowns" value={godowns.length} variant="green" />
         <StatCard label="Total Stock Units" value={formatNumber(totalStock)} />
         <StatCard label="Search Results" value={rows.length} />
       </div>
@@ -886,7 +886,7 @@ export function GodownsListPage() {
                 {rows.map((g, idx) => (
                   <tr key={g.id || `row-${idx}`}
                     style={{ transition: 'background 0.15s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.06)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     <Td>
@@ -899,18 +899,18 @@ export function GodownsListPage() {
                     <Td>{g.mobile || '—'}</Td>
                     <Td truncate>{g.address || '—'}</Td>
                     <Td align="right">
-                      <span style={{ fontWeight: 700, color: '#4338ca', fontSize: 14 }}>{formatNumber(stockByGodown[g.id] ?? 0)}</span>
+                      <span style={{ fontWeight: 700, color: '#047857', fontSize: 14 }}>{formatNumber(stockByGodown[g.id] ?? 0)}</span>
                     </Td>
                     <Td align="right">
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                         <Link to={`/godowns/${g.id}`} title="View godown" style={{ ...actionBtn, textDecoration: 'none' }}
-                          onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#ede9fe'; el.style.borderColor = '#c4b5fd'; el.style.color = '#4338ca' }}
+                          onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#d1fae5'; el.style.borderColor = '#a7f3d0'; el.style.color = '#047857' }}
                           onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fff'; el.style.borderColor = '#e2e8f0'; el.style.color = '#64748b' }}
                         ><EyeIcon /></Link>
                         {isAdmin && (
                           <>
                             <button type="button" title="Edit" style={actionBtn} onClick={() => openEdit(g)}
-                              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#ede9fe'; el.style.borderColor = '#c4b5fd'; el.style.color = '#4338ca' }}
+                              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#d1fae5'; el.style.borderColor = '#a7f3d0'; el.style.color = '#047857' }}
                               onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = '#fff'; el.style.borderColor = '#e2e8f0'; el.style.color = '#64748b' }}
                             ><PencilIcon /></button>
                             <button type="button" title="Delete" style={actionBtn} onClick={() => { setDeletingGodown(g); setDeleteOpen(true) }}

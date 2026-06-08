@@ -122,6 +122,7 @@ Uploads a product image directly to Cloudinary.
 ### Environment Variables (`.env`)
 - `PORT`: Server port (default 5000).
 - `MONGODB_URI`: Connection string for MongoDB.
+- `FRONTEND_PUBLIC_URL`: Public frontend base URL for delivery verify and biller return share links (e.g. `https://workflow360.octosofttechnologies.in`). When unset, the API derives this from the request `Origin`/`Referer`, or falls back to the production URL on the deployed host.
 - `FORCE_SEED`:
   - `true`: Wipes the database and re-seeds from `price_list_2026.json` on startup.
   - `false`: Normal operation (persists data).
