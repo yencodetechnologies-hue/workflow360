@@ -1,6 +1,5 @@
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
-const InventoryLedger = require('../models/InventoryLedger')
 const Product = require('../models/Product')
 const Godown = require('../models/Godown')
 const User = require('../models/User')
@@ -485,53 +484,6 @@ async function issuesByDelivery(req, res) {
   return res.json(rows)
 }
 
-async function stockReport(req, res) {
-  const match = {}
-  if (req.user.role === 'GODOWN' && req.user.godownId) {
-    if (!mongoose.Types.ObjectId.isValid(req.user.godownId)) {
-      return res.status(400).json({ message: 'Invalid user godownId' })
-    }
-    match.godownId = new mongoose.Types.ObjectId(req.user.godownId)
-  } else if (req.user.role === 'ADMIN' || req.user.role === 'BILLER') {
-    const gid = String(req.query.godownId || '').trim()
-    if (gid) {
-      if (!mongoose.Types.ObjectId.isValid(gid)) return res.status(400).json({ message: 'Invalid godownId' })
-      match.godownId = new mongoose.Types.ObjectId(gid)
-    }
-  }
-
-  const rows = await InventoryLedger.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: { godownId: '$godownId', productId: '$productId' },
-        qty: { $sum: '$qtyDelta' },
-      },
-    },
-    { $sort: { qty: -1 } },
-    { $limit: 5000 },
-  ])
-
-  const productIds = rows.map((r) => String(r._id.productId))
-  const godownIds = rows.map((r) => String(r._id.godownId))
-  const [productMap, godownMap] = await Promise.all([loadProductMap(productIds), loadGodownMap(godownIds)])
-
-  return res.json(
-    rows.map((r) => {
-      const p = productMap.get(String(r._id.productId))
-      const g = godownMap.get(String(r._id.godownId))
-      return {
-        godownId: String(r._id.godownId),
-        godownName: g?.name,
-        productId: String(r._id.productId),
-        particulars: p?.particulars,
-        sku: p?.sku || p?.s_no,
-        qty: r.qty,
-      }
-    }),
-  )
-}
-
 const RETURN_PHASE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'])
 
 async function returnsByBiller(req, res) {
@@ -745,7 +697,6 @@ module.exports = {
   customersList,
   missingReport,
   missingProductsReport,
-  stockReport,
   customerHistory,
   issuesByGodown,
   issuesByDelivery,

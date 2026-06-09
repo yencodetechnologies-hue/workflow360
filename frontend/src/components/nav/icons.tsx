@@ -129,6 +129,27 @@ export function ReportsIcon() {
   )
 }
 
+export function ActivityLogsIcon() {
+  return (
+    <Icon>
+      <path
+        d="M9 12h6M9 16h4M8 8h8"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <circle cx="6.5" cy="12" r="0.8" fill="currentColor" />
+      <circle cx="6.5" cy="16" r="0.8" fill="currentColor" />
+      <circle cx="6.5" cy="8" r="0.8" fill="currentColor" />
+    </Icon>
+  )
+}
+
 export function SearchIcon() {
   return (
     <Icon>

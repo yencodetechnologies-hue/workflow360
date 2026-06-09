@@ -19,6 +19,7 @@ import { QueuePage } from './pages/Queue'
 import { OrdersListPage } from './pages/Orders/List'
 import { ScanDeliveryPage } from './pages/Scan/ScanDelivery'
 import { AdminEditProfilePage } from './pages/Editprofile'
+import { ActivityLogsPage } from './pages/ActivityLogs'
 
 export default function App() {
   return (
@@ -101,6 +102,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['ADMIN']}>
                 <DeliveryPersonsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity-logs"
+            element={
+              <ProtectedRoute roles={['ADMIN']}>
+                <ActivityLogsPage />
               </ProtectedRoute>
             }
           />

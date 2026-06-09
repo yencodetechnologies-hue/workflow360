@@ -13,14 +13,12 @@ import type {
   IssueDeliveryRow,
   ProductReturnRow,
   ReportTab,
-  StockReportRow,
 } from '../types/reports'
 
 // -- constants --------------------------------------------------------------
 
 const MAIN_TABS: { id: ReportTab; label: string }[] = [
   { id: 'issues-godown', label: 'Missing & damage' },
-  { id: 'stock', label: 'Stock' },
 ]
 
 const ISSUE_SUB_TABS: { id: ReportTab; label: string }[] = [
@@ -521,7 +519,6 @@ export function ReportsPage() {
   const [error, setError] = useState<string | null>(null)
   const [godownIssues, setGodownIssues] = useState<GodownIssueRow[] | null>(null)
   const [deliveryIssues, setDeliveryIssues] = useState<IssueDeliveryRow[] | null>(null)
-  const [stock, setStock] = useState<StockReportRow[] | null>(null)
   const [billerReturns, setBillerReturns] = useState<BillerReturnRow[] | null>(null)
   const [productReturns, setProductReturns] = useState<ProductReturnRow[] | null>(null)
   const [damageReturns, setDamageReturns] = useState<ProductReturnRow[] | null>(null)
@@ -631,18 +628,6 @@ export function ReportsPage() {
     setDamageReturns(null)
     setMissingOrders(null)
   }, [activeTab, date, dateTo, dateQuery, filterQuery, godownId, billerUserId, showBillerList, showProductList])
-
-  useEffect(() => {
-    if (activeTab !== 'stock') return
-    const token = getToken(); if (!token) return
-    if (auth.status !== 'authenticated' || (auth.user.role !== 'ADMIN' && auth.user.role !== 'GODOWN')) return
-    setLoading(true); setError(null)
-    const gidQ = godownId ? `?godownId=${encodeURIComponent(godownId)}` : ''
-    apiFetch<StockReportRow[]>(`/reports/stock${gidQ}`, { token })
-      .then(setStock)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load stock'))
-      .finally(() => setLoading(false))
-  }, [activeTab, godownId, auth])
 
   const onMainTab = (id: ReportTab) => {
     if (id === 'issues-godown') {
@@ -998,46 +983,6 @@ export function ReportsPage() {
         </ReportCard>
       )}
 
-      {/* ----------------------------------------------
-          STOCK TAB
-      ---------------------------------------------- */}
-      {activeTab === 'stock' && (
-        <ReportCard>
-          <CardHead title="Inventory stock" />
-          {auth.status === 'authenticated' && auth.user.role !== 'ADMIN' && auth.user.role !== 'GODOWN' ? (
-            <div style={{ padding: 20 }}>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Stock report is available for admin and godown roles.</p>
-            </div>
-          ) : stock?.length ? (
-            <div style={tableWrap}>
-              <table style={{ ...tableEl, minWidth: 500 }}>
-                <thead>
-                  <tr>
-                    {['Godown','Product','SKU','Qty'].map((h, i) => (
-                      <th key={h} style={{ ...tHead, textAlign: i === 3 ? 'right' : 'left' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stock.map((r) => (
-                    <tr key={`${r.godownId}-${r.productId}`} style={{ transition: 'background 0.12s' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(238,242,255,0.4)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = '')}
-                    >
-                      <td style={tCell}>{r.godownName || r.godownId}</td>
-                      <td style={tCell}>{r.particulars || r.productId}</td>
-                      <td style={tCell}>{r.sku || '?'}</td>
-                      <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatNumber(r.qty)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : !loading ? (
-            <Empty title="No stock rows" sub="Load stock or adjust godown filter." />
-          ) : null}
-        </ReportCard>
-      )}
     </div>
   )
 }

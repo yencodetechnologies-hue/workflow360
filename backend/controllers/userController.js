@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 const User = require('../models/User')
 const { normalizePhone } = require('../utils/phone')
+const { logActivity } = require('../utils/activityLog')
 
 function normalizeContactPhone(value) {
   if (value == null || value === '') return undefined
@@ -84,6 +85,15 @@ async function createUser(req, res) {
       active: active !== undefined ? Boolean(active) : true,
     })
 
+    logActivity({
+      req,
+      action: 'USER_CREATED',
+      category: 'USER',
+      targetType: 'USER',
+      targetId: String(user._id),
+      targetName: user.email || user.loginId || user.siteName,
+      details: { role: user.role, siteName: user.siteName },
+    })
     return res.status(201).json(mapUser(user.toObject()))
   } catch (err) {
     if (err && (err.code === 11000 || err.code === 11001)) {
@@ -129,6 +139,15 @@ async function updateUser(req, res) {
     if (godownId !== undefined) user.godownId = godownId || undefined
     if (active !== undefined) user.active = Boolean(active)
     await user.save()
+    logActivity({
+      req,
+      action: 'USER_UPDATED',
+      category: 'USER',
+      targetType: 'USER',
+      targetId: String(user._id),
+      targetName: user.email || user.loginId || user.siteName,
+      details: { role: user.role },
+    })
     return res.json(mapUser(user.toObject()))
   } catch (err) {
     if (err && (err.code === 11000 || err.code === 11001)) {
@@ -146,6 +165,15 @@ async function setUserActive(req, res) {
     if (!user) return res.status(404).json({ message: 'Not found' })
     user.active = Boolean(active)
     await user.save()
+    logActivity({
+      req,
+      action: user.active ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+      category: 'USER',
+      targetType: 'USER',
+      targetId: String(user._id),
+      targetName: user.email || user.loginId || user.siteName,
+      details: { role: user.role, active: user.active },
+    })
     return res.json({ id: String(user._id), active: user.active })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Update failed' })
@@ -162,6 +190,15 @@ async function resetPassword(req, res) {
     const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10)
     user.passwordHash = await bcrypt.hash(String(password), saltRounds)
     await user.save()
+    logActivity({
+      req,
+      action: 'PASSWORD_RESET',
+      category: 'USER',
+      targetType: 'USER',
+      targetId: String(user._id),
+      targetName: user.email || user.loginId || user.siteName,
+      details: { role: user.role },
+    })
     return res.json({ id: String(user._id) })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Reset failed' })
@@ -184,7 +221,18 @@ async function deleteUser(req, res) {
       return res.status(403).json({ message: 'Only biller and delivery person accounts can be deleted' })
     }
 
+    const deletedName = user.email || user.loginId || user.siteName
+    const deletedRole = user.role
     await user.deleteOne()
+    logActivity({
+      req,
+      action: 'USER_DELETED',
+      category: 'USER',
+      targetType: 'USER',
+      targetId: String(id),
+      targetName: deletedName,
+      details: { role: deletedRole },
+    })
     return res.json({ message: 'User deleted', id: String(id) })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Delete failed' })

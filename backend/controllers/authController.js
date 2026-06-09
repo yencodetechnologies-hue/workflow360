@@ -5,6 +5,7 @@ const User = require('../models/User')
 const Godown = require('../models/Godown')
 const { normalizePhone } = require('../utils/phone')
 const { syncGodownLoginUser } = require('../utils/syncGodownUser')
+const { logActivity } = require('../utils/activityLog')
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev_jwt_secret_change_me')
@@ -172,10 +173,29 @@ async function login(req, res) {
     }
 
     if (!user || !user.active || !passwordOk) {
+      logActivity({
+        req,
+        actor: { userId: null, role: null, name: String(loginId || identifier || email || '') },
+        action: 'LOGIN_FAILED',
+        category: 'AUTH',
+        details: { identifier: String(loginId || identifier || email || '') },
+      })
       return res.status(401).json({ message: 'Invalid credentials' })
     }
 
     user = await ensureGodownLinked(user)
+
+    logActivity({
+      req,
+      actor: {
+        userId: String(user._id),
+        role: user.role,
+        name: user.email || user.loginId || user.siteName || user.contactName,
+      },
+      action: 'LOGIN',
+      category: 'AUTH',
+      details: { role: user.role },
+    })
 
     const token = signToken(user)
     return res.json({ token, user: await mapUser(user) })

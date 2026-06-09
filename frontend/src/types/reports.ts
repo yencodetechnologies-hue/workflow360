@@ -142,15 +142,6 @@ export type ProductReturnRow = {
   deliveries: ProductReturnDeliveryLine[]
 }
 
-export type StockReportRow = {
-  godownId: string
-  godownName?: string
-  productId: string
-  particulars?: string
-  sku?: string
-  qty: number
-}
-
 export type ReportTab =
   | 'daily'
   | 'issues-godown'
@@ -158,5 +149,4 @@ export type ReportTab =
   | 'issues-biller'
   | 'missing'
   | 'missing-products'
-  | 'stock'
   | 'customer'

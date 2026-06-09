@@ -7,7 +7,6 @@ const {
   customersList,
   missingReport,
   missingProductsReport,
-  stockReport,
   customerHistory,
   issuesByGodown,
   issuesByDelivery,
@@ -31,7 +30,6 @@ router.get('/returns/by-biller', requireRole(reportRoles), returnsByBiller)
 router.get('/returns/by-product', requireRole(reportRoles), returnsByProduct)
 router.get('/missing', requireRole(reportRoles), missingReport)
 router.get('/missing-products', requireRole(reportRoles), missingProductsReport)
-router.get('/stock', requireRole(['ADMIN', 'GODOWN', 'BILLER']), stockReport)
 router.get('/customer-history', requireRole(['ADMIN', 'BILLER']), customerHistory)
 
 module.exports = router

@@ -5,6 +5,7 @@ const Delivery = require('../models/Delivery')
 const { dispatchCompleteAsync } = require('./deliveryController')
 const { normalizePhone } = require('../utils/phone')
 const { syncGodownLoginUser, deactivateGodownLoginUser } = require('../utils/syncGodownUser')
+const { logActivity } = require('../utils/activityLog')
 
 const saltRounds = () => Number(process.env.BCRYPT_ROUNDS || 10)
 
@@ -74,6 +75,15 @@ async function createGodown(req, res) {
       throw syncErr
     }
 
+    logActivity({
+      req,
+      action: 'GODOWN_CREATED',
+      category: 'GODOWN',
+      targetType: 'GODOWN',
+      targetId: String(g._id),
+      targetName: g.name,
+      details: { code: g.code, city: g.city },
+    })
     return res.status(201).json(mapGodown(g.toObject()))
   } catch (err) {
     if (err && err.code === 11000) {
@@ -141,6 +151,15 @@ async function updateGodown(req, res) {
       }
     }
 
+    logActivity({
+      req,
+      action: 'GODOWN_UPDATED',
+      category: 'GODOWN',
+      targetType: 'GODOWN',
+      targetId: String(g._id),
+      targetName: g.name,
+      details: { code: g.code },
+    })
     return res.json(mapGodown(g.toObject()))
   } catch (err) {
     if (err && err.code === 11000) {
@@ -160,10 +179,18 @@ async function deleteGodown(req, res) {
     const g = await Godown.findById(godownId)
     if (!g || !g.active) return res.status(404).json({ message: 'Not found' })
 
+    const deletedName = g.name
     g.active = false
     await g.save()
     await deactivateGodownLoginUser(godownId)
-
+    logActivity({
+      req,
+      action: 'GODOWN_DELETED',
+      category: 'GODOWN',
+      targetType: 'GODOWN',
+      targetId: String(godownId),
+      targetName: deletedName,
+    })
     return res.json({ message: 'Godown deleted' })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Delete failed' })

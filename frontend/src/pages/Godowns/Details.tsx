@@ -739,7 +739,6 @@ export function GodownsDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [catSearch, setCatSearch] = useState('')
   const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string,string>>({})
-  const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string,string>>({})
   const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
 
   const load = () => {
@@ -805,10 +804,9 @@ export function GodownsDetailsPage() {
     if (!/^-?\d+$/.test(raw)) { setError('Enter a whole number (e.g. 10 or -3).'); return }
     const qtyDelta = parseInt(raw, 10)
     if (qtyDelta===0) { setError('Quantity change cannot be zero.'); return }
-    const note = (adjustNoteByProduct[productId]??'').trim()
     setError(null); setAdjustApplyingProductId(productId)
-    apiFetch<{ok:boolean;balanceAfter:number}>(`/godowns/${id}/inventory/adjust`, { token, method:'POST', body:JSON.stringify({productId,qtyDelta,note:note||undefined}) })
-      .then(() => { setAdjustDeltaByProduct(p=>({...p,[productId]:''})); setAdjustNoteByProduct(p=>({...p,[productId]:''})); return reloadStock() })
+    apiFetch<{ok:boolean;balanceAfter:number}>(`/godowns/${id}/inventory/adjust`, { token, method:'POST', body:JSON.stringify({productId,qtyDelta}) })
+      .then(() => { setAdjustDeltaByProduct(p=>({...p,[productId]:''})); return reloadStock() })
       .catch((e:any) => setError(e?.message||'Adjustment failed'))
       .finally(() => setAdjustApplyingProductId(null))
   }
@@ -1027,7 +1025,6 @@ export function GodownsDetailsPage() {
                         <th style={TH}>SKU</th>
                         <th style={{ ...TH, textAlign:'right' }}>Current</th>
                         <th style={TH}>Change (+/−)</th>
-                        <th style={TH}>Note</th>
                         <th style={{ ...TH, textAlign:'right' }}> </th>
                       </tr>
                     </thead>
@@ -1046,10 +1043,6 @@ export function GodownsDetailsPage() {
                               <input placeholder="e.g. 10" value={adjustDeltaByProduct[p.productId]??''} onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
                                 style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12.5, color:'#1E1A4E', background:'#faf9ff', outline:'none', fontFamily:'inherit' }}
                                 onFocus={e=>(e.currentTarget.style.borderColor='#34d399')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.18)')} />
-                            </td>
-                            <td style={{ ...TD, minWidth:130 }}>
-                              <input placeholder="Optional" value={adjustNoteByProduct[p.productId]??''} onChange={e=>setAdjustNoteByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
-                                style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12.5, color:'#1E1A4E', background:'#faf9ff', outline:'none', fontFamily:'inherit' }} />
                             </td>
                             <td style={{ ...TD, textAlign:'right' }}>
                               <button disabled={applying} onClick={()=>applyStockAdjustment(p.productId)}

@@ -1,5 +1,6 @@
 import type React from 'react'
 import {
+  ActivityLogsIcon,
   CalendarIcon,
   DashboardIcon,
   DeliveryIcon,
@@ -51,5 +52,6 @@ export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
     { label: 'Products', to: '/products', icon: <ProductIcon /> },
     { label: 'Delivery Manager', to: '/deliveries', icon: <DeliveryIcon /> },
     { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
+    { label: 'Activity Logs', to: '/activity-logs', icon: <ActivityLogsIcon /> },
   ]
 }
