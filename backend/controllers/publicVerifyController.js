@@ -1,5 +1,7 @@
+const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
 const Product = require('../models/Product')
+const InventoryLedger = require('../models/InventoryLedger')
 const { parseRate, populateLineDetails } = require('../utils/deliveryLineDetails')
 
 function allowedLineProductIds(delivery) {
@@ -184,6 +186,41 @@ async function postBillerReturn(req, res) {
     delivery.missingTotal = Math.round(missingTotal * 100) / 100
     delivery.billerReturnSubmittedAt = new Date()
     await delivery.save()
+
+    // Deduct damaged and missing items from inventory stock
+    const godownId = delivery.fromGodownId
+    if (godownId) {
+      const ledgerEntries = []
+      for (const line of billerDamagedLines) {
+        if (line.qty > 0) {
+          ledgerEntries.push({
+            godownId: new mongoose.Types.ObjectId(String(godownId)),
+            productId: new mongoose.Types.ObjectId(String(line.productId)),
+            qtyDelta: -line.qty,
+            reason: 'DAMAGE',
+            refType: 'BillerReturn',
+            refId: String(delivery._id),
+            note: line.note || `Damage reported - ${delivery.deliveryNo}`,
+          })
+        }
+      }
+      for (const line of billerMissingLines) {
+        if (line.qty > 0) {
+          ledgerEntries.push({
+            godownId: new mongoose.Types.ObjectId(String(godownId)),
+            productId: new mongoose.Types.ObjectId(String(line.productId)),
+            qtyDelta: -line.qty,
+            reason: 'LOSS',
+            refType: 'BillerReturn',
+            refId: String(delivery._id),
+            note: line.note || `Missing reported - ${delivery.deliveryNo}`,
+          })
+        }
+      }
+      if (ledgerEntries.length > 0) {
+        await InventoryLedger.insertMany(ledgerEntries)
+      }
+    }
 
     return res.json({
       ok: true,

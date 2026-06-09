@@ -68,4 +68,14 @@ class UserApi {
     final data = await ApiClient.patch('/users/$id', body: body);
     return UserRow.fromJson(data as Map<String, dynamic>);
   }
+
+  static Future<Map<String, dynamic>> getMyProfile() async {
+    final data = await ApiClient.get('/users/me');
+    return data as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> updateMyProfile(Map<String, dynamic> body) async {
+    final data = await ApiClient.put('/users/me', body: body);
+    return data as Map<String, dynamic>;
+  }
 }

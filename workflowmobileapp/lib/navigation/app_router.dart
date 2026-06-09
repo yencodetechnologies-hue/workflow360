@@ -20,6 +20,7 @@ import '../screens/reports_screen.dart';
 import '../screens/rfid_shell_screen.dart';
 import '../screens/role_selection_screen.dart';
 import '../screens/splash_screen.dart';
+import '../screens/profile_screen.dart';
 import '../services/app_state.dart';
 import '../services/auth_service.dart';
 import 'app_shell.dart';
@@ -51,7 +52,7 @@ class AppRouter {
           return '/dashboard';
         }
         if (user.role == 'DELIVERY') {
-          const allowed = ['/deliveries', '/rfid'];
+          const allowed = ['/deliveries', '/rfid', '/profile'];
           final ok = allowed.any((p) => path == p || path.startsWith('$p/')) ||
               path.startsWith('/scan/');
           if (!ok) return '/deliveries';
@@ -65,6 +66,7 @@ class AppRouter {
             '/reports',
             '/godowns',
             '/rfid',
+            '/profile',
           ];
           final ok = allowed.any((p) => path == p || path.startsWith('$p/')) ||
               path.startsWith('/scan/');
@@ -78,6 +80,11 @@ class AppRouter {
         GoRoute(
           path: '/login/:role',
           builder: (_, state) => LoginScreen(role: state.pathParameters['role']!.toUpperCase()),
+        ),
+        GoRoute(
+          parentNavigatorKey: _rootKey,
+          path: '/profile',
+          builder: (_, __) => const ProfileScreen(),
         ),
         GoRoute(
           parentNavigatorKey: _rootKey,

@@ -24,11 +24,11 @@ class RoleSelectionScreen extends StatelessWidget {
       title: 'Godown',
       subtitle: 'Dispatch scan & vehicle verify',
       gradient: LinearGradient(
-        colors: [Color(0xFF059669), AppColors.green],
+        colors: [Color(0xFFD97706), AppColors.amber],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      accent: AppColors.green,
+      accent: AppColors.amber,
       features: ['RFID scan', 'Queue'],
     ),
     _RoleOption(
@@ -37,11 +37,11 @@ class RoleSelectionScreen extends StatelessWidget {
       title: 'Delivery',
       subtitle: 'Pickup at godown · deliver at biller',
       gradient: LinearGradient(
-        colors: [Color(0xFF2563EB), AppColors.accent],
+        colors: [Color(0xFF059669), AppColors.green],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      accent: AppColors.accent,
+      accent: AppColors.green,
       features: ['Routes', 'Proof'],
     ),
   ];

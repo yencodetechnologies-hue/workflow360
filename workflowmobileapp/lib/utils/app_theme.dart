@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Colors aligned with the web app (Tailwind: slate, violet primary, emerald success).
+/// Colors aligned with the web app (Tailwind: slate, emerald primary, emerald success).
 class AppColors {
   // Page & surfaces (website: slate-50 → white → blue-50/30)
   static const bg = Color(0xFFF8FAFC);
@@ -12,11 +12,11 @@ class AppColors {
   static const card = Color(0xFFFFFFFF);
   static const border = Color(0xFFE2E8F0);
 
-  // Brand primary (website: violet-500 / violet-600)
-  static const primary = Color(0xFF7C3AED);
-  static const primaryLight = Color(0xFF8B5CF6);
-  static const primaryDark = Color(0xFF6D28D9);
-  static const purple = Color(0xFF9333EA);
+  // Brand primary (website: emerald-500 / emerald-600)
+  static const primary = Color(0xFF059669);
+  static const primaryLight = Color(0xFF10B981);
+  static const primaryDark = Color(0xFF047857);
+  static const purple = Color(0xFF064E3B);
 
   /// Legacy name used across screens — same as [primary].
   static const cyan = primary;

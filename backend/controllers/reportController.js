@@ -271,9 +271,13 @@ async function dailyDeliveryReport(req, res) {
       a.byStatus[d.status] = (a.byStatus[d.status] || 0) + 1
       a.lost += (d.lostTagIds || []).length
       a.damaged += (d.damagedTagIds || []).length
+      a.missingQty += sumLineQty(d.billerMissingLines)
+      a.damageQty += sumLineQty(d.billerDamagedLines)
+      a.missingTotal += Number(d.missingTotal) || 0
+      a.damageTotal += Number(d.damageTotal) || 0
       return a
     },
-    { total: 0, byStatus: {}, lost: 0, damaged: 0 },
+    { total: 0, byStatus: {}, lost: 0, damaged: 0, missingQty: 0, damageQty: 0, missingTotal: 0, damageTotal: 0 },
   )
 
   const dateTo = String(req.query.dateTo || '').trim()
@@ -481,48 +485,6 @@ async function issuesByDelivery(req, res) {
   return res.json(rows)
 }
 
-async function issuesCustomerReport(req, res) {
-  const customerName = String(req.query.customerName || '').trim()
-  if (!customerName) return res.status(400).json({ message: 'customerName required' })
-
-  const result = await buildDeliveryQuery(req)
-  if (result.error) return res.status(400).json({ message: result.error.error })
-
-  const all = result.deliveries.filter((d) => d.customerName === customerName)
-  const issues = all.filter(deliveryHasIssue)
-
-  const summary = {
-    deliveryCount: all.length,
-    issueDeliveryCount: issues.length,
-    missingQty: 0,
-    damageQty: 0,
-    missingTotal: 0,
-    damageTotal: 0,
-    missingTagCount: 0,
-    damagedTagCount: 0,
-    lostTagCount: 0,
-  }
-
-  for (const d of all) {
-    const m = issueMetricsFromDelivery(d)
-    summary.missingQty += m.missingQty
-    summary.damageQty += m.damageQty
-    summary.missingTotal += m.missingTotal
-    summary.damageTotal += m.damageTotal
-    summary.missingTagCount += m.missingTagCount
-    summary.damagedTagCount += m.damagedTagCount
-    summary.lostTagCount += m.lostTagCount
-  }
-
-  const deliveries = await mapIssueDeliveryRows(all)
-
-  return res.json({
-    customerName,
-    summary,
-    deliveries,
-  })
-}
-
 async function stockReport(req, res) {
   const match = {}
   if (req.user.role === 'GODOWN' && req.user.godownId) {
@@ -591,6 +553,7 @@ async function returnsByBiller(req, res) {
         billerUserId: bid,
         deliveryCount: 0,
         missingOrderCount: 0,
+        damageOrderCount: 0,
         returnSubmittedCount: 0,
         pendingReturnCount: 0,
         missingQty: 0,
@@ -605,6 +568,7 @@ async function returnsByBiller(req, res) {
     const row = byBiller.get(bid)
     row.deliveryCount += 1
     if (sumLineQty(d.billerMissingLines) > 0) row.missingOrderCount += 1
+    if (sumLineQty(d.billerDamagedLines) > 0) row.damageOrderCount += 1
     if (d.billerReturnSubmittedAt) row.returnSubmittedCount += 1
     if (!d.billerReturnSubmittedAt && RETURN_PHASE_STATUSES.has(d.status)) {
       row.pendingReturnCount += 1
@@ -623,7 +587,7 @@ async function returnsByBiller(req, res) {
   const billerIds = [...byBiller.keys()]
   const billerMap = await loadBillerMap(billerIds)
 
-  const onlyMissing = String(req.query.onlyMissing || '1') !== '0'
+  const onlyIssues = String(req.query.onlyMissing || '1') !== '0'
 
   let rows = [...byBiller.values()]
     .map((row) => {
@@ -635,12 +599,14 @@ async function returnsByBiller(req, res) {
       }
     })
     .sort((a, b) => {
-      if (b.missingOrderCount !== a.missingOrderCount) return b.missingOrderCount - a.missingOrderCount
-      if (b.missingQty !== a.missingQty) return b.missingQty - a.missingQty
+      const aIssues = a.missingOrderCount + a.damageOrderCount
+      const bIssues = b.missingOrderCount + b.damageOrderCount
+      if (bIssues !== aIssues) return bIssues - aIssues
+      if (b.missingQty + b.damageQty !== a.missingQty + a.damageQty) return (b.missingQty + b.damageQty) - (a.missingQty + a.damageQty)
       return (a.billerName || '').localeCompare(b.billerName || '')
     })
 
-  if (onlyMissing) rows = rows.filter((r) => r.missingOrderCount > 0)
+  if (onlyIssues) rows = rows.filter((r) => r.missingOrderCount > 0 || r.damageOrderCount > 0)
 
   return res.json(rows)
 }
@@ -783,7 +749,6 @@ module.exports = {
   customerHistory,
   issuesByGodown,
   issuesByDelivery,
-  issuesCustomerReport,
   returnsByBiller,
   returnsByProduct,
 }

@@ -16,6 +16,10 @@ export type DailyReport = {
     byStatus: Record<string, number>
     lost: number
     damaged: number
+    missingQty: number
+    damageQty: number
+    missingTotal: number
+    damageTotal: number
   }
   deliveries: DailyDeliveryRow[]
 }
@@ -89,22 +93,6 @@ export type GodownIssueRow = {
   lostTagCount: number
 }
 
-export type CustomerIssueReport = {
-  customerName: string
-  summary: {
-    deliveryCount: number
-    issueDeliveryCount: number
-    missingQty: number
-    damageQty: number
-    missingTotal: number
-    damageTotal: number
-    missingTagCount: number
-    damagedTagCount: number
-    lostTagCount: number
-  }
-  deliveries: IssueDeliveryRow[]
-}
-
 export type MissingProductRow = {
   productId: string
   particulars?: string
@@ -122,6 +110,7 @@ export type BillerReturnRow = {
   siteName?: string
   deliveryCount: number
   missingOrderCount: number
+  damageOrderCount: number
   returnSubmittedCount: number
   pendingReturnCount: number
   missingQty: number
@@ -166,7 +155,6 @@ export type ReportTab =
   | 'daily'
   | 'issues-godown'
   | 'issues-delivery'
-  | 'issues-customer'
   | 'issues-biller'
   | 'missing'
   | 'missing-products'

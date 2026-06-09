@@ -3,7 +3,12 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.scribd.com)",
-      "Bash(dir \"j:\\\\Yencode\\\\workflow360\" /b)"
+      "Bash(dir \"j:\\\\Yencode\\\\workflow360\" /b)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -X POST http://localhost:2030/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@gmail.com\",\"password\":\"123456\"}')",
+      "Bash(node -e \"let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\); console.log\\(j.token ? j.token.substring\\(0,80\\)+'...' : JSON.stringify\\(j\\)\\)}\\)\")",
+      "Bash(curl -s -X POST http://localhost:2030/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@gmail.com\",\"password\":\"123456\"}' -o /tmp/login.txt)",
+      "Read(//tmp/**)"
     ]
   }
 }

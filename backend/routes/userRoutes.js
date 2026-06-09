@@ -17,13 +17,13 @@ const router = express.Router()
 
 router.use(requireAuth)
 
+router.get('/me', getMyProfile)
+router.put('/me', updateMyProfile)
+
 router.get('/billers', requireRole(['ADMIN', 'BILLER']), listBillers)
 router.post('/billers', requireRole(['ADMIN']), createBiller)
 
 router.use(requireRole(['ADMIN']))
-
-router.get('/me', getMyProfile)
-router.put('/me', updateMyProfile)
 
 router.get('/', listUsers)
 router.post('/', createUser)

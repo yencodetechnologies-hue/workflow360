@@ -14,6 +14,9 @@ class AuthUser {
   final String? godownId;
   final String? godownName;
   final String? siteName;
+  final String? siteAddress;
+  final String? contactPhone;
+  final String? contactName;
 
   AuthUser({
     required this.id,
@@ -23,6 +26,9 @@ class AuthUser {
     this.godownId,
     this.godownName,
     this.siteName,
+    this.siteAddress,
+    this.contactPhone,
+    this.contactName,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
@@ -33,6 +39,9 @@ class AuthUser {
         godownId: j['godownId'] as String?,
         godownName: j['godownName'] as String?,
         siteName: j['siteName'] as String?,
+        siteAddress: j['siteAddress'] as String?,
+        contactPhone: j['contactPhone'] as String?,
+        contactName: j['contactName'] as String?,
       );
 }
 
@@ -69,8 +78,19 @@ class AuthService {
       'godownId': user.godownId,
       'godownName': user.godownName,
       'siteName': user.siteName,
+      'siteAddress': user.siteAddress,
+      'contactPhone': user.contactPhone,
+      'contactName': user.contactName,
     }));
     await p.setString(_roleKey, role);
+  }
+
+  static Future<void> updateCachedUser(AuthUser user) async {
+    final token = await getToken();
+    final role = await getSavedRole();
+    if (token != null && role != null) {
+      await saveSession(token, user, role);
+    }
   }
 
   static Future<void> clearSession() async {

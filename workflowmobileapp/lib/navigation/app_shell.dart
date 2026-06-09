@@ -115,6 +115,11 @@ class _AppShellBody extends StatelessWidget {
               onPressed: () => context.push('/rfid'),
             ),
           IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'My profile',
+            onPressed: () => context.push('/profile'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sign out',
             onPressed: () async {
