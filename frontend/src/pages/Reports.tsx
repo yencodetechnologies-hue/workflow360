@@ -4570,41 +4570,41 @@ function IssueDeliveryTable({
 
 // -- missing report step indicator ------------------------------------------
 
-function MissingStepper({ step, labels }: { step: 1 | 2 | 3; labels: [string, string, string] }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 0, padding: '14px 20px',
-      borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
-      flexWrap: 'wrap',
-    }}>
-      {labels.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3
-        const active = step === n
-        const done = step > n
-        return (
-          <Fragment key={label}>
-            {i > 0 ? (
-              <div style={{ flex: '1 1 24px', height: 2, minWidth: 20, maxWidth: 48, background: done || active ? '#10b981' : '#e2e8f0', margin: '0 8px' }} />
-            ) : null}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                background: active ? '#059669' : done ? '#d1fae5' : '#f1f5f9',
-                color: active ? '#fff' : done ? '#059669' : '#94a3b8',
-                fontSize: 12, fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>{n}</div>
-              <span style={{
-                fontSize: 12, fontWeight: active ? 700 : 500,
-                color: active ? '#0f172a' : '#64748b', whiteSpace: 'nowrap',
-              }}>{label}</span>
-            </div>
-          </Fragment>
-        )
-      })}
-    </div>
-  )
-}
+// function MissingStepper({ step, labels }: { step: 1 | 2 | 3; labels: [string, string, string] }) {
+//   return (
+//     <div style={{
+//       display: 'flex', alignItems: 'center', gap: 0, padding: '14px 20px',
+//       borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(180deg, #f8fafc 0%, #fff 100%)',
+//       flexWrap: 'wrap',
+//     }}>
+//       {labels.map((label, i) => {
+//         const n = (i + 1) as 1 | 2 | 3
+//         const active = step === n
+//         const done = step > n
+//         return (
+//           <Fragment key={label}>
+//             {i > 0 ? (
+//               <div style={{ flex: '1 1 24px', height: 2, minWidth: 20, maxWidth: 48, background: done || active ? '#10b981' : '#e2e8f0', margin: '0 8px' }} />
+//             ) : null}
+//             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+//               <div style={{
+//                 width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+//                 background: active ? '#059669' : done ? '#d1fae5' : '#f1f5f9',
+//                 color: active ? '#fff' : done ? '#059669' : '#94a3b8',
+//                 fontSize: 12, fontWeight: 700,
+//                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+//               }}>{n}</div>
+//               <span style={{
+//                 fontSize: 12, fontWeight: active ? 700 : 500,
+//                 color: active ? '#0f172a' : '#64748b', whiteSpace: 'nowrap',
+//               }}>{label}</span>
+//             </div>
+//           </Fragment>
+//         )
+//       })}
+//     </div>
+//   )
+// }
 
 // -- missing orders table (per biller) --------------------------------------
 
@@ -4744,48 +4744,48 @@ function ProductMissingTable({
 
 // -- breadcrumb for biller drill-down ---------------------------------------
 
-function BillerBreadcrumb({
-  godownName,
-  billerName,
-  hideAllGodowns,
-  onAllGodowns,
-  onGodown,
-}: {
-  godownName?: string
-  billerName?: string
-  hideAllGodowns?: boolean
-  onAllGodowns: () => void
-  onGodown: () => void
-}) {
-  const linkStyle: React.CSSProperties = {
-    background: 'none', border: 'none', padding: 0, fontSize: 13, fontWeight: 600,
-    color: '#059669', cursor: 'pointer', textDecoration: 'underline',
-  }
-  const sep = <span style={{ color: '#94a3b8', margin: '0 6px' }}>/</span>
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, padding: '12px 20px', borderBottom: '1px solid #f1f5f9' }}>
-      {!hideAllGodowns ? (
-        <button type="button" onClick={onAllGodowns} style={linkStyle}>All godowns</button>
-      ) : null}
-      {godownName ? (
-        <>
-          {!hideAllGodowns ? sep : null}
-          {billerName ? (
-            <button type="button" onClick={onGodown} style={linkStyle}>{godownName}</button>
-          ) : (
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{godownName}</span>
-          )}
-        </>
-      ) : null}
-      {billerName ? (
-        <>
-          {sep}
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{billerName}</span>
-        </>
-      ) : null}
-    </div>
-  )
-}
+// function BillerBreadcrumb({
+//   godownName,
+//   billerName,
+//   hideAllGodowns,
+//   onAllGodowns,
+//   onGodown,
+// }: {
+//   godownName?: string
+//   billerName?: string
+//   hideAllGodowns?: boolean
+//   onAllGodowns: () => void
+//   onGodown: () => void
+// }) {
+//   const linkStyle: React.CSSProperties = {
+//     background: 'none', border: 'none', padding: 0, fontSize: 13, fontWeight: 600,
+//     color: '#059669', cursor: 'pointer', textDecoration: 'underline',
+//   }
+//   const sep = <span style={{ color: '#94a3b8', margin: '0 6px' }}>/</span>
+//   return (
+//     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, padding: '12px 20px', borderBottom: '1px solid #f1f5f9' }}>
+//       {!hideAllGodowns ? (
+//         <button type="button" onClick={onAllGodowns} style={linkStyle}>All godowns</button>
+//       ) : null}
+//       {godownName ? (
+//         <>
+//           {!hideAllGodowns ? sep : null}
+//           {billerName ? (
+//             <button type="button" onClick={onGodown} style={linkStyle}>{godownName}</button>
+//           ) : (
+//             <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{godownName}</span>
+//           )}
+//         </>
+//       ) : null}
+//       {billerName ? (
+//         <>
+//           {sep}
+//           <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{billerName}</span>
+//         </>
+//       ) : null}
+//     </div>
+//   )
+// }
 
 // -- inline searchable select for biller (reused from ReportFiltersBar pattern) --
 
@@ -5100,11 +5100,11 @@ export function ReportsPage() {
     return billerReturns?.find((b) => b.billerUserId === billerUserId)?.billerName || billerUserId
   }, [isBillerRole, auth, billerReturns, billerUserId])
 
-  const showBillerGodowns = false // removed drill-down flow
-  const showBillerList = false    // removed drill-down flow
+  // const showBillerGodowns = false // removed drill-down flow
+  // const showBillerList = false    // removed drill-down flow
   const showProductList = activeTab === 'issues-biller' && (Boolean(billerUserId) || isBillerRole)
 
-  const billerStep: 1 | 2 | 3 = showProductList ? 3 : showBillerList ? 2 : 1
+  // const billerStep: 1 | 2 | 3 = showProductList ? 3 : showBillerList ? 2 : 1
 
   const selectedBillerStats = useMemo(() => {
     const b = billerReturns?.find((row) => row.billerUserId === billerUserId)

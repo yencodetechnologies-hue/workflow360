@@ -820,7 +820,7 @@ export function ReportFiltersBar({
   onDateToChange,
   showCustomer,
   showBiller,
-  showProduct,
+
   hideGodownFilter,
 }: Props) {
 

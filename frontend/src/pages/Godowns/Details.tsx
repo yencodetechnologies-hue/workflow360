@@ -1205,7 +1205,7 @@ export function GodownsDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [catSearch, setCatSearch] = useState('')
-  const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
+  // const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
   // Selected product row for right panel detail
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
@@ -1301,8 +1301,8 @@ export function GodownsDetailsPage() {
     return { name: p?.particulars ?? selectedProductId, sku: p?.sku ?? '—', ...dStats }
   }, [selectedProductId, catalogById, deliveryStatsByProduct])
 
-  const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string, string>>({})
-  const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string, string>>({})
+  // const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string, string>>({})
+  // const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string, string>>({})
 
   const canEditGodown = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || (auth.user.role === 'GODOWN' && auth.user.godownId === id))
   useEffect(() => { if (tab === 'update' && !canEditGodown) setTab('catalog') }, [tab, canEditGodown])
@@ -1578,7 +1578,7 @@ export function GodownsDetailsPage() {
                     </thead>
                     <tbody>
                       {updateStockRows.map(p => {
-                        const applying = adjustApplyingProductId === p.productId
+                        // const applying = adjustApplyingProductId === p.productId
                         return (
                           <tr key={p.productId}
                             onClick={() => setSelectedProductId(prev => prev === p.productId ? null : p.productId)}
