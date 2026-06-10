@@ -589,7 +589,7 @@ export function ProductsListPage() {
       </div>
 
       {/* ── MODAL ── */}
-      <Modal open={open} title={editingId ? 'Edit Product' : 'Add Product'} onClose={() => setOpen(false)}
+      <Modal open={open} title={editingId ? 'Edit Product' : 'Add Product'} onClose={() => setOpen(false)} className="max-w-lg"
         footer={
           <div className="flex justify-end gap-3">
             <button className="h-10 px-5 rounded-xl border border-slate-200 bg-white text-[13.5px] font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer" onClick={() => setOpen(false)}>Cancel</button>

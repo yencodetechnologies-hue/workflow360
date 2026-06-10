@@ -43,13 +43,21 @@ function applyAdminFilters(req, q) {
     req.user.role === 'ADMIN' || req.user.role === 'BILLER' || req.user.role === 'GODOWN'
 
   if (!canFilter && req.user.role !== 'DELIVERY') return null
+console.log("QUERY =", req.query);
 
-  const godownId = String(req.query.godownId || '').trim()
+  // const godownId = String(req.query.godownId || '').trim()
+const godownId = Array.isArray(req.query.godownId)
+  ? req.query.godownId[0]
+  : String(req.query.godownId || '').trim()
+
+   console.log("Raw godownId:", req.query.godownId);
+console.log("Parsed godownId:", godownId);
+  
   if (godownId) {
     if (!mongoose.Types.ObjectId.isValid(godownId)) return { error: 'Invalid godownId' }
     q.fromGodownId = new mongoose.Types.ObjectId(godownId)
   }
-
+ 
   const site = String(req.query.site || '').trim()
   if (site) {
     const rx = { $regex: escapeRegex(site), $options: 'i' }
