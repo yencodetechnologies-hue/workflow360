@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
+const InventoryLedger = require('../models/InventoryLedger')
 const Product = require('../models/Product')
 const Godown = require('../models/Godown')
 const User = require('../models/User')
@@ -484,6 +485,95 @@ async function issuesByDelivery(req, res) {
   return res.json(rows)
 }
 
+async function issuesCustomerReport(req, res) {
+  const customerName = String(req.query.customerName || '').trim()
+  if (!customerName) return res.status(400).json({ message: 'customerName required' })
+
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const all = result.deliveries.filter((d) => d.customerName === customerName)
+  const issues = all.filter(deliveryHasIssue)
+
+  const summary = {
+    deliveryCount: all.length,
+    issueDeliveryCount: issues.length,
+    missingQty: 0,
+    damageQty: 0,
+    missingTotal: 0,
+    damageTotal: 0,
+    missingTagCount: 0,
+    damagedTagCount: 0,
+    lostTagCount: 0,
+  }
+
+  for (const d of all) {
+    const m = issueMetricsFromDelivery(d)
+    summary.missingQty += m.missingQty
+    summary.damageQty += m.damageQty
+    summary.missingTotal += m.missingTotal
+    summary.damageTotal += m.damageTotal
+    summary.missingTagCount += m.missingTagCount
+    summary.damagedTagCount += m.damagedTagCount
+    summary.lostTagCount += m.lostTagCount
+  }
+
+  const deliveries = await mapIssueDeliveryRows(all)
+
+  return res.json({
+    customerName,
+    summary,
+    deliveries,
+  })
+}
+
+async function stockReport(req, res) {
+  const match = {}
+  if (req.user.role === 'GODOWN' && req.user.godownId) {
+    if (!mongoose.Types.ObjectId.isValid(req.user.godownId)) {
+      return res.status(400).json({ message: 'Invalid user godownId' })
+    }
+    match.godownId = new mongoose.Types.ObjectId(req.user.godownId)
+  } else if (req.user.role === 'ADMIN' || req.user.role === 'BILLER') {
+    const gid = String(req.query.godownId || '').trim()
+    if (gid) {
+      if (!mongoose.Types.ObjectId.isValid(gid)) return res.status(400).json({ message: 'Invalid godownId' })
+      match.godownId = new mongoose.Types.ObjectId(gid)
+    }
+  }
+
+  const rows = await InventoryLedger.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: { godownId: '$godownId', productId: '$productId' },
+        qty: { $sum: '$qtyDelta' },
+      },
+    },
+    { $sort: { qty: -1 } },
+    { $limit: 5000 },
+  ])
+
+  const productIds = rows.map((r) => String(r._id.productId))
+  const godownIds = rows.map((r) => String(r._id.godownId))
+  const [productMap, godownMap] = await Promise.all([loadProductMap(productIds), loadGodownMap(godownIds)])
+
+  return res.json(
+    rows.map((r) => {
+      const p = productMap.get(String(r._id.productId))
+      const g = godownMap.get(String(r._id.godownId))
+      return {
+        godownId: String(r._id.godownId),
+        godownName: g?.name,
+        productId: String(r._id.productId),
+        particulars: p?.particulars,
+        sku: p?.sku || p?.s_no,
+        qty: r.qty,
+      }
+    }),
+  )
+}
+
 const RETURN_PHASE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN'])
 
 async function returnsByBiller(req, res) {
@@ -505,7 +595,6 @@ async function returnsByBiller(req, res) {
         billerUserId: bid,
         deliveryCount: 0,
         missingOrderCount: 0,
-        damageOrderCount: 0,
         returnSubmittedCount: 0,
         pendingReturnCount: 0,
         missingQty: 0,
@@ -520,7 +609,6 @@ async function returnsByBiller(req, res) {
     const row = byBiller.get(bid)
     row.deliveryCount += 1
     if (sumLineQty(d.billerMissingLines) > 0) row.missingOrderCount += 1
-    if (sumLineQty(d.billerDamagedLines) > 0) row.damageOrderCount += 1
     if (d.billerReturnSubmittedAt) row.returnSubmittedCount += 1
     if (!d.billerReturnSubmittedAt && RETURN_PHASE_STATUSES.has(d.status)) {
       row.pendingReturnCount += 1
@@ -539,7 +627,7 @@ async function returnsByBiller(req, res) {
   const billerIds = [...byBiller.keys()]
   const billerMap = await loadBillerMap(billerIds)
 
-  const onlyIssues = String(req.query.onlyMissing || '1') !== '0'
+  const onlyMissing = String(req.query.onlyMissing || '1') !== '0'
 
   let rows = [...byBiller.values()]
     .map((row) => {
@@ -551,14 +639,12 @@ async function returnsByBiller(req, res) {
       }
     })
     .sort((a, b) => {
-      const aIssues = a.missingOrderCount + a.damageOrderCount
-      const bIssues = b.missingOrderCount + b.damageOrderCount
-      if (bIssues !== aIssues) return bIssues - aIssues
-      if (b.missingQty + b.damageQty !== a.missingQty + a.damageQty) return (b.missingQty + b.damageQty) - (a.missingQty + a.damageQty)
+      if (b.missingOrderCount !== a.missingOrderCount) return b.missingOrderCount - a.missingOrderCount
+      if (b.missingQty !== a.missingQty) return b.missingQty - a.missingQty
       return (a.billerName || '').localeCompare(b.billerName || '')
     })
 
-  if (onlyIssues) rows = rows.filter((r) => r.missingOrderCount > 0 || r.damageOrderCount > 0)
+  if (onlyMissing) rows = rows.filter((r) => r.missingOrderCount > 0)
 
   return res.json(rows)
 }
@@ -666,6 +752,54 @@ async function returnsByProduct(req, res) {
   return res.json(rows)
 }
 
+async function customerProductsReport(req, res) {
+  const customerName = String(req.query.customerName || '').trim()
+  if (!customerName) return res.status(400).json({ message: 'customerName required' })
+
+  const result = await buildDeliveryQuery(req)
+  if (result.error) return res.status(400).json({ message: result.error.error })
+
+  const deliveries = result.deliveries.filter((d) => d.customerName === customerName)
+
+  const missingAgg = new Map()
+  const damagedAgg = new Map()
+  const productIds = []
+
+  for (const d of deliveries) {
+    for (const line of d.billerMissingLines || []) {
+      if (!line.qty || line.qty <= 0) continue
+      const pid = String(line.productId)
+      productIds.push(pid)
+      if (!missingAgg.has(pid)) missingAgg.set(pid, { productId: pid, totalQty: 0, deliveryCount: 0 })
+      const row = missingAgg.get(pid)
+      row.totalQty += line.qty
+      row.deliveryCount += 1
+    }
+    for (const line of d.billerDamagedLines || []) {
+      if (!line.qty || line.qty <= 0) continue
+      const pid = String(line.productId)
+      productIds.push(pid)
+      if (!damagedAgg.has(pid)) damagedAgg.set(pid, { productId: pid, totalQty: 0, deliveryCount: 0 })
+      const row = damagedAgg.get(pid)
+      row.totalQty += line.qty
+      row.deliveryCount += 1
+    }
+  }
+
+  const productMap = await loadProductMap(productIds)
+
+  const enrichRow = (row) => {
+    const p = productMap.get(row.productId)
+    return { ...row, particulars: p?.particulars, sku: p?.sku || p?.s_no }
+  }
+
+  return res.json({
+    customerName,
+    missingByProduct: [...missingAgg.values()].map(enrichRow).sort((a, b) => b.totalQty - a.totalQty),
+    damagedByProduct: [...damagedAgg.values()].map(enrichRow).sort((a, b) => b.totalQty - a.totalQty),
+  })
+}
+
 async function customerHistory(req, res) {
   const q = String(req.query.q || '').trim()
   if (!q) return res.status(400).json({ message: 'q required' })
@@ -697,9 +831,12 @@ module.exports = {
   customersList,
   missingReport,
   missingProductsReport,
+  stockReport,
   customerHistory,
   issuesByGodown,
   issuesByDelivery,
+  issuesCustomerReport,
+  customerProductsReport,
   returnsByBiller,
   returnsByProduct,
 }

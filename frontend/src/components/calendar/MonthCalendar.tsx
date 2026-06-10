@@ -190,7 +190,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
 
       {/*
         Grid: 7 equal columns, 2px gap.
-        No min-width on cells ù they shrink to fit whatever width is available.
+        No min-width on cells ÔøΩ they shrink to fit whatever width is available.
         This is the key: 1fr columns with no content forcing a min-width.
       */}
       <div style={{
@@ -200,7 +200,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
         width: '100%',
       }}>
 
-        {/* Weekday headers ù single letter on mobile to save space */}
+        {/* Weekday headers ÔøΩ single letter on mobile to save space */}
         {WEEKDAYS.map((w, i) => (
           <div key={w + i} style={{
             padding: '4px 0',
@@ -231,7 +231,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
               type="button"
               onClick={() => onSelectDate(cell.key)}
               style={{
-                /* No fixed width/padding ù let the 1fr column own it */
+                /* No fixed width/padding ÔøΩ let the 1fr column own it */
                 minHeight: 44,
                 width: '100%',
                 boxSizing: 'border-box',
@@ -285,7 +285,7 @@ export function MonthCalendar({ month, days, selectedDate, onSelectDate }: Props
                 {cell.day}
               </div>
 
-              {/* Delivery dot ù just a colored dot on mobile, no text */}
+              {/* Delivery dot ÔøΩ just a colored dot on mobile, no text */}
               {hasDeliveries && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                   <div style={{

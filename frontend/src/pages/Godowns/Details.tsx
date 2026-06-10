@@ -739,6 +739,7 @@ export function GodownsDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [catSearch, setCatSearch] = useState('')
   const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string,string>>({})
+  const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string,string>>({})
   const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
 
   const load = () => {
@@ -804,9 +805,10 @@ export function GodownsDetailsPage() {
     if (!/^-?\d+$/.test(raw)) { setError('Enter a whole number (e.g. 10 or -3).'); return }
     const qtyDelta = parseInt(raw, 10)
     if (qtyDelta===0) { setError('Quantity change cannot be zero.'); return }
+    const note = (adjustNoteByProduct[productId]??'').trim()
     setError(null); setAdjustApplyingProductId(productId)
-    apiFetch<{ok:boolean;balanceAfter:number}>(`/godowns/${id}/inventory/adjust`, { token, method:'POST', body:JSON.stringify({productId,qtyDelta}) })
-      .then(() => { setAdjustDeltaByProduct(p=>({...p,[productId]:''})); return reloadStock() })
+    apiFetch<{ok:boolean;balanceAfter:number}>(`/godowns/${id}/inventory/adjust`, { token, method:'POST', body:JSON.stringify({productId,qtyDelta,note:note||undefined}) })
+      .then(() => { setAdjustDeltaByProduct(p=>({...p,[productId]:''})); setAdjustNoteByProduct(p=>({...p,[productId]:''})); return reloadStock() })
       .catch((e:any) => setError(e?.message||'Adjustment failed'))
       .finally(() => setAdjustApplyingProductId(null))
   }
@@ -974,7 +976,9 @@ export function GodownsDetailsPage() {
                 <div style={{ padding:'40px 22px', textAlign:'center', color:'#7C7A9A', fontSize:13 }}>No stock rows yet.</div>
               ) : (
                 <div style={{ flex:1, overflowY:'auto', padding:'14px 18px', display:'flex', flexDirection:'column', gap:10 }}>
-                  {stockTableRows.map(p => (
+                  {stockTableRows.map(p => {
+                    const canAdjustThis = catalogById.get(p.productId)?.enabled === true
+                    return (
                     <div key={p.productId} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', border:'1px solid rgba(83,74,183,0.12)', borderRadius:9, background:'#faf9ff', transition:'border-color 0.12s' }}
                       onMouseEnter={e=>(e.currentTarget.style.borderColor='#6ee7b7')}
                       onMouseLeave={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.12)')}
@@ -992,16 +996,26 @@ export function GodownsDetailsPage() {
                       </div>
                       {canEditGodown && (
                         <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
-                          <input value={adjustDeltaByProduct[p.productId]??''} onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))} placeholder="+/-"
-                            style={{ width:60, height:32, padding:'0 8px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12, color:'#1E1A4E', background:'#fff', outline:'none', fontFamily:'inherit' }} />
-                          <button disabled={adjustApplyingProductId===p.productId} onClick={()=>applyStockAdjustment(p.productId)}
-                            style={{ height:32, padding:'0 12px', borderRadius:7, border:'none', background:'#059669', fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer' }}>
+                          <input
+                            value={adjustDeltaByProduct[p.productId]??''}
+                            onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
+                            placeholder="+/-"
+                            disabled={!canAdjustThis}
+                            title={!canAdjustThis ? 'Enable this product in the Product catalog tab first' : undefined}
+                            style={{ width:60, height:32, padding:'0 8px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12, color:'#1E1A4E', background: canAdjustThis ? '#fff' : '#f1f5f9', outline:'none', fontFamily:'inherit', cursor: canAdjustThis ? 'text' : 'not-allowed' }}
+                          />
+                          <button
+                            disabled={adjustApplyingProductId===p.productId || !canAdjustThis}
+                            onClick={()=>applyStockAdjustment(p.productId)}
+                            title={!canAdjustThis ? 'Enable this product in the Product catalog tab first' : undefined}
+                            style={{ height:32, padding:'0 12px', borderRadius:7, border:'none', background: canAdjustThis ? '#059669' : '#94a3b8', fontSize:12, fontWeight:600, color:'#fff', cursor: canAdjustThis ? 'pointer' : 'not-allowed' }}>
                             {adjustApplyingProductId===p.productId?'…':'Apply'}
                           </button>
                         </div>
                       )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </>}
@@ -1025,6 +1039,7 @@ export function GodownsDetailsPage() {
                         <th style={TH}>SKU</th>
                         <th style={{ ...TH, textAlign:'right' }}>Current</th>
                         <th style={TH}>Change (+/−)</th>
+                        <th style={TH}>Note</th>
                         <th style={{ ...TH, textAlign:'right' }}> </th>
                       </tr>
                     </thead>
@@ -1043,6 +1058,10 @@ export function GodownsDetailsPage() {
                               <input placeholder="e.g. 10" value={adjustDeltaByProduct[p.productId]??''} onChange={e=>setAdjustDeltaByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
                                 style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12.5, color:'#1E1A4E', background:'#faf9ff', outline:'none', fontFamily:'inherit' }}
                                 onFocus={e=>(e.currentTarget.style.borderColor='#34d399')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(83,74,183,0.18)')} />
+                            </td>
+                            <td style={{ ...TD, minWidth:130 }}>
+                              <input placeholder="Optional" value={adjustNoteByProduct[p.productId]??''} onChange={e=>setAdjustNoteByProduct(prev=>({...prev,[p.productId]:e.target.value}))}
+                                style={{ width:'100%', height:34, padding:'0 10px', border:'1px solid rgba(83,74,183,0.18)', borderRadius:7, fontSize:12.5, color:'#1E1A4E', background:'#faf9ff', outline:'none', fontFamily:'inherit' }} />
                             </td>
                             <td style={{ ...TD, textAlign:'right' }}>
                               <button disabled={applying} onClick={()=>applyStockAdjustment(p.productId)}

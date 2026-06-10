@@ -9,25 +9,30 @@ import { getToken, useAuth } from '../auth/store'
 import { useReportFilters } from '../hooks/useReportFilters'
 import type {
   BillerReturnRow,
+  CustomerIssueReport,
+  CustomerProductsReport,
   GodownIssueRow,
   IssueDeliveryRow,
   ProductReturnRow,
   ReportTab,
+  StockReportRow,
 } from '../types/reports'
 
 // -- constants --------------------------------------------------------------
 
 const MAIN_TABS: { id: ReportTab; label: string }[] = [
   { id: 'issues-godown', label: 'Missing & damage' },
+  { id: 'stock', label: 'Stock' },
 ]
 
 const ISSUE_SUB_TABS: { id: ReportTab; label: string }[] = [
   { id: 'issues-godown', label: 'By godown' },
   { id: 'issues-biller', label: 'Missing by biller' },
   { id: 'issues-delivery', label: 'By delivery' },
+  { id: 'issues-customer', label: 'By customer' },
 ]
 
-const ISSUE_TABS = new Set<ReportTab>(['issues-godown', 'issues-biller', 'issues-delivery'])
+const ISSUE_TABS = new Set<ReportTab>(['issues-godown', 'issues-biller', 'issues-delivery', 'issues-customer'])
 
 // -- helpers ----------------------------------------------------------------
 
@@ -519,9 +524,11 @@ export function ReportsPage() {
   const [error, setError] = useState<string | null>(null)
   const [godownIssues, setGodownIssues] = useState<GodownIssueRow[] | null>(null)
   const [deliveryIssues, setDeliveryIssues] = useState<IssueDeliveryRow[] | null>(null)
+  const [customerReport, setCustomerReport] = useState<CustomerIssueReport | null>(null)
+  const [customerProducts, setCustomerProducts] = useState<CustomerProductsReport | null>(null)
+  const [stock, setStock] = useState<StockReportRow[] | null>(null)
   const [billerReturns, setBillerReturns] = useState<BillerReturnRow[] | null>(null)
   const [productReturns, setProductReturns] = useState<ProductReturnRow[] | null>(null)
-  const [damageReturns, setDamageReturns] = useState<ProductReturnRow[] | null>(null)
   const [missingOrders, setMissingOrders] = useState<IssueDeliveryRow[] | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -539,7 +546,7 @@ export function ReportsPage() {
   const showProductList = activeTab === 'issues-biller' && Boolean(godownId) && Boolean(billerUserId)
 
   const godownsWithMissing = useMemo(
-    () => (godownIssues || []).filter((g) => g.issueDeliveryCount > 0),
+    () => (godownIssues || []).filter((g) => g.missingQty > 0),
     [godownIssues],
   )
 
@@ -550,18 +557,16 @@ export function ReportsPage() {
     if (b) return b
     if (!missingOrders?.length) return null
     return {
-      missingOrderCount: missingOrders.filter((o) => o.missingQty > 0).length,
-      damageOrderCount: missingOrders.filter((o) => o.damageQty > 0).length,
+      missingOrderCount: missingOrders.length,
       missingQty: missingOrders.reduce((s, o) => s + o.missingQty, 0),
-      damageQty: missingOrders.reduce((s, o) => s + o.damageQty, 0),
       missingTotal: missingOrders.reduce((s, o) => s + (o.missingTotal || 0), 0),
-      damageTotal: missingOrders.reduce((s, o) => s + (o.damageTotal || 0), 0),
     }
   }, [billerReturns, billerUserId, missingOrders])
 
   useEffect(() => {
     if (!ISSUE_TABS.has(activeTab)) return
     const token = getToken(); if (!token) return
+    if (activeTab === 'issues-customer' && !customerName.trim()) { setCustomerReport(null); setCustomerProducts(null); return }
     setLoading(true); setError(null)
 
     const loadGodown = () =>
@@ -570,22 +575,33 @@ export function ReportsPage() {
     const loadDelivery = () =>
       apiFetch<IssueDeliveryRow[]>(`/reports/issues/by-delivery?${dateQuery}limit=100${filterQuery}`, { token })
         .then(setDeliveryIssues).catch(() => setDeliveryIssues([]))
+    const loadCustomer = () => {
+      const cn = encodeURIComponent(customerName.trim())
+      const fq = filterQuery.replace(/&?customerName=[^&]*/g, '')
+      return Promise.all([
+        apiFetch<CustomerIssueReport>(`/reports/issues/customer?${dateQuery}customerName=${cn}${fq}`, { token })
+          .then(setCustomerReport).catch(() => setCustomerReport(null)),
+        apiFetch<CustomerProductsReport>(`/reports/issues/customer-products?${dateQuery}customerName=${cn}${fq}`, { token })
+          .then(setCustomerProducts).catch(() => setCustomerProducts(null)),
+      ]).then(() => undefined)
+    }
 
     const promises: Promise<void>[] = []
     if (activeTab === 'issues-godown' || (activeTab === 'issues-biller' && !godownId && !lockGodownFilter)) {
       promises.push(loadGodown())
     }
     if (activeTab === 'issues-delivery') promises.push(loadDelivery())
+    if (activeTab === 'issues-customer') promises.push(loadCustomer())
     Promise.all(promises).finally(() => setLoading(false))
-  }, [date, dateTo, dateQuery, filterQuery, activeTab, godownId, site, lockGodownFilter])
+  }, [date, dateTo, dateQuery, filterQuery, activeTab, customerName, godownId, site, lockGodownFilter])
 
   useEffect(() => {
     if (activeTab !== 'issues-biller') return
     const token = getToken(); if (!token) return
 
     if (showBillerList) {
-      setLoading(true); setError(null); setProductReturns(null); setDamageReturns(null)
-      apiFetch<BillerReturnRow[]>(`/reports/returns/by-biller?${dateQuery}godownId=${encodeURIComponent(godownId)}&onlyMissing=0${filterQuery.replace(/&?billerUserId=[^&]*/g, '')}`, { token })
+      setLoading(true); setError(null); setProductReturns(null)
+      apiFetch<BillerReturnRow[]>(`/reports/returns/by-biller?${dateQuery}godownId=${encodeURIComponent(godownId)}${filterQuery.replace(/&?billerUserId=[^&]*/g, '')}`, { token })
         .then(setBillerReturns)
         .catch((e: unknown) => {
           setError(e instanceof Error ? e.message : 'Failed to load biller report')
@@ -600,23 +616,19 @@ export function ReportsPage() {
       const fq = filterQuery.includes('billerUserId')
         ? filterQuery
         : `${filterQuery}&billerUserId=${encodeURIComponent(billerUserId)}`
-      const missingQ = `/reports/returns/by-product?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&metric=missing`
-      const damageQ = `/reports/returns/by-product?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&metric=damage`
+      const productQ = `/reports/returns/by-product?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&metric=missing`
       const ordersQ = `/reports/issues/by-delivery?${dateQuery}godownId=${encodeURIComponent(godownId)}${fq}&limit=200`
       Promise.all([
-        apiFetch<ProductReturnRow[]>(missingQ, { token }),
-        apiFetch<ProductReturnRow[]>(damageQ, { token }),
+        apiFetch<ProductReturnRow[]>(productQ, { token }),
         apiFetch<IssueDeliveryRow[]>(ordersQ, { token }),
       ])
-        .then(([missing, damage, orders]) => {
-          setProductReturns(missing)
-          setDamageReturns(damage)
-          setMissingOrders(orders.filter((o) => o.missingQty > 0 || o.damageQty > 0))
+        .then(([products, orders]) => {
+          setProductReturns(products)
+          setMissingOrders(orders.filter((o) => o.missingQty > 0))
         })
         .catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : 'Failed to load issue report')
+          setError(e instanceof Error ? e.message : 'Failed to load missing report')
           setProductReturns([])
-          setDamageReturns([])
           setMissingOrders([])
         })
         .finally(() => setLoading(false))
@@ -625,9 +637,20 @@ export function ReportsPage() {
 
     setBillerReturns(null)
     setProductReturns(null)
-    setDamageReturns(null)
     setMissingOrders(null)
   }, [activeTab, date, dateTo, dateQuery, filterQuery, godownId, billerUserId, showBillerList, showProductList])
+
+  useEffect(() => {
+    if (activeTab !== 'stock') return
+    const token = getToken(); if (!token) return
+    if (auth.status !== 'authenticated' || (auth.user.role !== 'ADMIN' && auth.user.role !== 'GODOWN')) return
+    setLoading(true); setError(null)
+    const gidQ = godownId ? `?godownId=${encodeURIComponent(godownId)}` : ''
+    apiFetch<StockReportRow[]>(`/reports/stock${gidQ}`, { token })
+      .then(setStock)
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load stock'))
+      .finally(() => setLoading(false))
+  }, [activeTab, godownId, auth])
 
   const onMainTab = (id: ReportTab) => {
     if (id === 'issues-godown') {
@@ -680,6 +703,7 @@ export function ReportsPage() {
             dateTo={dateTo}
             onDateChange={(d) => setFilters({ date: d })}
             onDateToChange={(d) => setFilters({ dateTo: d })}
+            showCustomer={activeTab === 'issues-customer'}
             hideGodownFilter={lockGodownFilter}
           />
         </div>
@@ -741,12 +765,12 @@ export function ReportsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <ReportCard>
             <CardHead
-              title="Issues by biller"
-              sub="Drill down from godown → biller → missing/damage orders and products."
+              title="Missing by biller"
+              sub="Drill down from godown ? biller ? missing orders and products."
             />
             <MissingStepper
               step={billerStep}
-              labels={['Select godown', 'Biller issue summary', 'Orders & products']}
+              labels={['Select godown', 'Biller missing summary', 'Orders & products']}
             />
             <BillerBreadcrumb
               godownName={selectedGodownName}
@@ -760,7 +784,7 @@ export function ReportsPage() {
               <>
                 <div style={{ padding: '0 20px 8px' }}>
                   <p style={{ fontSize: 12, color: '#64748b', margin: '8px 0 0' }}>
-                    Warehouses with biller-reported missing or damage in the selected period.
+                    Warehouses with biller-reported missing items in the selected period.
                   </p>
                 </div>
                 {godownsWithMissing.length ? (
@@ -768,7 +792,7 @@ export function ReportsPage() {
                     <table style={tableEl}>
                       <thead>
                         <tr>
-                          {['Godown', 'Issue orders', 'Missing qty', 'Damage qty', ''].map((h, i) => (
+                          {['Godown', 'Missing orders', 'Missing qty', 'Missing value (?)', ''].map((h, i) => (
                             <th key={i} style={{ ...tHead, textAlign: i >= 1 && i <= 3 ? 'right' : 'left' }}>{h}</th>
                           ))}
                         </tr>
@@ -782,10 +806,10 @@ export function ReportsPage() {
                           >
                             <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>{g.godownName || g.godownId}</td>
                             <td style={{ ...tCell, textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{formatNumber(g.issueDeliveryCount)}</td>
-                            <td style={{ ...tCell, textAlign: 'right', fontWeight: g.missingQty > 0 ? 600 : undefined, color: g.missingQty > 0 ? '#dc2626' : '#64748b' }}>{formatNumber(g.missingQty)}</td>
-                            <td style={{ ...tCell, textAlign: 'right', fontWeight: g.damageQty > 0 ? 600 : undefined, color: g.damageQty > 0 ? '#d97706' : '#64748b' }}>{formatNumber(g.damageQty)}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{formatNumber(g.missingQty)}</td>
+                            <td style={{ ...tCell, textAlign: 'right' }}>{formatCurrency(g.missingTotal)}</td>
                             <td style={tCell}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View billers →</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View billers ?</span>
                             </td>
                           </tr>
                         ))}
@@ -793,21 +817,21 @@ export function ReportsPage() {
                     </table>
                   </div>
                 ) : !loading ? (
-                  <Empty title="No issues at godowns" sub="No biller-reported missing or damage for the selected period." />
+                  <Empty title="No missing at godowns" sub="No biller-reported missing items for the selected period." />
                 ) : null}
               </>
             )}
 
             {showBillerList && (
               <>
-                <CardHead title="Billers with issues" sub={selectedGodownName || godownId} />
+                <CardHead title="Billers with missing orders" sub={selectedGodownName || godownId} />
                 {billerReturns?.length ? (
                   <div style={tableWrap}>
-                    <table style={{ ...tableEl, minWidth: 800 }}>
+                    <table style={{ ...tableEl, minWidth: 720 }}>
                       <thead>
                         <tr>
-                          {['Biller', 'Site / office', 'Missing orders', 'Missing qty', 'Damage qty', 'Value (₹)', ''].map((h, i) => (
-                            <th key={i} style={{ ...tHead, textAlign: i >= 2 && i <= 5 ? 'right' : 'left' }}>{h}</th>
+                          {['Biller', 'Site / office', 'Missing orders', 'Missing qty', 'Value (?)', ''].map((h, i) => (
+                            <th key={i} style={{ ...tHead, textAlign: i >= 2 && i <= 4 ? 'right' : 'left' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -819,13 +843,12 @@ export function ReportsPage() {
                             onMouseLeave={(e) => (e.currentTarget.style.background = '')}
                           >
                             <td style={{ ...tCell, fontWeight: 600, color: '#0f172a' }}>{b.billerName || b.billerUserId}</td>
-                            <td style={{ ...tCell, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.siteName || '—'}</td>
-                            <td style={{ ...tCell, textAlign: 'right', fontWeight: b.missingOrderCount > 0 ? 700 : undefined, color: b.missingOrderCount > 0 ? '#dc2626' : '#64748b' }}>{formatNumber(b.missingOrderCount)}</td>
-                            <td style={{ ...tCell, textAlign: 'right', fontWeight: b.missingQty > 0 ? 700 : undefined, color: b.missingQty > 0 ? '#dc2626' : '#64748b' }}>{formatNumber(b.missingQty)}</td>
-                            <td style={{ ...tCell, textAlign: 'right', fontWeight: b.damageQty > 0 ? 700 : undefined, color: b.damageQty > 0 ? '#d97706' : '#64748b' }}>{formatNumber(b.damageQty)}</td>
-                            <td style={{ ...tCell, textAlign: 'right' }}>{b.missingTotal + b.damageTotal > 0 ? formatCurrency(b.missingTotal + b.damageTotal) : '—'}</td>
+                            <td style={{ ...tCell, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.siteName || '?'}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(b.missingOrderCount)}</td>
+                            <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(b.missingQty)}</td>
+                            <td style={{ ...tCell, textAlign: 'right' }}>{formatCurrency(b.missingTotal)}</td>
                             <td style={tCell}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View details →</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>View details ?</span>
                             </td>
                           </tr>
                         ))}
@@ -833,7 +856,7 @@ export function ReportsPage() {
                     </table>
                   </div>
                 ) : !loading ? (
-                  <Empty title="No billers with issues" sub="No biller-reported missing or damage for this godown and period." />
+                  <Empty title="No billers with missing" sub="No biller-reported missing orders for this godown and period." />
                 ) : null}
               </>
             )}
@@ -841,33 +864,28 @@ export function ReportsPage() {
 
           {showProductList && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
                 <StatCard
-                  label="Missing qty"
+                  label="Missing orders"
+                  value={formatNumber(selectedBillerStats?.missingOrderCount ?? missingOrders?.length ?? 0)}
+                  tone="bad"
+                />
+                <StatCard
+                  label="Missing quantity"
                   value={formatNumber(selectedBillerStats?.missingQty ?? 0)}
                   tone="bad"
                 />
                 <StatCard
-                  label="Damage qty"
-                  value={formatNumber(selectedBillerStats?.damageQty ?? 0)}
-                  tone="warn"
-                />
-                <StatCard
                   label="Missing value"
                   value={formatCurrency(selectedBillerStats?.missingTotal ?? 0)}
-                  tone="bad"
-                />
-                <StatCard
-                  label="Damage value"
-                  value={formatCurrency(selectedBillerStats?.damageTotal ?? 0)}
                   tone="warn"
                 />
               </div>
 
               <ReportCard>
                 <CardHead
-                  title="Issue orders"
-                  sub={`${selectedBillerName}${selectedGodownName ? ` → ${selectedGodownName}` : ''} → deliveries with biller-reported missing or damage`}
+                  title="Missing orders"
+                  sub={`${selectedBillerName}${selectedGodownName ? ` ? ${selectedGodownName}` : ''} ? deliveries with biller-reported missing items`}
                 />
                 <div style={{ padding: '0 0 4px' }}>
                   {missingOrders ? <MissingOrdersTable rows={missingOrders} /> : null}
@@ -877,7 +895,7 @@ export function ReportsPage() {
               <ReportCard>
                 <CardHead
                   title="Missing by product"
-                  sub="Products reported missing — expand to see which orders"
+                  sub="Products reported missing ? expand to see which orders"
                 />
                 <div style={{ padding: '0 0 4px' }}>
                   {productReturns ? (
@@ -888,24 +906,6 @@ export function ReportsPage() {
                     />
                   ) : !loading ? (
                     <Empty title="No missing products" sub="No product-level missing data for this biller." />
-                  ) : null}
-                </div>
-              </ReportCard>
-
-              <ReportCard>
-                <CardHead
-                  title="Damage by product"
-                  sub="Products reported damaged — expand to see which orders"
-                />
-                <div style={{ padding: '0 0 4px' }}>
-                  {damageReturns ? (
-                    <ProductMissingTable
-                      rows={damageReturns}
-                      expandedId={expandedId}
-                      onToggleExpand={setExpandedId}
-                    />
-                  ) : !loading ? (
-                    <Empty title="No damaged products" sub="No product-level damage data for this biller." />
                   ) : null}
                 </div>
               </ReportCard>
@@ -983,6 +983,198 @@ export function ReportsPage() {
         </ReportCard>
       )}
 
+      {/* ----------------------------------------------
+          ISSUES ? BY CUSTOMER
+      ---------------------------------------------- */}
+      {activeTab === 'issues-customer' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {!customerName.trim() ? (
+            <ReportCard>
+              <div style={{ padding: '20px' }}>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+                  Select a customer above to load their delivery and issue summary.
+                </p>
+              </div>
+            </ReportCard>
+          ) : null}
+
+          {customerReport && (
+            <>
+              {/* summary metrics */}
+              <ReportCard>
+                <CardHead title={customerReport.customerName} />
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 0,
+                }}>
+                  {[
+                    { label: 'Deliveries', val: customerReport.summary.deliveryCount },
+                    { label: 'With issues', val: customerReport.summary.issueDeliveryCount },
+                    { label: 'Missing qty', val: customerReport.summary.missingQty, accent: '#dc2626' },
+                    { label: 'Damage qty', val: customerReport.summary.damageQty, accent: '#d97706' },
+                    { label: 'Tags missing', val: customerReport.summary.missingTagCount, accent: '#dc2626' },
+                    { label: 'Dmg/lost tags', val: customerReport.summary.damagedTagCount + customerReport.summary.lostTagCount, accent: '#d97706' },
+                  ].map(({ label, val, accent }, i) => (
+                    <div key={label} style={{
+                      padding: '14px 18px',
+                      borderBottom: i < 3 ? '1px solid #f1f5f9' : undefined,
+                      borderRight: (i + 1) % 3 !== 0 ? '1px solid #f1f5f9' : undefined,
+                    }}>
+                      <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>{label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: accent || '#0f172a', marginTop: 4 }}>
+                        {formatNumber(val)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {(customerReport.summary.missingTotal > 0 || customerReport.summary.damageTotal > 0) && (
+                  <div style={{ display: 'flex', gap: 24, padding: '12px 18px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                    {customerReport.summary.missingTotal > 0 && (
+                      <div>
+                        <span style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>Missing value </span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>{formatCurrency(customerReport.summary.missingTotal)}</span>
+                      </div>
+                    )}
+                    {customerReport.summary.damageTotal > 0 && (
+                      <div>
+                        <span style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>Damage value </span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#d97706' }}>{formatCurrency(customerReport.summary.damageTotal)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </ReportCard>
+
+              {/* product breakdown */}
+              {customerProducts && (customerProducts.missingByProduct.length > 0 || customerProducts.damagedByProduct.length > 0) && (
+                <ReportCard>
+                  <CardHead title="Product breakdown" sub="Missing and damaged products aggregated across all deliveries for this customer" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+                    {/* Missing products */}
+                    <div style={{ borderRight: '1px solid #f1f5f9' }}>
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', background: '#fef2f2' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          Missing products ({customerProducts.missingByProduct.length})
+                        </span>
+                      </div>
+                      {customerProducts.missingByProduct.length ? (
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ ...tHead, background: '#fff5f5' }}>Product</th>
+                              <th style={{ ...tHead, textAlign: 'right', background: '#fff5f5' }}>Missing qty</th>
+                              <th style={{ ...tHead, textAlign: 'right', background: '#fff5f5' }}>Orders</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {customerProducts.missingByProduct.map((p) => (
+                              <tr key={p.productId}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#fff5f5')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                              >
+                                <td style={{ ...tCell, fontWeight: 500 }}>{p.particulars || p.sku || p.productId}</td>
+                                <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{formatNumber(p.totalQty)}</td>
+                                <td style={{ ...tCell, textAlign: 'right', color: '#64748b' }}>{formatNumber(p.deliveryCount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ padding: '16px', fontSize: 12, color: '#94a3b8' }}>No missing products.</div>
+                      )}
+                    </div>
+                    {/* Damaged products */}
+                    <div>
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid #f1f5f9', background: '#fffbeb' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          Damaged products ({customerProducts.damagedByProduct.length})
+                        </span>
+                      </div>
+                      {customerProducts.damagedByProduct.length ? (
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ ...tHead, background: '#fffdf0' }}>Product</th>
+                              <th style={{ ...tHead, textAlign: 'right', background: '#fffdf0' }}>Damaged qty</th>
+                              <th style={{ ...tHead, textAlign: 'right', background: '#fffdf0' }}>Orders</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {customerProducts.damagedByProduct.map((p) => (
+                              <tr key={p.productId}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#fffdf0')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                              >
+                                <td style={{ ...tCell, fontWeight: 500 }}>{p.particulars || p.sku || p.productId}</td>
+                                <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#d97706' }}>{formatNumber(p.totalQty)}</td>
+                                <td style={{ ...tCell, textAlign: 'right', color: '#64748b' }}>{formatNumber(p.deliveryCount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ padding: '16px', fontSize: 12, color: '#94a3b8' }}>No damaged products.</div>
+                      )}
+                    </div>
+                  </div>
+                </ReportCard>
+              )}
+
+              {/* deliveries table */}
+              <ReportCard>
+                <CardHead title="Deliveries (date-wise)" />
+                <IssueDeliveryTable rows={customerReport.deliveries} expandedId={expandedId} onToggleExpand={setExpandedId} />
+              </ReportCard>
+            </>
+          )}
+
+          {customerName.trim() && !loading && !customerReport && (
+            <Empty title="No data" sub="No deliveries for this customer in the selected period." />
+          )}
+        </div>
+      )}
+
+      {/* ----------------------------------------------
+          STOCK TAB
+      ---------------------------------------------- */}
+      {activeTab === 'stock' && (
+        <ReportCard>
+          <CardHead title="Inventory stock" />
+          {auth.status === 'authenticated' && auth.user.role !== 'ADMIN' && auth.user.role !== 'GODOWN' ? (
+            <div style={{ padding: 20 }}>
+              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Stock report is available for admin and godown roles.</p>
+            </div>
+          ) : stock?.length ? (
+            <div style={tableWrap}>
+              <table style={{ ...tableEl, minWidth: 500 }}>
+                <thead>
+                  <tr>
+                    {['Godown','Product','SKU','Qty'].map((h, i) => (
+                      <th key={h} style={{ ...tHead, textAlign: i === 3 ? 'right' : 'left' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {stock.map((r) => (
+                    <tr key={`${r.godownId}-${r.productId}`} style={{ transition: 'background 0.12s' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(238,242,255,0.4)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                    >
+                      <td style={tCell}>{r.godownName || r.godownId}</td>
+                      <td style={tCell}>{r.particulars || r.productId}</td>
+                      <td style={tCell}>{r.sku || '?'}</td>
+                      <td style={{ ...tCell, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatNumber(r.qty)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : !loading ? (
+            <Empty title="No stock rows" sub="Load stock or adjust godown filter." />
+          ) : null}
+        </ReportCard>
+      )}
     </div>
   )
 }

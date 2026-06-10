@@ -117,11 +117,11 @@
 //   }
 
 //   return (
-//     // AppShell provides 20px 24px padding ù gap:12 keeps everything tight
+//     // AppShell provides 20px 24px padding ÔøΩ gap:12 keeps everything tight
 //     <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
 //       {/* ----------------------------------------------
-//           FILTERS CARD ù label + inputs on ONE row
+//           FILTERS CARD ÔøΩ label + inputs on ONE row
 //       ---------------------------------------------- */}
 //       <div style={card}>
 //         <div style={{
@@ -131,7 +131,7 @@
 //           padding: '12px 22px',
 //           flexWrap: 'wrap',
 //         }}>
-//           {/* Filters label ù left, inline */}
+//           {/* Filters label ÔøΩ left, inline */}
 //           <div style={{ flexShrink: 0 }}>
 //             <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Filters</div>
 //             <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
@@ -142,7 +142,7 @@
 //           {/* Thin divider */}
 //           <div style={{ width: 1, height: 32, background: '#ede9fe', flexShrink: 0 }} />
 
-//           {/* Godown + Site inputs ù same row as label */}
+//           {/* Godown + Site inputs ÔøΩ same row as label */}
 //           <div style={{ flex: 1, minWidth: 0 }}>
 //             <ReportFiltersBar
 //               godowns={godowns}
@@ -214,7 +214,7 @@
 //                 Total Deliveries
 //               </div>
 //               <div style={{ fontSize: 24, fontWeight: 600, color: '#4338ca', lineHeight: 1, textAlign: 'center' }}>
-//                 {loading ? 'ù' : monthTotal}
+//                 {loading ? 'ÔøΩ' : monthTotal}
 //               </div>
 //             </div>
 
@@ -491,7 +491,7 @@ export function CalendarPage() {
             <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>Filters</div>
             <div style={{ fontSize: 11, color: '#6b7280' }}>Filter by warehouse &amp; site.</div>
           </div>
-          {/* Inputs ù full width, stacks on mobile */}
+          {/* Inputs ÔøΩ full width, stacks on mobile */}
           <ReportFiltersBar
             godowns={godowns}
             sites={sites}
@@ -518,7 +518,7 @@ export function CalendarPage() {
       {/* -- CALENDAR CARD -- */}
       <div style={card}>
 
-        {/* Header: icon + title + stat pills ù all in one wrapping row */}
+        {/* Header: icon + title + stat pills ÔøΩ all in one wrapping row */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -547,7 +547,7 @@ export function CalendarPage() {
             </div>
           </div>
 
-          {/* Stat pills ù flex-row, wrap below title on very narrow screens */}
+          {/* Stat pills ÔøΩ flex-row, wrap below title on very narrow screens */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <div style={{
               border: '1px solid #bbf7d0', borderRadius: 9,
@@ -558,7 +558,7 @@ export function CalendarPage() {
                 Deliveries
               </div>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#047857', lineHeight: 1, textAlign: 'center' }}>
-                {loading ? 'ù' : monthTotal}
+                {loading ? 'ÔøΩ' : monthTotal}
               </div>
             </div>
             <div style={{
@@ -629,7 +629,7 @@ export function CalendarPage() {
           </button>
         </div>
 
-        {/* Calendar grid ù overflow:hidden clips any accidental bleed */}
+        {/* Calendar grid ÔøΩ overflow:hidden clips any accidental bleed */}
         <div style={{ background: '#f0fdf4', overflow: 'hidden' }}>
           <MonthCalendar
             month={month}
@@ -677,7 +677,7 @@ export function CalendarPage() {
                 Deliveries for {formatSelectedDate(selectedDate)}
               </div>
               <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-                {dailyLoading ? 'Loadingù' : `${selectedDayTotal} ${selectedDayTotal === 1 ? 'delivery' : 'deliveries'}`}
+                {dailyLoading ? 'LoadingÔøΩ' : `${selectedDayTotal} ${selectedDayTotal === 1 ? 'delivery' : 'deliveries'}`}
               </div>
             </div>
             <Link
@@ -705,7 +705,7 @@ export function CalendarPage() {
           <div style={{ overflowX: 'auto' }}>
             {dailyLoading ? (
               <div style={{ padding: '28px 12px', textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>
-                Loading deliveriesù
+                Loading deliveriesÔøΩ
               </div>
             ) : daily?.deliveries.length ? (
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
@@ -777,7 +777,7 @@ export function CalendarPage() {
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}>
-                        {d.siteName || d.siteAddress || 'ù'}
+                        {d.siteName || d.siteAddress || 'ÔøΩ'}
                       </td>
                       <td style={{
                         padding: '12px',
@@ -789,7 +789,7 @@ export function CalendarPage() {
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}>
-                        {d.godownName || 'ù'}
+                        {d.godownName || 'ÔøΩ'}
                       </td>
                       <td style={{ padding: '12px', borderBottom: '1px solid #f1f5f9' }}>
                         <Badge variant={deliveryBadgeVariant(d.status)}>

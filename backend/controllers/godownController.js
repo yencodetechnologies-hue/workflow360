@@ -98,7 +98,7 @@ async function updateGodown(req, res) {
     const { godownId } = req.params
     if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godown id' })
 
-    const g = await Godown.findById(godownId)
+    const g = await Godown.findById(godownId).select('+passwordHash')
     if (!g || !g.active) return res.status(404).json({ message: 'Not found' })
 
     if (req.user.role === 'GODOWN') {
@@ -136,9 +136,9 @@ async function updateGodown(req, res) {
     if (passwordUpdated || mobile !== undefined) {
       try {
         const synced = await syncGodownLoginUser(g, {
-          passwordHash: passwordUpdated ? g.passwordHash : undefined,
+          passwordHash: g.passwordHash || undefined,
         })
-        if (!synced) {
+        if (!synced && g.mobile) {
           return res.status(400).json({
             message: 'Could not update godown login user: mobile number is invalid',
           })

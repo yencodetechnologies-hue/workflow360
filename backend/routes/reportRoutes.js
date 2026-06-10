@@ -7,9 +7,12 @@ const {
   customersList,
   missingReport,
   missingProductsReport,
+  stockReport,
   customerHistory,
   issuesByGodown,
   issuesByDelivery,
+  issuesCustomerReport,
+  customerProductsReport,
   returnsByBiller,
   returnsByProduct,
 } = require('../controllers/reportController')
@@ -26,10 +29,13 @@ router.get('/sites', requireRole(reportRoles), sitesList)
 router.get('/customers', requireRole(reportRoles), customersList)
 router.get('/issues/by-godown', requireRole(reportRoles), issuesByGodown)
 router.get('/issues/by-delivery', requireRole(reportRoles), issuesByDelivery)
+router.get('/issues/customer', requireRole(reportRoles), issuesCustomerReport)
+router.get('/issues/customer-products', requireRole(reportRoles), customerProductsReport)
 router.get('/returns/by-biller', requireRole(reportRoles), returnsByBiller)
 router.get('/returns/by-product', requireRole(reportRoles), returnsByProduct)
 router.get('/missing', requireRole(reportRoles), missingReport)
 router.get('/missing-products', requireRole(reportRoles), missingProductsReport)
+router.get('/stock', requireRole(['ADMIN', 'GODOWN', 'BILLER']), stockReport)
 router.get('/customer-history', requireRole(['ADMIN', 'BILLER']), customerHistory)
 
 module.exports = router

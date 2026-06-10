@@ -93,6 +93,28 @@ export type GodownIssueRow = {
   lostTagCount: number
 }
 
+export type CustomerIssueReport = {
+  customerName: string
+  summary: {
+    deliveryCount: number
+    issueDeliveryCount: number
+    missingQty: number
+    damageQty: number
+    missingTotal: number
+    damageTotal: number
+    missingTagCount: number
+    damagedTagCount: number
+    lostTagCount: number
+  }
+  deliveries: IssueDeliveryRow[]
+}
+
+export type CustomerProductsReport = {
+  customerName: string
+  missingByProduct: Array<{ productId: string; particulars?: string; sku?: string; totalQty: number; deliveryCount: number }>
+  damagedByProduct: Array<{ productId: string; particulars?: string; sku?: string; totalQty: number; deliveryCount: number }>
+}
+
 export type MissingProductRow = {
   productId: string
   particulars?: string
@@ -110,7 +132,6 @@ export type BillerReturnRow = {
   siteName?: string
   deliveryCount: number
   missingOrderCount: number
-  damageOrderCount: number
   returnSubmittedCount: number
   pendingReturnCount: number
   missingQty: number
@@ -142,11 +163,22 @@ export type ProductReturnRow = {
   deliveries: ProductReturnDeliveryLine[]
 }
 
+export type StockReportRow = {
+  godownId: string
+  godownName?: string
+  productId: string
+  particulars?: string
+  sku?: string
+  qty: number
+}
+
 export type ReportTab =
   | 'daily'
   | 'issues-godown'
   | 'issues-delivery'
+  | 'issues-customer'
   | 'issues-biller'
   | 'missing'
   | 'missing-products'
+  | 'stock'
   | 'customer'
