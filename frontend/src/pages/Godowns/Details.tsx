@@ -1205,7 +1205,7 @@ export function GodownsDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [catSearch, setCatSearch] = useState('')
-  // const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
+  const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
   // Selected product row for right panel detail
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
@@ -1301,8 +1301,8 @@ export function GodownsDetailsPage() {
     return { name: p?.particulars ?? selectedProductId, sku: p?.sku ?? '—', ...dStats }
   }, [selectedProductId, catalogById, deliveryStatsByProduct])
 
-  // const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string, string>>({})
-  // const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string, string>>({})
+  const [adjustDeltaByProduct, setAdjustDeltaByProduct] = useState<Record<string, string>>({})
+  const [adjustNoteByProduct, setAdjustNoteByProduct] = useState<Record<string, string>>({})
 
   const canEditGodown = auth.status === 'authenticated' && (auth.user.role === 'ADMIN' || (auth.user.role === 'GODOWN' && auth.user.godownId === id))
   useEffect(() => { if (tab === 'update' && !canEditGodown) setTab('catalog') }, [tab, canEditGodown])
@@ -1314,19 +1314,19 @@ export function GodownsDetailsPage() {
       .catch((e: any) => setError(e?.message || 'Update failed'))
   }
 
-  // const applyStockAdjustment = (productId: string) => {
-  //   const token = getToken(); if (!token || !id || !canEditGodown) return
-  //   const raw = (adjustDeltaByProduct[productId] ?? '').trim()
-  //   if (!/^-?\d+$/.test(raw)) { setError('Enter a whole number (e.g. 10 or -3).'); return }
-  //   const qtyDelta = parseInt(raw, 10)
-  //   if (qtyDelta === 0) { setError('Quantity change cannot be zero.'); return }
-  //   const note = (adjustNoteByProduct[productId] ?? '').trim()
-  //   setError(null); setAdjustApplyingProductId(productId)
-  //   apiFetch<{ ok: boolean; balanceAfter: number }>(`/godowns/${id}/inventory/adjust`, { token, method: 'POST', body: JSON.stringify({ productId, qtyDelta, note: note || undefined }) })
-  //     .then(() => { setAdjustDeltaByProduct(p => ({ ...p, [productId]: '' })); setAdjustNoteByProduct(p => ({ ...p, [productId]: '' })); return reloadStock() })
-  //     .catch((e: any) => setError(e?.message || 'Adjustment failed'))
-  //     .finally(() => setAdjustApplyingProductId(null))
-  // }
+  const applyStockAdjustment = (productId: string) => {
+    const token = getToken(); if (!token || !id || !canEditGodown) return
+    const raw = (adjustDeltaByProduct[productId] ?? '').trim()
+    if (!/^-?\d+$/.test(raw)) { setError('Enter a whole number (e.g. 10 or -3).'); return }
+    const qtyDelta = parseInt(raw, 10)
+    if (qtyDelta === 0) { setError('Quantity change cannot be zero.'); return }
+    const note = (adjustNoteByProduct[productId] ?? '').trim()
+    setError(null); setAdjustApplyingProductId(productId)
+    apiFetch<{ ok: boolean; balanceAfter: number }>(`/godowns/${id}/inventory/adjust`, { token, method: 'POST', body: JSON.stringify({ productId, qtyDelta, note: note || undefined }) })
+      .then(() => { setAdjustDeltaByProduct(p => ({ ...p, [productId]: '' })); setAdjustNoteByProduct(p => ({ ...p, [productId]: '' })); return reloadStock() })
+      .catch((e: any) => setError(e?.message || 'Adjustment failed'))
+      .finally(() => setAdjustApplyingProductId(null))
+  }
 
   if (!id) return <div style={{ padding: 24 }}>Invalid godown ID.</div>
   if (loading && !godown) return <div style={{ padding: 24, fontSize: 13, color: '#7C7A9A' }}>Loading…</div>
@@ -1578,7 +1578,7 @@ export function GodownsDetailsPage() {
                     </thead>
                     <tbody>
                       {updateStockRows.map(p => {
-                        // const applying = adjustApplyingProductId === p.productId
+                        const applying = adjustApplyingProductId === p.productId
                         return (
                           <tr key={p.productId}
                             onClick={() => setSelectedProductId(prev => prev === p.productId ? null : p.productId)}
@@ -1592,14 +1592,14 @@ export function GodownsDetailsPage() {
                             <td style={{ ...TD, textAlign: 'right', fontWeight: 700, color: '#C2410C' }}>{p.outOfDelivery}</td>
                             <td style={{ ...TD, textAlign: 'right', fontWeight: 700, color: '#DC2626' }}>{p.missing}</td>
                             <td style={{ ...TD, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                              {/* <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
+                              <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
                                 <input placeholder="+/-" value={adjustDeltaByProduct[p.productId] ?? ''} onChange={e => setAdjustDeltaByProduct(prev => ({ ...prev, [p.productId]: e.target.value }))}
                                   style={{ width: 60, height: 32, padding: '0 8px', border: '1px solid rgba(83,74,183,0.18)', borderRadius: 7, fontSize: 12, color: '#1E1A4E', background: '#fff', outline: 'none', fontFamily: 'inherit' }} />
                                 <button disabled={applying} onClick={() => applyStockAdjustment(p.productId)}
                                   style={{ height: 32, padding: '0 12px', borderRadius: 7, border: 'none', background: 'linear-gradient(135deg,#34d399,#059669)', fontSize: 12, fontWeight: 600, color: '#fff', cursor: applying ? 'not-allowed' : 'pointer' }}>
                                   {applying ? '…' : 'Apply'}
                                 </button>
-                              </div> */}
+                              </div>
                             </td>
                           </tr>
                         )

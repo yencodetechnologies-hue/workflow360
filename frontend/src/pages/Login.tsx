@@ -710,7 +710,7 @@ export function LoginPage() {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     onBlur={() => setTouched(true)}
-                    placeholder="admin@gmail.com or mobile"
+                    placeholder="email or mobile"
                     style={{
                       border: '1.5px solid rgba(5,150,105,0.15)',
                       color: '#1E1A4E',
