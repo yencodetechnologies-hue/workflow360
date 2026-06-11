@@ -256,7 +256,7 @@ export function AdminEditProfilePage() {
 
       {!loading ? (
         <Card className="overflow-hidden rounded-[30px] border border-slate-200/70 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.12)]">
-          <div className="relative h-40 bg-gradient-to-r from-primary-600 via-primary-600 to-primary-600">
+          <div className="relative h-20 bg-gradient-to-r from-primary-600 via-primary-600 to-primary-600">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_40%)]" />
           </div>
 
@@ -269,19 +269,30 @@ export function AdminEditProfilePage() {
                   </span>
                 </div>
 
-                <div>
-                  <h2 className="text-3xl font-bold text-slate-900">{displayName}</h2>
+                <div style={{ minWidth: 0 }}>
+                  <h2
+                    className="text-xl font-bold text-slate-900"
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '320px',
+                    }}
+                    title={displayName}
+                  >
+                    {displayName}
+                  </h2>
                   <p className="mt-2 text-sm text-slate-500">
                     {roleLabels[form.role] || form.role}
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700">
+              <div className="flex flex-row items-center gap-3">
+                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 whitespace-nowrap">
                   {roleBadge(form.role)}
                 </div>
-                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700">
+                <div className="rounded-2xl bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 whitespace-nowrap">
                   {auth.status === 'authenticated' ? 'Signed in' : 'Guest'}
                 </div>
               </div>

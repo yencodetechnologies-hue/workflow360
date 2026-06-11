@@ -281,17 +281,24 @@ function drawSignatures(doc, boxes = null) {
 }
 
 function drawFooter(doc) {
-  const footerY = 808
-  doc.moveTo(MARGIN, footerY - 10)
-    .lineTo(MARGIN + CONTENT_WIDTH, footerY - 10)
+  // Draw footer on the LAST page at a fixed y position using switchToPage
+  // so that PDFKit never auto-creates a new blank page from doc.text().
+  const lastPage = doc.bufferedPageRange().start + doc.bufferedPageRange().count - 1
+  doc.switchToPage(lastPage)
+
+  const footerY = PAGE_BOTTOM - 22
+  doc.moveTo(MARGIN, footerY)
+    .lineTo(MARGIN + CONTENT_WIDTH, footerY)
     .strokeColor(BRAND.accent)
     .lineWidth(1)
     .stroke()
+
   doc.font('Helvetica').fontSize(8).fillColor(BRAND.muted)
+  // Draw text using absolute y; lineBreak:false prevents any page overflow
   doc.text(
     `Workflow360 · Generated on ${formatDateTime(new Date())}`,
     MARGIN,
-    footerY,
+    footerY + 5,
     { width: CONTENT_WIDTH, align: 'center', lineBreak: false },
   )
 }
