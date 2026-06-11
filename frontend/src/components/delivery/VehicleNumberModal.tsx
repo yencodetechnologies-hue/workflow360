@@ -101,11 +101,25 @@ export function VehicleNumberModal({
     }
   }, [open, initialValue, initialDriverName, initialDriverPhone])
 
+  // const handleConfirm = () => {
+  //   const v = vehicleNumber.trim()
+  //   if (!v) return
+  //   void onConfirm(v, driverName.trim(), driverPhone.trim())
+  // }
+
   const handleConfirm = () => {
-    const v = vehicleNumber.trim()
-    if (!v) return
-    void onConfirm(v, driverName.trim(), driverPhone.trim())
-  }
+  console.log("MODAL VALUES", {
+    vehicleNumber,
+    driverName,
+    driverPhone,
+  })
+
+  void onConfirm(
+    vehicleNumber.trim(),
+    driverName.trim(),
+    driverPhone.trim()
+  )
+}
 
   return (
     <Modal open={open} title={title} onClose={onClose}>

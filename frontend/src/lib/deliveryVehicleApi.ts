@@ -31,7 +31,6 @@ type VehicleResponse = {
   driverPhone?: string
 }
 
-/** Assign vehicle + driver details when moving to out-for-delivery, or update while already out. */
 export async function postDeliveryVehicle(
   deliveryId: string,
   token: string,
@@ -41,13 +40,27 @@ export async function postDeliveryVehicle(
   driverName?: string,
   driverPhone?: string,
 ): Promise<VehicleResponse> {
-  return apiFetch<VehicleResponse>(`/deliveries/${deliveryId}/out-for-delivery`, {
-    token,
-    method: 'POST',
-    body: JSON.stringify({
-      vehicleNumber,
-      ...(driverName  ? { driverName  } : {}),
-      ...(driverPhone ? { driverPhone } : {}),
-    }),
+
+   console.log('OUT FOR DELIVERY PARAMS', {
+    vehicleNumber,
+    driverName,
+    driverPhone,
   })
+
+  const payload = {
+    vehicleNumber,
+    ...(driverName ? { driverName } : {}),
+    ...(driverPhone ? { driverPhone } : {}),
+  }
+
+  console.log('OUT FOR DELIVERY PAYLOAD', payload)
+
+  return apiFetch<VehicleResponse>(
+    `/deliveries/${deliveryId}/out-for-delivery`,
+    {
+      token,
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  )
 }

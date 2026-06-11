@@ -1449,9 +1449,19 @@ export function GodownsDetailsPage() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(83,74,183,0.12)', background: '#fff' }}>
-          <button style={tabBtn('catalog')} onClick={() => setTab('catalog')}>Product catalog</button>
-          <button style={tabBtn('stock')} onClick={() => setTab('stock')}>Stock at godown</button>
-          {canEditGodown && <button style={tabBtn('update')} onClick={() => setTab('update')}>Update stock</button>}
+        <button style={tabBtn('catalog')} onClick={() => setTab('catalog')}>
+  Product catalog
+</button>
+
+{canEditGodown && (
+  <button style={tabBtn('update')} onClick={() => setTab('update')}>
+    Update stock
+  </button>
+)}
+
+<button style={tabBtn('stock')} onClick={() => setTab('stock')}>
+  Stock at godown
+</button>
         </div>
 
         {/* Split grid: left content | right detail panel */}
@@ -1511,50 +1521,7 @@ export function GodownsDetailsPage() {
               </div>
             </>}
 
-            {/* ═══ STOCK ═══ */}
-            {tab === 'stock' && <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 22px', borderBottom: '1px solid rgba(83,74,183,0.08)' }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1E1A4E' }}>
-                  Stock at godown <span style={{ fontSize: 13, fontWeight: 400, color: '#7C7A9A' }}>(current quantities)</span>
-                </div>
-                <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Total: {formatNumber(stockRows.reduce((a, r) => a + r.qty, 0))} units</span>
-              </div>
-              {stockTableRows.length === 0 ? (
-                <div style={{ padding: '40px 22px', textAlign: 'center', color: '#7C7A9A', fontSize: 13 }}>No stock rows yet.</div>
-              ) : (
-                <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {stockTableRows.map(p => (
-                    <div key={p.productId}
-                      onClick={() => setSelectedProductId(prev => prev === p.productId ? null : p.productId)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: `1px solid ${selectedProductId === p.productId ? '#34d399' : 'rgba(83,74,183,0.12)'}`, borderRadius: 9, background: selectedProductId === p.productId ? '#ecfdf5' : '#faf9ff', cursor: 'pointer', transition: 'all 0.14s' }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1E1A4E' }}>{p.name}</div>
-                        <div style={{ fontSize: 10.5, color: '#7C7A9A', marginTop: 1 }}>{p.sku}</div>
-                        <div style={{ height: 4, background: '#ecfdf5', borderRadius: 4, overflow: 'hidden', marginTop: 5 }}>
-                          <div style={{ height: '100%', width: `${Math.round((p.qty / maxStock) * 100)}%`, background: 'linear-gradient(90deg,#34d399,#6ee7b7)', borderRadius: 4 }} />
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: '#059669' }}>{formatNumber(p.qty)}</div>
-                        <div style={{ fontSize: 10, color: '#7C7A9A' }}>units</div>
-                      </div>
-                      {/* Out of delivery badge */}
-                      <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 56 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#C2410C' }}>{p.outOfDelivery}</div>
-                        <div style={{ fontSize: 9, color: '#9A3412', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Out</div>
-                      </div>
-                      {/* Missing badge */}
-                      <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 56 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#DC2626' }}>{p.missing}</div>
-                        <div style={{ fontSize: 9, color: '#991B1B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Missing</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>}
-
+           
             {/* ═══ UPDATE STOCK ═══ */}
             {tab === 'update' && <>
               <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(83,74,183,0.08)' }}>
@@ -1609,6 +1576,50 @@ export function GodownsDetailsPage() {
                 </div>
               )}
             </>}
+             {/* ═══ STOCK ═══ */}
+            {tab === 'stock' && <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 22px', borderBottom: '1px solid rgba(83,74,183,0.08)' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1E1A4E' }}>
+                  Stock at godown <span style={{ fontSize: 13, fontWeight: 400, color: '#7C7A9A' }}>(current quantities)</span>
+                </div>
+                <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Total: {formatNumber(stockRows.reduce((a, r) => a + r.qty, 0))} units</span>
+              </div>
+              {stockTableRows.length === 0 ? (
+                <div style={{ padding: '40px 22px', textAlign: 'center', color: '#7C7A9A', fontSize: 13 }}>No stock rows yet.</div>
+              ) : (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {stockTableRows.map(p => (
+                    <div key={p.productId}
+                      onClick={() => setSelectedProductId(prev => prev === p.productId ? null : p.productId)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: `1px solid ${selectedProductId === p.productId ? '#34d399' : 'rgba(83,74,183,0.12)'}`, borderRadius: 9, background: selectedProductId === p.productId ? '#ecfdf5' : '#faf9ff', cursor: 'pointer', transition: 'all 0.14s' }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1E1A4E' }}>{p.name}</div>
+                        <div style={{ fontSize: 10.5, color: '#7C7A9A', marginTop: 1 }}>{p.sku}</div>
+                        <div style={{ height: 4, background: '#ecfdf5', borderRadius: 4, overflow: 'hidden', marginTop: 5 }}>
+                          <div style={{ height: '100%', width: `${Math.round((p.qty / maxStock) * 100)}%`, background: 'linear-gradient(90deg,#34d399,#6ee7b7)', borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: '#059669' }}>{formatNumber(p.qty)}</div>
+                        <div style={{ fontSize: 10, color: '#7C7A9A' }}>units</div>
+                      </div>
+                      {/* Out of delivery badge */}
+                      <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 56 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#C2410C' }}>{p.outOfDelivery}</div>
+                        <div style={{ fontSize: 9, color: '#9A3412', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Out</div>
+                      </div>
+                      {/* Missing badge */}
+                      <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 56 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#DC2626' }}>{p.missing}</div>
+                        <div style={{ fontSize: 9, color: '#991B1B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Missing</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
           </div>
 
           {/* RIGHT: Delivery detail panel */}
