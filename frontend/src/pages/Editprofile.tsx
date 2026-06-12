@@ -307,13 +307,6 @@ export function AdminEditProfilePage() {
               />
 
               <Input
-                label="Login ID"
-                value={form.loginId}
-                onChange={(e) => updateField('loginId', e.target.value)}
-                className="h-12 rounded-2xl"
-              />
-
-              <Input
                 label="Email address"
                 value={form.email}
                 onChange={(e) => updateField('email', e.target.value)}
