@@ -587,8 +587,7 @@
 // async function returnsByBiller(req, res) {
 //   ensureGodownQueryParam(req)
 //   const godownId = String(req.query.godownId || '').trim()
-//   if (!godownId) return res.status(400).json({ message: 'godownId required' })
-//   if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
+//   if (godownId && !mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
 
 //   const result = await buildDeliveryQuery(req)
 //   if (result.error) return res.status(400).json({ message: result.error.error })
@@ -660,8 +659,7 @@
 // async function returnsByProduct(req, res) {
 //   ensureGodownQueryParam(req)
 //   const godownId = String(req.query.godownId || '').trim()
-//   if (!godownId) return res.status(400).json({ message: 'godownId required' })
-//   if (!mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
+//   if (godownId && !mongoose.Types.ObjectId.isValid(godownId)) return res.status(400).json({ message: 'Invalid godownId' })
 
 //   const metric = String(req.query.metric || 'missing').trim()
 //   if (!['missing', 'damage', 'return'].includes(metric)) {
@@ -832,6 +830,26 @@
 //   )
 // }
 
+// async function statusCounts(req, res) {
+//   const q = {}
+//   applyRoleScope(req, q)
+//   if (req.user.role === 'GODOWN' && req.user.godownId) {
+//     const gid = new mongoose.Types.ObjectId(String(req.user.godownId))
+//     q.$or = [{ fromGodownId: gid }, { 'lines.godownId': gid }]
+//   }
+//   const results = await Delivery.aggregate([
+//     { $match: q },
+//     { $group: { _id: '$status', count: { $sum: 1 } } },
+//   ])
+//   const byStatus = {}
+//   let total = 0
+//   for (const r of results) {
+//     byStatus[r._id] = r.count
+//     total += r.count
+//   }
+//   return res.json({ total, byStatus })
+// }
+
 // module.exports = {
 //   dailyDeliveryReport,
 //   calendarReport,
@@ -847,7 +865,9 @@
 //   customerProductsReport,
 //   returnsByBiller,
 //   returnsByProduct,
+//   statusCounts,
 // }
+
 
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
@@ -856,10 +876,21 @@ const Product = require('../models/Product')
 const Godown = require('../models/Godown')
 const User = require('../models/User')
 
+// IST is UTC+5:30 = 330 minutes ahead of UTC.
+// To get the UTC boundaries for a local IST calendar day:
+//   IST midnight = UTC 18:30 of the *previous* day
+// We detect the server's TZ offset dynamically so this works even if the
+// server is running in UTC or IST.
+const SERVER_TZ_OFFSET_MS = new Date().getTimezoneOffset() * 60 * 1000 // negative for UTC
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000 // +5:30 in ms
+
 function dayRange(dateStr) {
   const [y, m, d] = String(dateStr).split('-').map((x) => Number(x))
-  const start = new Date(Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0))
-  const end = new Date(Date.UTC(y, (m || 1) - 1, (d || 1) + 1, 0, 0, 0))
+  // Build IST midnight as a UTC instant
+  // IST midnight = UTC (day-1) 18:30:00
+  const istMidnightUTC = Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0) - IST_OFFSET_MS
+  const start = new Date(istMidnightUTC)
+  const end = new Date(istMidnightUTC + 24 * 60 * 60 * 1000)
   return { start, end }
 }
 
