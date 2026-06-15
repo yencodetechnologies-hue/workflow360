@@ -259,7 +259,7 @@ const postVehicleTransition = async (
           <option value={value}>{deliveryStatusLabel(value)}</option>
         ) : null}
       </select>
-      {['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(status) ? (
+      {/* {['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(status) ? (
         <button
           type="button"
           disabled={busy}
@@ -267,6 +267,16 @@ const postVehicleTransition = async (
           className="text-xs font-semibold text-primary-700 hover:text-primary-900 disabled:opacity-60"
         >
           {status === 'OUT_FOR_DELIVERY' ? 'Change vehicle' : 'Set vehicle'}
+        </button>
+      ) : null} */}
+      {['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED'].includes(status) ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={openVehicleOutModal}
+          className="text-xs font-semibold text-primary-700 hover:text-primary-900 disabled:opacity-60"
+        >
+          {status === 'OUT_FOR_DELIVERY' ? 'Change vehicle' : status === 'COMPLETED' ? 'Edit driver info' : 'Set vehicle'}
         </button>
       ) : null}
       {status === 'RETURN_PICKUP' ? (

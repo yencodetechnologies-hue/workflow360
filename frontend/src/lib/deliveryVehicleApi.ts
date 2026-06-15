@@ -40,20 +40,11 @@ export async function postDeliveryVehicle(
   driverName?: string,
   driverPhone?: string,
 ): Promise<VehicleResponse> {
-
-   console.log('OUT FOR DELIVERY PARAMS', {
-    vehicleNumber,
-    driverName,
-    driverPhone,
-  })
-
   const payload = {
     vehicleNumber,
     ...(driverName ? { driverName } : {}),
     ...(driverPhone ? { driverPhone } : {}),
   }
-
-  console.log('OUT FOR DELIVERY PAYLOAD', payload)
 
   return apiFetch<VehicleResponse>(
     `/deliveries/${deliveryId}/out-for-delivery`,

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
 const Product = require('../models/Product')
+const User = require('../models/User')
 const InventoryLedger = require('../models/InventoryLedger')
 const { parseRate, populateLineDetails } = require('../utils/deliveryLineDetails')
 
@@ -8,6 +9,28 @@ function allowedLineProductIds(delivery) {
   return new Set((delivery.lines || []).map((l) => String(l.productId)))
 }
 
+// Resolve vehicle/driver info for a delivery, falling back to the assigned
+// delivery user's profile for older records that predate this feature.
+async function resolveVehicleInfo(delivery) {
+  let vehicleLabel = delivery.vehicleLabel || ''
+  let driverName = delivery.driverName || ''
+  let driverPhone = delivery.driverPhone || ''
+
+  if ((!vehicleLabel || !driverName || !driverPhone) && delivery.assignedDeliveryUserId) {
+    try {
+      const driver = await User.findById(delivery.assignedDeliveryUserId).lean()
+      if (driver) {
+        if (!vehicleLabel && driver.loginId) vehicleLabel = driver.loginId
+        if (!driverName && driver.contactName) driverName = driver.contactName
+        if (!driverPhone && driver.contactPhone) driverPhone = driver.contactPhone
+      }
+    } catch {
+      // ignore lookup errors and fall back to whatever was on the delivery
+    }
+  }
+
+  return { vehicleLabel, driverName, driverPhone }
+}
 // ── Delivery Verify GET ────────────────────────────────────────────────────
 async function getDeliveryVerify(req, res) {
   try {
@@ -16,8 +39,8 @@ async function getDeliveryVerify(req, res) {
 
     const delivery = await Delivery.findOne({ deliveryVerifyToken: token }).lean()
     if (!delivery) return res.status(404).json({ message: 'Not found' })
-
-    const lines = await populateLineDetails(delivery)
+const lines = await populateLineDetails(delivery)
+    const { vehicleLabel, driverName, driverPhone } = await resolveVehicleInfo(delivery)
 
     return res.json({
       deliveryNo: delivery.deliveryNo,
@@ -25,9 +48,9 @@ async function getDeliveryVerify(req, res) {
       siteName: delivery.siteName,
       status: delivery.status,
       deliveryAt: delivery.deliveryAt,
-      vehicleLabel: delivery.vehicleLabel,
-      driverName: delivery.driverName,
-      driverPhone: delivery.driverPhone,
+      vehicleLabel,
+      driverName,
+      driverPhone,
       lines,
       deliveryVerifierName: delivery.deliveryVerifierName,
       deliveryVerifiedAt: delivery.deliveryVerifiedAt,
@@ -99,7 +122,8 @@ async function getBillerReturn(req, res) {
     const delivery = await Delivery.findOne({ billerReturnVerifyToken: token }).lean()
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
-    const lines = await populateLineDetails(delivery)
+const lines = await populateLineDetails(delivery)
+    const { vehicleLabel, driverName, driverPhone } = await resolveVehicleInfo(delivery)
 
     return res.json({
       deliveryNo: delivery.deliveryNo,
@@ -107,9 +131,9 @@ async function getBillerReturn(req, res) {
       siteName: delivery.siteName,
       status: delivery.status,
       challanNo: delivery.challanNo,
-      vehicleLabel: delivery.vehicleLabel,
-      driverName: delivery.driverName,
-      driverPhone: delivery.driverPhone,
+      vehicleLabel,
+      driverName,
+      driverPhone,
       lines,
       billerDamagedLines: delivery.billerDamagedLines,
       billerMissingLines: delivery.billerMissingLines,

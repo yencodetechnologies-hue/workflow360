@@ -622,8 +622,12 @@ type DeliveryDetail = {
   fromGodownId: string
   deliveryAt: string
   returnExpectedAt?: string
-  vehicleLabel?: string
+vehicleLabel?: string
+  driverName?: string
+  driverPhone?: string
   returnPickupVehicleLabel?: string
+  returnPickupDriverName?: string
+  returnPickupDriverPhone?: string
   status: string
   lines: DeliveryLine[]
   scanProgress?: {
@@ -862,10 +866,28 @@ function AdminDeliveryDetailPage() {
           <span className="font-medium text-emerald-800">Products: </span>
           <span className="text-slate-700">{d.lines.length} items</span>
         </div>
+        {/* {d.vehicleLabel ? (
+          <div>
+            <span className="font-medium text-emerald-800">Vehicle: </span>
+            <span className="text-slate-700">{d.vehicleLabel}</span>
+          </div>
+        ) : null} */}
         {d.vehicleLabel ? (
           <div>
             <span className="font-medium text-emerald-800">Vehicle: </span>
             <span className="text-slate-700">{d.vehicleLabel}</span>
+          </div>
+        ) : null}
+        {d.driverName ? (
+          <div>
+            <span className="font-medium text-emerald-800">Driver: </span>
+            <span className="text-slate-700">{d.driverName}</span>
+          </div>
+        ) : null}
+        {d.driverPhone ? (
+          <div>
+            <span className="font-medium text-emerald-800">Driver phone: </span>
+            <span className="text-slate-700">{d.driverPhone}</span>
           </div>
         ) : null}
       </div>
@@ -921,7 +943,11 @@ function AdminDeliveryDetailPage() {
                 deliveryId={d.id}
                 status={d.status}
                 vehicleLabel={d.vehicleLabel}
+                driverName={d.driverName}
+                driverPhone={d.driverPhone}
                 returnPickupVehicleLabel={d.returnPickupVehicleLabel}
+                returnPickupDriverName={d.returnPickupDriverName}
+                returnPickupDriverPhone={d.returnPickupDriverPhone}
                 onUpdated={() => load()}
                 onError={(msg) => setError(msg)}
               />
@@ -942,10 +968,34 @@ function AdminDeliveryDetailPage() {
                 {d.vehicleLabel}
               </div>
             ) : null}
+            {d.driverName ? (
+              <div>
+                <span className="text-slate-600">Driver: </span>
+                {d.driverName}
+              </div>
+            ) : null}
+            {d.driverPhone ? (
+              <div>
+                <span className="text-slate-600">Driver phone: </span>
+                {d.driverPhone}
+              </div>
+            ) : null}
             {d.returnPickupVehicleLabel ? (
               <div>
                 <span className="text-slate-600">Return pickup vehicle: </span>
                 {d.returnPickupVehicleLabel}
+              </div>
+            ) : null}
+            {d.returnPickupDriverName ? (
+              <div>
+                <span className="text-slate-600">Return pickup driver: </span>
+                {d.returnPickupDriverName}
+              </div>
+            ) : null}
+            {d.returnPickupDriverPhone ? (
+              <div>
+                <span className="text-slate-600">Return pickup driver phone: </span>
+                {d.returnPickupDriverPhone}
               </div>
             ) : null}
             {d.contactPhone ? (

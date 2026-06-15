@@ -1,5 +1,3 @@
-
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PublicCompletionScreen } from '../../components/public/PublicCompletionScreen'
@@ -235,6 +233,8 @@ export function PublicDeliveryVerifyPage() {
   const completionMeta = [
     { label: 'Site', value: data.siteName || '—' },
     { label: 'Vehicle', value: data.vehicleLabel || '—' },
+    { label: 'Driver', value: data.driverName || '—' },
+    { label: 'Driver phone', value: data.driverPhone || '—' },
   ]
 
   if (phase === 'thankYou') {
@@ -273,9 +273,9 @@ export function PublicDeliveryVerifyPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             {data.siteName ? <Badge variant="slate">Site: {data.siteName}</Badge> : null}
-            {data.vehicleLabel ? <Badge variant="slate">Vehicle: {data.vehicleLabel}</Badge> : null}
-            {data.driverName ? <Badge variant="slate">Driver: {data.driverName}</Badge> : null}
-            {data.driverPhone ? <Badge variant="slate">Phone: {data.driverPhone}</Badge> : null}
+            <Badge variant="slate">Vehicle: {data.vehicleLabel || '—'}</Badge>
+            <Badge variant="slate">Driver: {data.driverName || '—'}</Badge>
+            <Badge variant="slate">Phone: {data.driverPhone || '—'}</Badge>
           </div>
           {data.deliveryVerifiedAt ? (
             <div className="mt-2 text-xs text-emerald-600 font-medium">

@@ -1087,7 +1087,12 @@ async function getDelivery(req, res) {
       status: d.status,
       phase: d.phase || 'FORWARD',
       vehicleLabel: d.vehicleLabel,
+      driverName: d.driverName,
+      driverPhone: d.driverPhone,
       challanNo: d.challanNo,
+      // phase: d.phase || 'FORWARD',
+      // vehicleLabel: d.vehicleLabel,
+      // challanNo: d.challanNo,
       pickupLocation: pickupLocations[0] || pickupLocationFromGodown(null, d.fromGodownId),
       pickupLocations,
       dropLocation: dropLocationFromDelivery(d),
@@ -1138,8 +1143,17 @@ async function getDelivery(req, res) {
     selfDelivery: d.selfDelivery,
     assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
     vehicleLabel: d.vehicleLabel,
+    driverName: d.driverName,
+    driverPhone: d.driverPhone,
     returnPickupVehicleLabel: d.returnPickupVehicleLabel,
+    returnPickupDriverName: d.returnPickupDriverName,
+    returnPickupDriverPhone: d.returnPickupDriverPhone,
     status: d.status,
+    // selfDelivery: d.selfDelivery,
+    // assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
+    // vehicleLabel: d.vehicleLabel,
+    // returnPickupVehicleLabel: d.returnPickupVehicleLabel,
+    // status: d.status,
     phase: d.phase,
     lines,
     dispatchedTagIds: d.dispatchedTagIds,
@@ -1448,17 +1462,17 @@ async function assignOutForDeliveryVehicle(delivery, userId, vehicleNumber, driv
   // delivery.vehicleVerifiedByUserId = userId
   // delivery.assignedDeliveryUserId = driver._id
 
-  delivery.vehicleLabel = vehicle
+delivery.vehicleLabel = vehicle
 
-delivery.driverName =
-  String(driverName || driver.contactName || '').trim()
+  delivery.driverName =
+    String(driverName || driver.contactName || `Vehicle ${vehicle}`).trim()
 
-delivery.driverPhone =
-  String(driverPhone || driver.contactPhone || '').trim()
+  delivery.driverPhone =
+    String(driverPhone || driver.contactPhone || '').trim()
 
-delivery.vehicleVerifiedAt = new Date()
-delivery.vehicleVerifiedByUserId = userId
-delivery.assignedDeliveryUserId = driver._id
+  delivery.vehicleVerifiedAt = new Date()
+  delivery.vehicleVerifiedByUserId = userId
+  delivery.assignedDeliveryUserId = driver._id
 
   return { vehicle, driver }
 }
@@ -1549,6 +1563,22 @@ async function updateOutForDeliveryVehicle(req, res, existingDelivery, vehicleNu
       return res.status(400).json({ message: 'vehicleNumber required' })
     }
 
+    // const isAdminUser = req.user.role === 'ADMIN'
+
+    // if (!isAdminUser && delivery.status !== 'OUT_FOR_DELIVERY') {
+    //   return res.status(409).json({
+    //     message: 'Vehicle can only be changed while the delivery is out for delivery',
+    //   })
+    // }
+
+    // if (['COMPLETED', 'CANCELLED'].includes(delivery.status)) {
+    //   return res.status(409).json({ message: 'Cannot change vehicle on a completed or cancelled delivery' })
+    // }
+
+    // const { driver } = await assignOutForDeliveryVehicle(delivery, req.user.id, number, req.body?.driverName, req.body?.driverPhone)
+
+    // const promoteToOutForDelivery = isAdminUser && ['PROCESSED', 'PACKED'].includes(delivery.status)
+
     const isAdminUser = req.user.role === 'ADMIN'
 
     if (!isAdminUser && delivery.status !== 'OUT_FOR_DELIVERY') {
@@ -1557,8 +1587,12 @@ async function updateOutForDeliveryVehicle(req, res, existingDelivery, vehicleNu
       })
     }
 
-    if (['COMPLETED', 'CANCELLED'].includes(delivery.status)) {
+    if (!isAdminUser && ['COMPLETED', 'CANCELLED'].includes(delivery.status)) {
       return res.status(409).json({ message: 'Cannot change vehicle on a completed or cancelled delivery' })
+    }
+
+    if (isAdminUser && delivery.status === 'CANCELLED') {
+      return res.status(409).json({ message: 'Cannot change vehicle on a cancelled delivery' })
     }
 
     const { driver } = await assignOutForDeliveryVehicle(delivery, req.user.id, number, req.body?.driverName, req.body?.driverPhone)
@@ -1577,10 +1611,12 @@ async function updateOutForDeliveryVehicle(req, res, existingDelivery, vehicleNu
       await notifyOutForDelivery(delivery, driver._id)
     }
 
-    return res.json({
+return res.json({
       ok: true,
       status: delivery.status,
       vehicleLabel: delivery.vehicleLabel,
+      driverName: delivery.driverName,
+      driverPhone: delivery.driverPhone,
       vehicleVerifiedAt: delivery.vehicleVerifiedAt,
       outForDeliveryAt: delivery.outForDeliveryAt,
       assignedDeliveryUserId: String(delivery.assignedDeliveryUserId),
