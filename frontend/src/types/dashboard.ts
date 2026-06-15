@@ -48,6 +48,13 @@ export type DashboardAlert = {
   severity: 'warn' | 'bad' | 'info'
 }
 
+export type ReturnKpis = {
+  returnDelivery: number
+  returnDispatch: number
+  returnsPending: number
+  returnsCompleted: number
+}
+
 export type TodayKpis = {
   today: number
   running: number
