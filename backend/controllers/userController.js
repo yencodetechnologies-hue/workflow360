@@ -31,7 +31,7 @@ function makeInternalEmail(mobile, siteName) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .slice(0, 40)
-  return `biller_${base || Date.now()}@wf360.local`
+  return `biller_${base || 'x'}_${Date.now()}@wf360.local`
 }
 
 async function listUsers(req, res) {
@@ -53,15 +53,15 @@ async function createUser(req, res) {
     const normalizedLoginId = loginId ? String(loginId).trim().toUpperCase() : undefined
     let normalizedEmail = email ? String(email).toLowerCase().trim() : undefined
 
-    if (!normalizedEmail && !normalizedLoginId) {
-      return res.status(400).json({ message: 'email or loginId required' })
-    }
-
     if (!normalizedEmail && role === 'BILLER') {
       normalizedEmail = makeInternalEmail(contactPhone, siteName)
     }
 
-    if (normalizedEmail) {
+    if (!normalizedEmail && !normalizedLoginId) {
+      return res.status(400).json({ message: 'email or loginId required' })
+    }
+
+    if (normalizedEmail && role !== 'BILLER') {
       const exists = await User.findOne({ email: normalizedEmail }).lean()
       if (exists) return res.status(400).json({ message: 'User already exists' })
     }

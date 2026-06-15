@@ -20,9 +20,9 @@ const userSchema = mongoose.Schema(
   { timestamps: true },
 )
 
-userSchema.index({ email: 1 }, { unique: true, sparse: true })
+userSchema.index({ email: 1 })
 userSchema.index({ loginId: 1 }, { unique: true, sparse: true })
-userSchema.index({ contactPhone: 1 }, { unique: true, sparse: true })
+userSchema.index({ contactPhone: 1 })
 userSchema.index({ role: 1, godownId: 1 })
 
 const User = mongoose.model('User', userSchema)
