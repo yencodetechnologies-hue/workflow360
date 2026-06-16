@@ -1,3 +1,449 @@
+// const bcrypt = require('bcryptjs')
+// const mongoose = require('mongoose')
+// const User = require('../models/User')
+// const { normalizePhone } = require('../utils/phone')
+// const { logActivity } = require('../utils/activityLog')
+
+// function normalizeContactPhone(value) {
+//   if (value == null || value === '') return undefined
+//   const normalized = normalizePhone(value)
+//   return normalized || String(value).trim() || undefined
+// }
+
+// function mapUser(u) {
+//   return {
+//     id: String(u._id),
+//     email: u.email,
+//     loginId: u.loginId,
+//     role: u.role,
+//     godownId: u.godownId,
+//     siteName: u.siteName,
+//     siteAddress: u.siteAddress,
+//     contactPhone: u.contactPhone,
+//     contactName: u.contactName,
+//     active: u.active,
+//     createdAt: u.createdAt,
+//   }
+// }
+
+// function makeInternalEmail(mobile, siteName) {
+//   const base = mobile ? String(mobile).replace(/\D/g, '') : String(siteName || 'biller')
+//     .toLowerCase()
+//     .replace(/[^a-z0-9]+/g, '_')
+//     .slice(0, 40)
+//   return `biller_${base || 'x'}_${Date.now()}@wf360.local`
+// }
+
+// async function listUsers(req, res) {
+//   const users = await User.find({}).sort({ createdAt: -1 }).lean()
+//   return res.json(users.map(mapUser))
+// }
+
+// async function listBillers(req, res) {
+//   const users = await User.find({ role: 'BILLER', active: true }).sort({ siteName: 1 }).lean()
+//   return res.json(users.map(mapUser))
+// }
+
+// async function createUser(req, res) {
+//   try {
+//     const { email, loginId, password, role, godownId, active, siteName, siteAddress, contactPhone, contactName } =
+//       req.body || {}
+//     if (!password || !role) return res.status(400).json({ message: 'password and role required' })
+
+//     const normalizedLoginId = loginId ? String(loginId).trim().toUpperCase() : undefined
+//     let normalizedEmail = email ? String(email).toLowerCase().trim() : undefined
+
+//     if (!normalizedEmail && role === 'BILLER') {
+//       normalizedEmail = makeInternalEmail(contactPhone, siteName)
+//     }
+
+//     if (!normalizedEmail && !normalizedLoginId) {
+//       return res.status(400).json({ message: 'email or loginId required' })
+//     }
+
+//     if (normalizedEmail && role !== 'BILLER') {
+//       const exists = await User.findOne({ email: normalizedEmail }).lean()
+//       if (exists) return res.status(400).json({ message: 'User already exists' })
+//     }
+//     if (normalizedLoginId) {
+//       const exists = await User.findOne({ loginId: normalizedLoginId }).lean()
+//       if (exists) return res.status(400).json({ message: 'loginId already exists' })
+//     }
+
+//     const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10)
+//     const passwordHash = await bcrypt.hash(String(password), saltRounds)
+//     const user = await User.create({
+//       email: normalizedEmail,
+//       loginId: normalizedLoginId,
+//       passwordHash,
+//       role,
+//       godownId: godownId || undefined,
+//       siteName: siteName ? String(siteName).trim() : undefined,
+//       siteAddress: siteAddress ? String(siteAddress).trim() : undefined,
+//       contactPhone: contactPhone ? normalizeContactPhone(contactPhone) : undefined,
+//       contactName: contactName ? String(contactName).trim() : undefined,
+//       active: active !== undefined ? Boolean(active) : true,
+//     })
+
+//     logActivity({
+//       req,
+//       action: 'USER_CREATED',
+//       category: 'USER',
+//       targetType: 'USER',
+//       targetId: String(user._id),
+//       targetName: user.email || user.loginId || user.siteName,
+//       details: { role: user.role, siteName: user.siteName },
+//     })
+//     return res.status(201).json(mapUser(user.toObject()))
+//   } catch (err) {
+//     if (err && (err.code === 11000 || err.code === 11001)) {
+//       return res.status(400).json({ message: 'Mobile number is already in use' })
+//     }
+//     return res.status(500).json({ message: err.message || 'Create user failed' })
+//   }
+// }
+
+// async function createBiller(req, res) {
+//   try {
+//     const { email, siteName, siteAddress, contactPhone, contactName, password } = req.body || {}
+//     if (!siteName || !String(siteName).trim()) {
+//       return res.status(400).json({ message: 'siteName (company/office name) required' })
+//     }
+//     const pwd = password || '123456'
+//     req.body = {
+//       email: email || undefined,
+//       password: pwd,
+//       role: 'BILLER',
+//       siteName,
+//       siteAddress,
+//       contactPhone,
+//       contactName,
+//     }
+//     return createUser(req, res)
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message || 'Create biller failed' })
+//   }
+// }
+
+// async function updateUser(req, res) {
+//   try {
+//     const user = await User.findById(req.params.id)
+//     if (!user) return res.status(404).json({ message: 'Not found' })
+//     const { siteName, siteAddress, contactPhone, contactName, godownId, active } = req.body || {}
+//     if (siteName !== undefined) user.siteName = siteName ? String(siteName).trim() : undefined
+//     if (siteAddress !== undefined) user.siteAddress = siteAddress ? String(siteAddress).trim() : undefined
+//     if (contactPhone !== undefined) {
+//       user.contactPhone = contactPhone ? normalizeContactPhone(contactPhone) : undefined
+//     }
+//     if (contactName !== undefined) user.contactName = contactName ? String(contactName).trim() : undefined
+//     if (godownId !== undefined) user.godownId = godownId || undefined
+//     if (active !== undefined) user.active = Boolean(active)
+//     await user.save()
+//     logActivity({
+//       req,
+//       action: 'USER_UPDATED',
+//       category: 'USER',
+//       targetType: 'USER',
+//       targetId: String(user._id),
+//       targetName: user.email || user.loginId || user.siteName,
+//       details: { role: user.role },
+//     })
+//     return res.json(mapUser(user.toObject()))
+//   } catch (err) {
+//     if (err && (err.code === 11000 || err.code === 11001)) {
+//       return res.status(400).json({ message: 'Mobile number is already in use' })
+//     }
+//     return res.status(500).json({ message: err.message || 'Update failed' })
+//   }
+// }
+
+// async function setUserActive(req, res) {
+//   try {
+//     const { id } = req.params
+//     const { active } = req.body || {}
+//     const user = await User.findById(id)
+//     if (!user) return res.status(404).json({ message: 'Not found' })
+//     user.active = Boolean(active)
+//     await user.save()
+//     logActivity({
+//       req,
+//       action: user.active ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+//       category: 'USER',
+//       targetType: 'USER',
+//       targetId: String(user._id),
+//       targetName: user.email || user.loginId || user.siteName,
+//       details: { role: user.role, active: user.active },
+//     })
+//     return res.json({ id: String(user._id), active: user.active })
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message || 'Update failed' })
+//   }
+// }
+
+// async function resetPassword(req, res) {
+//   try {
+//     const { id } = req.params
+//     const { password } = req.body || {}
+//     if (!password) return res.status(400).json({ message: 'password required' })
+//     const user = await User.findById(id)
+//     if (!user) return res.status(404).json({ message: 'Not found' })
+//     const saltRounds = Number(process.env.BCRYPT_ROUNDS || 10)
+//     user.passwordHash = await bcrypt.hash(String(password), saltRounds)
+//     await user.save()
+//     logActivity({
+//       req,
+//       action: 'PASSWORD_RESET',
+//       category: 'USER',
+//       targetType: 'USER',
+//       targetId: String(user._id),
+//       targetName: user.email || user.loginId || user.siteName,
+//       details: { role: user.role },
+//     })
+//     return res.json({ id: String(user._id) })
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message || 'Reset failed' })
+//   }
+// }
+
+// async function deleteUser(req, res) {
+//   try {
+//     const { id } = req.params
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//       return res.status(400).json({ message: 'Invalid user id' })
+//     }
+//     if (String(req.user.id) === String(id)) {
+//       return res.status(400).json({ message: 'Cannot delete your own account' })
+//     }
+
+//     const user = await User.findById(id)
+//     if (!user) return res.status(404).json({ message: 'Not found' })
+//     if (!['BILLER', 'DELIVERY'].includes(user.role)) {
+//       return res.status(403).json({ message: 'Only biller and delivery person accounts can be deleted' })
+//     }
+
+//     const deletedName = user.email || user.loginId || user.siteName
+//     const deletedRole = user.role
+//     await user.deleteOne()
+//     logActivity({
+//       req,
+//       action: 'USER_DELETED',
+//       category: 'USER',
+//       targetType: 'USER',
+//       targetId: String(id),
+//       targetName: deletedName,
+//       details: { role: deletedRole },
+//     })
+//     return res.json({ message: 'User deleted', id: String(id) })
+//   } catch (err) {
+//     return res.status(500).json({ message: err.message || 'Delete failed' })
+//   }
+// }
+
+
+
+// /* =========================================================
+//    ADMIN EDIT PROFILE API
+// ========================================================= */
+
+// async function getMyProfile(req, res) {
+//   try {
+//     const user = await User.findById(req.user.id).lean()
+
+//     if (!user) {
+//       return res.status(404).json({
+//         message: 'User not found',
+//       })
+//     }
+
+//     return res.json({
+//       id: String(user._id),
+//       email: user.email,
+//       loginId: user.loginId,
+//       role: user.role,
+//       godownId: user.godownId,
+//       siteName: user.siteName,
+//       siteAddress: user.siteAddress,
+//       contactPhone: user.contactPhone,
+//       contactName: user.contactName,
+//       active: user.active,
+//       createdAt: user.createdAt,
+//       updatedAt: user.updatedAt,
+//     })
+//   } catch (err) {
+//     return res.status(500).json({
+//       message: err.message || 'Failed to load profile',
+//     })
+//   }
+// }
+
+// async function updateMyProfile(req, res) {
+//   try {
+//     const user = await User.findById(req.user.id)
+
+//     if (!user) {
+//       return res.status(404).json({
+//         message: 'User not found',
+//       })
+//     }
+
+//     const {
+//       email,
+//       loginId,
+//       password,
+//       godownId,
+//       siteName,
+//       siteAddress,
+//       contactPhone,
+//       contactName,
+//     } = req.body || {}
+
+//     /* ==============================
+//        EMAIL UPDATE
+//     ============================== */
+
+//     if (email !== undefined) {
+//       const normalizedEmail = String(email)
+//         .toLowerCase()
+//         .trim()
+
+//       const emailExists = await User.findOne({
+//         email: normalizedEmail,
+//         _id: { $ne: user._id },
+//       }).lean()
+
+//       if (emailExists) {
+//         return res.status(400).json({
+//           message: 'Email already exists',
+//         })
+//       }
+
+//       user.email = normalizedEmail
+//     }
+
+//     /* ==============================
+//        LOGIN ID UPDATE
+//     ============================== */
+
+//     if (loginId !== undefined) {
+//       const normalizedLoginId = String(loginId)
+//         .trim()
+//         .toUpperCase()
+
+//       const loginExists = await User.findOne({
+//         loginId: normalizedLoginId,
+//         _id: { $ne: user._id },
+//       }).lean()
+
+//       if (loginExists) {
+//         return res.status(400).json({
+//           message: 'loginId already exists',
+//         })
+//       }
+
+//       user.loginId = normalizedLoginId
+//     }
+
+//     /* ==============================
+//        PASSWORD UPDATE
+//     ============================== */
+
+//     if (password && String(password).trim()) {
+//       const saltRounds = Number(
+//         process.env.BCRYPT_ROUNDS || 10,
+//       )
+
+//       user.passwordHash = await bcrypt.hash(
+//         String(password),
+//         saltRounds,
+//       )
+//     }
+
+//     /* ==============================
+//        OTHER FIELDS
+//     ============================== */
+
+//     if (godownId !== undefined) {
+//       if (user.role !== 'GODOWN') {
+//         user.godownId = undefined
+//       } else {
+//         const trimmed = godownId != null ? String(godownId).trim() : ''
+//         if (!trimmed) {
+//           user.godownId = undefined
+//         } else if (!mongoose.Types.ObjectId.isValid(trimmed)) {
+//           return res.status(400).json({ message: 'godownId must be a valid MongoDB id' })
+//         } else {
+//           user.godownId = trimmed
+//         }
+//       }
+//     }
+
+//     if (siteName !== undefined) {
+//       user.siteName = siteName
+//         ? String(siteName).trim()
+//         : undefined
+//     }
+
+//     if (siteAddress !== undefined) {
+//       user.siteAddress = siteAddress
+//         ? String(siteAddress).trim()
+//         : undefined
+//     }
+
+//     if (contactPhone !== undefined) {
+//       user.contactPhone = contactPhone ? normalizeContactPhone(contactPhone) : undefined
+//     }
+
+//     if (contactName !== undefined) {
+//       user.contactName = contactName
+//         ? String(contactName).trim()
+//         : undefined
+//     }
+
+//     await user.save()
+
+//     return res.json({
+//       message: 'Profile updated successfully',
+
+//       user: {
+//         id: String(user._id),
+//         email: user.email,
+//         loginId: user.loginId,
+//         role: user.role,
+//         godownId: user.godownId,
+//         siteName: user.siteName,
+//         siteAddress: user.siteAddress,
+//         contactPhone: user.contactPhone,
+//         contactName: user.contactName,
+//         active: user.active,
+//         createdAt: user.createdAt,
+//         updatedAt: user.updatedAt,
+//       },
+//     })
+//   } catch (err) {
+//     console.log("adminprofileupdate",err);
+    
+//     return res.status(500).json({
+//       message: err.message || 'Profile update failed',
+//     })
+//   }
+// }
+
+
+
+// module.exports = {
+//   getMyProfile,
+//   updateMyProfile,
+//   listUsers,
+//   listBillers,
+//   createUser,
+//   createBiller,
+//   updateUser,
+//   setUserActive,
+//   resetPassword,
+//   deleteUser,
+// }
+
+
 const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
 const User = require('../models/User')
@@ -27,11 +473,15 @@ function mapUser(u) {
 }
 
 function makeInternalEmail(mobile, siteName) {
-  const base = mobile ? String(mobile).replace(/\D/g, '') : String(siteName || 'biller')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .slice(0, 40)
-  return `biller_${base || 'x'}_${Date.now()}@wf360.local`
+  const base = mobile
+    ? String(mobile).replace(/\D/g, '')
+    : String(siteName || 'biller')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .slice(0, 40)
+  // Always unique: timestamp + random 4-digit suffix prevents any collision
+  const rand = Math.floor(1000 + Math.random() * 9000)
+  return `biller_${base || 'x'}_${Date.now()}_${rand}@wf360.local`
 }
 
 async function listUsers(req, res) {
@@ -97,7 +547,21 @@ async function createUser(req, res) {
     return res.status(201).json(mapUser(user.toObject()))
   } catch (err) {
     if (err && (err.code === 11000 || err.code === 11001)) {
-      return res.status(400).json({ message: 'Mobile number is already in use' })
+      // Identify which field caused the duplicate key error
+      const keyPattern = err.keyPattern || {}
+      if (keyPattern.contactPhone) {
+        return res.status(400).json({ message: 'Mobile number is already in use' })
+      }
+      if (keyPattern.email) {
+        // For BILLERs the email is auto-generated — retry with a fresh one
+        if (req.body && req.body.role === 'BILLER' && !req._originalEmail) {
+          req._originalEmail = req.body.email
+          req.body.email = makeInternalEmail(req.body.contactPhone, req.body.siteName)
+          return createUser(req, res)
+        }
+        return res.status(400).json({ message: 'Email already in use' })
+      }
+      return res.status(400).json({ message: 'Duplicate value — please check your input' })
     }
     return res.status(500).json({ message: err.message || 'Create user failed' })
   }
@@ -151,7 +615,11 @@ async function updateUser(req, res) {
     return res.json(mapUser(user.toObject()))
   } catch (err) {
     if (err && (err.code === 11000 || err.code === 11001)) {
-      return res.status(400).json({ message: 'Mobile number is already in use' })
+      const keyPattern = err.keyPattern || {}
+      if (keyPattern.contactPhone) {
+        return res.status(400).json({ message: 'Mobile number is already in use' })
+      }
+      return res.status(400).json({ message: 'Duplicate value — please check your input' })
     }
     return res.status(500).json({ message: err.message || 'Update failed' })
   }
