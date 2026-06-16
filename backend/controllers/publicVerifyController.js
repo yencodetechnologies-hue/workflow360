@@ -477,17 +477,11 @@ async function postBillerReturn(req, res) {
       })
     }
 
-    delivery.billerDamagedLines = billerDamagedLines
-    delivery.billerMissingLines = billerMissingLines
-    delivery.damageTotal = Math.round(damageTotal * 100) / 100
-    delivery.missingTotal = Math.round(missingTotal * 100) / 100
-    delivery.billerReturnSubmittedAt = new Date()
-    delivery.status = 'COMPLETED'
-    await delivery.save()
-
     // Damaged/missing items are physically returned to the godown and can be restocked.
     // So we ADD back (+qty) to inventory for both damaged and missing returns.
     // Net effect: Stock = initial - dispatched + returned_damaged + returned_missing
+    // Insert the ledger entries BEFORE saving the delivery, so if this fails the
+    // delivery is left untouched and the biller can safely resubmit.
     const godownId = delivery.fromGodownId
     if (godownId) {
       const ledgerEntries = []
@@ -521,6 +515,14 @@ async function postBillerReturn(req, res) {
         await InventoryLedger.insertMany(ledgerEntries)
       }
     }
+
+    delivery.billerDamagedLines = billerDamagedLines
+    delivery.billerMissingLines = billerMissingLines
+    delivery.damageTotal = Math.round(damageTotal * 100) / 100
+    delivery.missingTotal = Math.round(missingTotal * 100) / 100
+    delivery.billerReturnSubmittedAt = new Date()
+    delivery.status = 'COMPLETED'
+    await delivery.save()
 
     return res.json({
       ok: true,
