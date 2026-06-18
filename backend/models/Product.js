@@ -52,7 +52,12 @@ const productSchema = mongoose.Schema({
 });
 
 // Middleware to set SKU if not provided
-productSchema.pre('save', async function() {
+productSchema.pre('save', function () {
+
+    if (!this.productId) {
+        this.productId = `PROD-${this.s_no}`;
+    }
+
     if (!this.sku) {
         this.sku = `SKU-${this.s_no}`;
     }
