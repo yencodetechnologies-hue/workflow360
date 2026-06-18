@@ -38,6 +38,8 @@ const getProductById = async (req, res) => {
 const createProduct = async (req, res) => {
     try {
         const { s_no, category, particulars, specification, rate, image_path, image_status, sku, unit, reorderLevel } = req.body;
+          console.log("createProduct called")
+  console.log(req.body,"prduct body")
 
         const productExists = await Product.findOne({ s_no });
 
@@ -57,14 +59,19 @@ const createProduct = async (req, res) => {
             unit,
             reorderLevel
         });
-
+   console.log("Created:", product)
         if (product) {
             res.status(201).json(product);
         } else {
             res.status(400).json({ message: 'Invalid product data' });
         }
     } catch (error) {
-        res.status(500).json({ message: error.message });
+           console.error("CREATE PRODUCT ERROR:", error);
+    res.status(500).json({
+        message: error.message,
+        name: error.name,
+        errors: error.errors
+    });
     }
 };
 

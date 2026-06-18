@@ -9,6 +9,9 @@ function getTokenFromReq(req) {
 }
 
 async function requireAuth(req, res, next) {
+    console.log("requireAuth called");
+  console.log("next type =", typeof next);
+
   try {
     const token = getTokenFromReq(req)
     if (!token) return res.status(401).json({ message: 'Missing token' })
@@ -33,13 +36,20 @@ async function requireAuth(req, res, next) {
     }
     next()
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' })
+   console.error("AUTH ERROR:", err)
+    return res.status(401).json({
+      message: err.message,
+      stack: err.stack
+    })
   }
 }
 
 function requireRole(roles) {
   const allowed = new Set(roles)
   return (req, res, next) => {
+     console.log("requireRole called")
+    console.log("next type =", typeof next)
+    console.log("user =", req.user)
     if (!req.user) return res.status(401).json({ message: 'Not authenticated' })
     if (!allowed.has(req.user.role)) return res.status(403).json({ message: 'Forbidden' })
     next()
