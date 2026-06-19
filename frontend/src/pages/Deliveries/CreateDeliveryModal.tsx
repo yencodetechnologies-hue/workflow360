@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -266,6 +266,94 @@ const fieldInp: React.CSSProperties = {
   transition: 'border-color 0.15s',
 }
 
+// ── Searchable biller dropdown (search box lives INSIDE the open list) ──────
+function SearchableBillerSelect({
+  billers, value, onChange,
+}: { billers: UserRow[]; value: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  const selected = billers.find((b) => b.id === value)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return billers
+    return billers.filter((b) =>
+      (b.siteName?.toLowerCase().includes(q) ?? false) ||
+      (b.contactName?.toLowerCase().includes(q) ?? false) ||
+      (b.contactPhone?.toLowerCase().includes(q) ?? false) ||
+      (b.email?.toLowerCase().includes(q) ?? false)
+    )
+  }, [billers, query])
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  return (
+    <div ref={boxRef} style={{ position: 'relative' }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Biller</label>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{ ...fieldInp, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left' }}
+      >
+        <span style={{ color: selected ? '#0f172a' : '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected
+            ? `${selected.siteName || selected.contactName || 'Biller'}${selected.contactPhone ? ` · ${selected.contactPhone}` : ''}`
+            : 'Select biller…'}
+        </span>
+        <span style={{ color: '#94a3b8', flexShrink: 0, marginLeft: 8 }}>▾</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 20,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+        }}>
+          {/* search box lives inside the open dropdown */}
+          <div style={{ padding: 8, borderBottom: '1px solid #f1f5f9' }}>
+            <input
+              autoFocus
+              placeholder="Search name or mobile number…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ ...fieldInp, height: 34 }}
+            />
+          </div>
+          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+            {filtered.length === 0 ? (
+              <p style={{ padding: 14, fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>No billers match.</p>
+            ) : (
+              filtered.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => { onChange(b.id); setOpen(false); setQuery('') }}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none',
+                    borderBottom: '1px solid #f8fafc', background: b.id === value ? '#ecfdf5' : '#fff',
+                    cursor: 'pointer', fontFamily: 'inherit', display: 'flex', justifyContent: 'space-between', gap: 10,
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{b.siteName || b.contactName || 'Biller'}</span>
+                  <span style={{ fontSize: 12, color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' }}>{b.contactPhone || ''}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliveryId, prefill }: Props) {
   const auth = useAuth()
@@ -392,6 +480,16 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
       .catch(() => setBillers([]))
     apiFetch<GodownRow[]>('/godowns', { token }).then(setGodowns).catch(() => {})
   }, [open, canCreate, auth])
+
+  useEffect(() => {
+  if (!open || isEditMode) return
+  if (godowns.length === 0) return
+  if (selectedGodownIds.length > 0) return
+  const first = godowns[0]
+  setSelectedGodownIds([first.id])
+  setActiveGodownId(first.id)
+  void loadGodownProducts(first.id)
+}, [open, isEditMode, godowns])
 
   const loadGodownProducts = async (godownId: string) => {
     const token = getToken(); if (!token) return
@@ -641,9 +739,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                   </div>
                 ) : (
                   <div>
-                    <Select label="Biller" value={billerId} onChange={(e) => setBillerId(e.target.value)}
-                      options={[{ value: '', label: 'Select biller…' }, ...billers.map((b) => ({ value: b.id, label: `${b.siteName || b.contactName || 'Biller'}${b.contactPhone ? ` · ${b.contactPhone}` : ''}` }))]}
-                    />
+                    <SearchableBillerSelect billers={billers} value={billerId} onChange={setBillerId} />
                     {selectedBiller && (
                       <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                         <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 4 }}>Selected</div>
@@ -740,7 +836,21 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
             {/* ══ STEP 3: PRODUCTS ══════════════════════════════════════════ */}
             {step === 3 && (
               <div>
-                <StepHeader title="Select products" description="Choose branch, switch godown on the left, pick products on the right." />
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <StepHeader title="Select products" description="Choose branch, switch godown on the left, pick products on the right." />
+                  <button
+                    type="button"
+                    onClick={() => nav('/products')}
+                    style={{
+                      flexShrink: 0, marginTop: 2, padding: '8px 14px', borderRadius: 9,
+                      border: '1px dashed #6ee7b7', background: '#ecfdf5',
+                      fontSize: 12, fontWeight: 600, color: '#059669', cursor: 'pointer', fontFamily: 'inherit',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    + Add Product
+                  </button>
+                </div>
                 {editMetadataOnly && <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', fontSize: 13, color: '#92400e' }}>This delivery has scan activity. Quantity adjustments may be limited.</div>}
                 {selectedGodownIds.length === 0 ? (
                   <div style={{ padding: '32px', textAlign: 'center', borderRadius: 12, border: '1px dashed #fcd34d', background: '#fffbeb', fontSize: 13, color: '#92400e' }}>Go back and select at least one godown first.</div>
