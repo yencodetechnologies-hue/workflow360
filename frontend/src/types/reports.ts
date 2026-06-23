@@ -20,6 +20,7 @@ export type DailyReport = {
     damageQty: number
     missingTotal: number
     damageTotal: number
+    selfDelivery:boolean
   }
   deliveries: DailyDeliveryRow[]
 }
@@ -42,6 +43,7 @@ export type DailyDeliveryRow = {
   damageTotal?: number
   missingQty?: number
   damageQty?: number
+  selfDelivery:boolean
 }
 
 export type ProductMissingLine = {

@@ -137,6 +137,10 @@
 //   if (sumLineQty(d.billerMissingLines) > 0 || sumLineQty(d.billerDamagedLines) > 0) return true
 //   if (tagMissingCount(d) > 0) return true
 //   if ((d.damagedTagIds || []).length > 0 || (d.lostTagIds || []).length > 0) return true
+//   // Also flag COMPLETED deliveries that had a biller return submitted with qty
+//   if (d.status === 'COMPLETED' && d.billerReturnSubmittedAt) {
+//     if (sumLineQty(d.billerDamagedLines) > 0 || sumLineQty(d.billerMissingLines) > 0) return true
+//   }
 //   return false
 // }
 
@@ -145,8 +149,11 @@
 // }
 
 // function issueMetricsFromDelivery(d) {
+//   // billerDamagedLines is the combined "return qty (damaged / missing)" field
+//   // from the biller return form. billerMissingLines is also checked for legacy data.
+//   const returnQty = sumLineQty(d.billerDamagedLines) + sumLineQty(d.billerMissingLines)
 //   return {
-//     missingQty: sumLineQty(d.billerMissingLines),
+//     missingQty: returnQty,
 //     damageQty: sumLineQty(d.billerDamagedLines),
 //     missingTotal: Number(d.missingTotal) || 0,
 //     damageTotal: Number(d.damageTotal) || 0,
@@ -669,7 +676,9 @@
 //     }
 //     const row = byBiller.get(bid)
 //     row.deliveryCount += 1
-//     if (sumLineQty(d.billerMissingLines) > 0) row.missingOrderCount += 1
+//     // billerDamagedLines holds the combined "damage/missing" return qty from the biller form
+//     const hasReturn = sumLineQty(d.billerDamagedLines) > 0 || sumLineQty(d.billerMissingLines) > 0
+//     if (hasReturn) row.missingOrderCount += 1
 //     if (d.billerReturnSubmittedAt) row.returnSubmittedCount += 1
 //     if (!d.billerReturnSubmittedAt && RETURN_PHASE_STATUSES.has(d.status)) {
 //       row.pendingReturnCount += 1
@@ -720,12 +729,18 @@
 //     return res.status(400).json({ message: 'metric must be missing, damage, or return' })
 //   }
 
+//   // billerUserId is now optional — omitting it returns all billers data
 //   if (req.user.role !== 'BILLER') {
 //     const billerUserId = String(req.query.billerUserId || '').trim()
-//     if (!billerUserId) return res.status(400).json({ message: 'billerUserId required' })
-//     if (!mongoose.Types.ObjectId.isValid(billerUserId)) {
+//     if (billerUserId && !mongoose.Types.ObjectId.isValid(billerUserId)) {
 //       return res.status(400).json({ message: 'Invalid billerUserId' })
 //     }
+//   }
+
+//   // Optional productId filter
+//   const filterProductId = String(req.query.productId || '').trim()
+//   if (filterProductId && !mongoose.Types.ObjectId.isValid(filterProductId)) {
+//     return res.status(400).json({ message: 'Invalid productId' })
 //   }
 
 //   const result = await buildDeliveryQuery(req)
@@ -735,21 +750,34 @@
 
 //   for (const d of result.deliveries) {
 //     if (metric === 'missing') {
-//       for (const line of d.billerMissingLines || []) {
+//       // billerDamagedLines is the combined "Return qty (damaged / missing)" field
+//       // from the biller return form — treat it as the primary return indicator
+//       const returnLines = [
+//         ...(d.billerDamagedLines || []),
+//         ...(d.billerMissingLines || []),
+//       ]
+//       // Aggregate by productId to avoid double-counting
+//       const byPid = new Map()
+//       for (const line of returnLines) {
 //         if (!line.qty || line.qty <= 0) continue
 //         const pid = String(line.productId)
+//         byPid.set(pid, (byPid.get(pid) || 0) + line.qty)
+//       }
+//       for (const [pid, qty] of byPid) {
+//         // Apply productId filter if provided
+//         if (filterProductId && pid !== filterProductId) continue
 //         if (!agg.has(pid)) {
 //           agg.set(pid, { productId: pid, totalQty: 0, deliveries: [] })
 //         }
 //         const row = agg.get(pid)
-//         row.totalQty += line.qty
+//         row.totalQty += qty
 //         row.deliveries.push({
 //           id: String(d._id),
 //           deliveryNo: d.deliveryNo,
 //           customerName: d.customerName,
 //           deliveryAt: d.deliveryAt,
-//           qty: line.qty,
-//           note: line.note,
+//           qty,
+//           note: undefined,
 //         })
 //       }
 //     } else if (metric === 'damage') {
@@ -930,18 +958,10 @@ const Product = require('../models/Product')
 const Godown = require('../models/Godown')
 const User = require('../models/User')
 
-// IST is UTC+5:30 = 330 minutes ahead of UTC.
-// To get the UTC boundaries for a local IST calendar day:
-//   IST midnight = UTC 18:30 of the *previous* day
-// We detect the server's TZ offset dynamically so this works even if the
-// server is running in UTC or IST.
-const SERVER_TZ_OFFSET_MS = new Date().getTimezoneOffset() * 60 * 1000 // negative for UTC
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000 // +5:30 in ms
 
 function dayRange(dateStr) {
   const [y, m, d] = String(dateStr).split('-').map((x) => Number(x))
-  // Build IST midnight as a UTC instant
-  // IST midnight = UTC (day-1) 18:30:00
   const istMidnightUTC = Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0) - IST_OFFSET_MS
   const start = new Date(istMidnightUTC)
   const end = new Date(istMidnightUTC + 24 * 60 * 60 * 1000)
@@ -979,21 +999,16 @@ function applyAdminFilters(req, q) {
     req.user.role === 'ADMIN' || req.user.role === 'BILLER' || req.user.role === 'GODOWN'
 
   if (!canFilter && req.user.role !== 'DELIVERY') return null
-console.log("QUERY =", req.query);
 
-  // const godownId = String(req.query.godownId || '').trim()
-const godownId = Array.isArray(req.query.godownId)
-  ? req.query.godownId[0]
-  : String(req.query.godownId || '').trim()
+  const godownId = Array.isArray(req.query.godownId)
+    ? req.query.godownId[0]
+    : String(req.query.godownId || '').trim()
 
-   console.log("Raw godownId:", req.query.godownId);
-console.log("Parsed godownId:", godownId);
-  
   if (godownId) {
     if (!mongoose.Types.ObjectId.isValid(godownId)) return { error: 'Invalid godownId' }
     q.fromGodownId = new mongoose.Types.ObjectId(godownId)
   }
- 
+
   const site = String(req.query.site || '').trim()
   if (site) {
     const rx = { $regex: escapeRegex(site), $options: 'i' }
@@ -1017,6 +1032,28 @@ console.log("Parsed godownId:", godownId);
   return null
 }
 
+function applyPhaseFilter(req, q) {
+  const phase = String(req.query.phase || '').trim()
+  if (phase === 'return') {
+    q.phase = 'RETURN'
+  }
+}
+
+function applyStatusFilter(req, q) {
+  const status = String(req.query.status || '').trim()
+  if (!status) return
+
+  if (status === 'active') {
+    q.status = { $in: ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY'] }
+  } else if (status === 'pending_return') {
+    q.status = { $in: ['DELIVERED', 'PENDING_RETURN'] }
+  } else if (status === 'pending') {
+    q.status = { $in: ['PENDING_RETURN', 'DELIVERED', 'RETURN_PICKUP'] }
+  } else if (status === 'completed') {
+    q.status = 'COMPLETED'
+  }
+}
+
 function applyDeliveryDateFilter(req, q) {
   const dateFrom = String(req.query.dateFrom || req.query.date || '').trim()
   const dateTo = String(req.query.dateTo || '').trim()
@@ -1027,13 +1064,13 @@ function applyDeliveryDateFilter(req, q) {
   if (dateFrom && dateTo && dateFrom > dateTo) return { error: 'dateFrom must be <= dateTo' }
 
   if (dateFrom) {
-    const { start } = dayRange(dateFrom)
     if (dateTo) {
+      const { start } = dayRange(dateFrom)
       const { end } = dayRange(dateTo)
       q.deliveryAt = { $gte: start, $lt: end }
     } else {
-      const { start: s, end } = dayRange(dateFrom)
-      q.deliveryAt = { $gte: s, $lt: end }
+      const { start, end } = dayRange(dateFrom)
+      q.deliveryAt = { $gte: start, $lt: end }
     }
   }
 
@@ -1062,20 +1099,13 @@ function deliveryHasIssue(d) {
   if (sumLineQty(d.billerMissingLines) > 0 || sumLineQty(d.billerDamagedLines) > 0) return true
   if (tagMissingCount(d) > 0) return true
   if ((d.damagedTagIds || []).length > 0 || (d.lostTagIds || []).length > 0) return true
-  // Also flag COMPLETED deliveries that had a biller return submitted with qty
   if (d.status === 'COMPLETED' && d.billerReturnSubmittedAt) {
     if (sumLineQty(d.billerDamagedLines) > 0 || sumLineQty(d.billerMissingLines) > 0) return true
   }
   return false
 }
 
-function deliveryHasMissing(d) {
-  return deliveryHasIssue(d)
-}
-
 function issueMetricsFromDelivery(d) {
-  // billerDamagedLines is the combined "return qty (damaged / missing)" field
-  // from the biller return form. billerMissingLines is also checked for legacy data.
   const returnQty = sumLineQty(d.billerDamagedLines) + sumLineQty(d.billerMissingLines)
   return {
     missingQty: returnQty,
@@ -1184,6 +1214,7 @@ async function mapIssueDeliveryRows(deliveries) {
       siteAddress: d.siteAddress,
       deliveryAt: d.deliveryAt,
       status: d.status,
+      selfDelivery: d.selfDelivery || false,
       fromGodownId: String(d.fromGodownId),
       godownName: g?.name,
       missingCount: missing.length,
@@ -1200,6 +1231,8 @@ async function mapMissingRows(deliveries) {
   return mapIssueDeliveryRows(deliveries)
 }
 
+// ── DAILY DELIVERY REPORT ─────────────────────────────────────────────────
+
 async function dailyDeliveryReport(req, res) {
   const date = String(req.query.date || req.query.dateFrom || '').trim()
   if (!date) return res.status(400).json({ message: 'date=YYYY-MM-DD required' })
@@ -1208,6 +1241,9 @@ async function dailyDeliveryReport(req, res) {
   applyRoleScope(req, q)
   const filterErr = applyAdminFilters(req, q)
   if (filterErr) return res.status(400).json({ message: filterErr.error })
+
+  applyPhaseFilter(req, q)
+  applyStatusFilter(req, q)
 
   const dateErr = applyDeliveryDateFilter(req, q)
   if (dateErr) return res.status(400).json({ message: dateErr.error })
@@ -1250,6 +1286,8 @@ async function dailyDeliveryReport(req, res) {
         godownName: g?.name,
         deliveryAt: d.deliveryAt,
         status: d.status,
+        selfDelivery: d.selfDelivery || false,
+        phase: d.phase,
         dispatched: (d.dispatchedTagIds || []).length,
         returned: (d.returnedTagIds || []).length,
         lost: metrics.lostTagCount,
@@ -1263,6 +1301,10 @@ async function dailyDeliveryReport(req, res) {
   })
 }
 
+// ── DAILY RETURNS REPORT ──────────────────────────────────────────────────
+// FIX: Now filters by deliveryAt (same field the calendar uses) instead of
+// returnExpectedAt, and queries phase=RETURN so counts match the calendar view.
+
 async function dailyReturnsReport(req, res) {
   const date = String(req.query.date || req.query.dateFrom || '').trim()
   if (!date) return res.status(400).json({ message: 'date=YYYY-MM-DD required' })
@@ -1273,8 +1315,12 @@ async function dailyReturnsReport(req, res) {
   const filterErr = applyAdminFilters(req, q)
   if (filterErr) return res.status(400).json({ message: filterErr.error })
 
+  // Filter by deliveryAt for the given day (same as calendar)
   const { start, end } = dayRange(date)
-  q.returnExpectedAt = { $gte: start, $lt: end }
+  q.deliveryAt = { $gte: start, $lt: end }
+
+  // Only RETURN phase deliveries
+  q.phase = 'RETURN'
 
   const deliveries = await Delivery.find(q).lean()
 
@@ -1289,8 +1335,10 @@ async function dailyReturnsReport(req, res) {
 
   const by = counts.byStatus
   const returnDelivery = counts.total
-  const returnDispatch = by.RETURN_PICKUP || 0
-  const returnsPending = (by.PENDING_RETURN || 0) + (by.DELIVERED || 0)
+  // Return dispatch: actively out for return pickup
+  const returnDispatch = (by.RETURN_PICKUP || 0) + (by.OUT_FOR_DELIVERY || 0) + (by.DISPATCHED || 0)
+  // Returns pending: scheduled but not yet picked up
+  const returnsPending = (by.PENDING_RETURN || 0) + (by.DELIVERED || 0) + (by.PROCESSED || 0) + (by.PACKED || 0)
   const returnsCompleted = by.COMPLETED || 0
 
   return res.json({
@@ -1306,6 +1354,8 @@ async function dailyReturnsReport(req, res) {
   })
 }
 
+// ── CALENDAR REPORT ───────────────────────────────────────────────────────
+
 async function calendarReport(req, res) {
   const month = String(req.query.month || '').trim()
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
@@ -1318,12 +1368,16 @@ async function calendarReport(req, res) {
   const filterErr = applyAdminFilters(req, q)
   if (filterErr) return res.status(400).json({ message: filterErr.error })
 
-  const deliveries = await Delivery.find(q).select('deliveryAt status').lean()
+  applyPhaseFilter(req, q)
+
+  const deliveries = await Delivery.find(q).select('deliveryAt status selfDelivery phase').lean()
   const byDay = new Map()
 
   for (const d of deliveries) {
     const dt = new Date(d.deliveryAt)
-    const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`
+    const istMs = dt.getTime() + IST_OFFSET_MS
+    const istDate = new Date(istMs)
+    const key = `${istDate.getUTCFullYear()}-${String(istDate.getUTCMonth() + 1).padStart(2, '0')}-${String(istDate.getUTCDate()).padStart(2, '0')}`
     if (!byDay.has(key)) byDay.set(key, { total: 0, byStatus: {} })
     const bucket = byDay.get(key)
     bucket.total += 1
@@ -1601,7 +1655,6 @@ async function returnsByBiller(req, res) {
     }
     const row = byBiller.get(bid)
     row.deliveryCount += 1
-    // billerDamagedLines holds the combined "damage/missing" return qty from the biller form
     const hasReturn = sumLineQty(d.billerDamagedLines) > 0 || sumLineQty(d.billerMissingLines) > 0
     if (hasReturn) row.missingOrderCount += 1
     if (d.billerReturnSubmittedAt) row.returnSubmittedCount += 1
@@ -1654,7 +1707,6 @@ async function returnsByProduct(req, res) {
     return res.status(400).json({ message: 'metric must be missing, damage, or return' })
   }
 
-  // billerUserId is now optional — omitting it returns all billers data
   if (req.user.role !== 'BILLER') {
     const billerUserId = String(req.query.billerUserId || '').trim()
     if (billerUserId && !mongoose.Types.ObjectId.isValid(billerUserId)) {
@@ -1662,7 +1714,6 @@ async function returnsByProduct(req, res) {
     }
   }
 
-  // Optional productId filter
   const filterProductId = String(req.query.productId || '').trim()
   if (filterProductId && !mongoose.Types.ObjectId.isValid(filterProductId)) {
     return res.status(400).json({ message: 'Invalid productId' })
@@ -1675,13 +1726,10 @@ async function returnsByProduct(req, res) {
 
   for (const d of result.deliveries) {
     if (metric === 'missing') {
-      // billerDamagedLines is the combined "Return qty (damaged / missing)" field
-      // from the biller return form — treat it as the primary return indicator
       const returnLines = [
         ...(d.billerDamagedLines || []),
         ...(d.billerMissingLines || []),
       ]
-      // Aggregate by productId to avoid double-counting
       const byPid = new Map()
       for (const line of returnLines) {
         if (!line.qty || line.qty <= 0) continue
@@ -1689,7 +1737,6 @@ async function returnsByProduct(req, res) {
         byPid.set(pid, (byPid.get(pid) || 0) + line.qty)
       }
       for (const [pid, qty] of byPid) {
-        // Apply productId filter if provided
         if (filterProductId && pid !== filterProductId) continue
         if (!agg.has(pid)) {
           agg.set(pid, { productId: pid, totalQty: 0, deliveries: [] })
@@ -1833,6 +1880,7 @@ async function customerHistory(req, res) {
       siteAddress: d.siteAddress,
       deliveryAt: d.deliveryAt,
       status: d.status,
+      selfDelivery: d.selfDelivery || false,
     })),
   )
 }

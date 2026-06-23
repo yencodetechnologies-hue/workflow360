@@ -20,13 +20,15 @@ type BillerReturnCardProps = {
 
 const RETURN_ELIGIBLE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN', 'COMPLETED'])
 
-function ReturnLineList({
+type CombinedLine = BillerReturnLine & { kind: 'Missing' | 'Damaged' }
+
+function CombinedReturnLineList({
   title,
   lines,
   emptyLabel,
 }: {
   title: string
-  lines: BillerReturnLine[]
+  lines: CombinedLine[]
   emptyLabel: string
 }) {
   return (
@@ -35,8 +37,17 @@ function ReturnLineList({
       {lines.length > 0 ? (
         <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
           {lines.map((l, i) => (
-            <li key={`${l.productId}-${i}`} className="p-3">
-              <div className="font-semibold text-slate-900">{l.particulars || l.sku || l.productId}</div>
+            <li key={`${l.kind}-${l.productId}-${i}`} className="p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="font-semibold text-slate-900">{l.particulars || l.sku || l.productId}</div>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    l.kind === 'Missing' ? 'bg-rose-100 text-rose-700' : 'bg-orange-100 text-orange-700'
+                  }`}
+                >
+                  {l.kind}
+                </span>
+              </div>
               <div className="text-xs text-slate-500">
                 {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
               </div>
@@ -79,6 +90,11 @@ export function BillerReturnCard({
 
   const missing = billerMissingLines ?? []
   const damaged = billerDamagedLines ?? []
+  const combinedLines: CombinedLine[] = [
+    ...missing.map((l) => ({ ...l, kind: 'Missing' as const })),
+    ...damaged.map((l) => ({ ...l, kind: 'Damaged' as const })),
+  ]
+  const combinedTotal = (damageTotal ?? 0) + (missingTotal ?? 0)
   const formatTotal = (n?: number) => (n != null ? n.toFixed(2) : '—')
 
   return (
@@ -94,18 +110,13 @@ export function BillerReturnCard({
           <span className="text-right font-medium text-slate-800">{formatDateTime(billerReturnSubmittedAt)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-slate-500">Damage total</span>
-          <span className="text-right font-medium text-slate-800">{formatTotal(damageTotal)}</span>
-        </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-500">Missing total</span>
-          <span className="text-right font-medium text-slate-800">{formatTotal(missingTotal)}</span>
+          <span className="text-slate-500">Damage/Missing total</span>
+          <span className="text-right font-medium text-slate-800">{formatTotal(combinedTotal)}</span>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <ReturnLineList title="Missing" lines={missing} emptyLabel="None reported." />
-        <ReturnLineList title="Damaged" lines={damaged} emptyLabel="None reported." />
+      <div className="mt-4">
+        <CombinedReturnLineList title="Damage/Missing" lines={combinedLines} emptyLabel="None reported." />
       </div>
     </div>
   )

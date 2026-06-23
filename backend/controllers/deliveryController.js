@@ -1208,6 +1208,7 @@ const DELIVERY_STATUSES = [
   'RETURN_PICKUP',
   'PENDING_RETURN',
   'COMPLETED',
+    'BILLED',
   'CANCELLED',
 ]
 
@@ -1219,11 +1220,12 @@ const STATUS_CHAIN = [
   'RETURN_PICKUP',
   'PENDING_RETURN',
   'COMPLETED',
+    'BILLED'
 ]
 
 function isAdjacentStatusTransition(from, to) {
   if (from === to) return true
-  if (to === 'CANCELLED') return from !== 'COMPLETED'
+  if (to === 'CANCELLED') return from !== 'COMPLETED' && from !== 'BILLED'
   if (from === 'CANCELLED') return to === 'PROCESSED'
 
   const i = STATUS_CHAIN.indexOf(from)

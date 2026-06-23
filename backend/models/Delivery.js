@@ -66,6 +66,7 @@ const deliverySchema = mongoose.Schema(
         'RETURN_PICKUP',
         'PENDING_RETURN',
         'COMPLETED',
+        'BILLED',
         'CANCELLED',
       ],
       default: 'PROCESSED',

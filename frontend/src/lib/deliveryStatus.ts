@@ -253,6 +253,8 @@ export type DeliveryStatus =
   | 'PENDING_RETURN'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'BILLED'
+
 
 export const DELIVERY_STATUS_OPTIONS: { value: DeliveryStatus; label: string }[] = [
   { value: 'PROCESSED', label: 'Processed' },
@@ -262,6 +264,7 @@ export const DELIVERY_STATUS_OPTIONS: { value: DeliveryStatus; label: string }[]
   { value: 'RETURN_PICKUP', label: 'Return pickup' },
   { value: 'PENDING_RETURN', label: 'Pending return' },
   { value: 'COMPLETED', label: 'Completed' },
+  { value: 'BILLED', label: 'Billed' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ]
 
@@ -343,6 +346,8 @@ export function deliveryStatusLabel(status: string): string {
     RETURN_PICKUP: 'Return pickup',
     PENDING_RETURN: 'Pending return',
     COMPLETED: 'Completed',
+    BILLED: 'Billed',
+
     CANCELLED: 'Cancelled',
     UPCOMING: 'Processed',
     DISPATCHED: 'Out for delivery',

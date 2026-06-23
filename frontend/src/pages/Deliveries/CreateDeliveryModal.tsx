@@ -187,9 +187,9 @@ function SummaryChip({ label, value }: { label: string; value: string }) {
 
 // ── Date + time-slot helpers ─────────────────────────────────────────────────
 const TIME_SLOTS = [
-  { value: 'MORNING', label: 'Morning (9:00 AM)', hour: 9 },
-  { value: 'AFTERNOON', label: 'Afternoon (1:00 PM)', hour: 13 },
-  { value: 'EVENING', label: 'Evening (6:00 PM)', hour: 18 },
+  { value: 'MORNING', label: 'Morning ', hour: 9 },
+  { value: 'AFTERNOON', label: 'Afternoon', hour: 13 },
+  { value: 'EVENING', label: 'Evening ', hour: 18 },
 ] as const
 
 function slotHour(slot: string): number {
