@@ -10,8 +10,7 @@ const { logActivity } = require('../utils/activityLog')
 function signToken(user) {
   const secret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev_jwt_secret_change_me')
   if (!secret) throw new Error('JWT_SECRET not configured')
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d'
-  return jwt.sign({ sub: String(user._id), role: user.role }, secret, { expiresIn })
+  return jwt.sign({ sub: String(user._id), role: user.role }, secret)
 }
 
 function isValidGodownObjectId(id) {
