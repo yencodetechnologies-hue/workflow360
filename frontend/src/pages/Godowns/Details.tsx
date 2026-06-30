@@ -2255,6 +2255,13 @@ export function GodownsDetailsPage() {
       .finally(() => setLoading(false))
   }
 
+  const reloadCatalog = () => {
+    const token = getToken(); if (!token || !id) return Promise.resolve()
+    return apiFetch<CatalogRow[]>(`/godowns/${id}/products`, { token })
+      .then(cat => setCatalog(cat.sort((a, b) => (a.particulars || '').localeCompare(b.particulars || ''))))
+      .catch(() => {})
+  }
+
   const reloadStock = () => {
     const token = getToken(); if (!token || !id) return Promise.resolve()
     return apiFetch<Array<{ godownId: string; productId: string; qty: number }>>(`/reports/stock?godownId=${encodeURIComponent(id)}`, { token })
@@ -2264,7 +2271,8 @@ export function GodownsDetailsPage() {
 
   useEffect(() => { load() }, [id])
   useEffect(() => {
-    const h1 = () => void reloadStock(), h2 = () => void reloadStock()
+    const h1 = () => { void reloadCatalog(); void reloadStock() }
+    const h2 = () => void reloadStock()
     window.addEventListener('godown-stock-changed', h1)
     window.addEventListener('focus', h2)
     return () => { window.removeEventListener('godown-stock-changed', h1); window.removeEventListener('focus', h2) }
