@@ -1023,19 +1023,33 @@ export function ReportsPage() {
   const isLoading = loading || billerLoading
 
   // Build biller display map from all orders
+  // const deliveryBillerMap = useMemo(() => {
+  //   const map = new Map<string, string>()
+  //   if (billerUserId) {
+  //     const b = billers.find(x => x.id === billerUserId)
+  //     if (b) ordersToShow.forEach(o => map.set(o.id, b.name + (b.siteName ? ` — ${b.siteName}` : '')))
+  //   }
+  //   return map
+  // }, [ordersToShow, billers, billerUserId])
+
   const deliveryBillerMap = useMemo(() => {
-    const map = new Map<string, string>()
-    if (billerUserId) {
-      const b = billers.find(x => x.id === billerUserId)
-      if (b) ordersToShow.forEach(o => map.set(o.id, b.name + (b.siteName ? ` — ${b.siteName}` : '')))
-    }
-    return map
-  }, [ordersToShow, billers, billerUserId])
+  const map = new Map<string, string>()
+  if (billerUserId) {
+    const b = billers.find(x => x.id === billerUserId)
+    if (b) ordersToShow.forEach(o => map.set(o.id, b.siteName || b.name))
+  }
+  return map
+}, [ordersToShow, billers, billerUserId])
+
+  // const billerOptions = [
+  //   { value: '', label: '— All billers —' },
+  //   ...billers.map(b => ({ value: b.id, label: b.name + (b.siteName ? ` — ${b.siteName}` : '') })),
+  // ]
 
   const billerOptions = [
-    { value: '', label: '— All billers —' },
-    ...billers.map(b => ({ value: b.id, label: b.name + (b.siteName ? ` — ${b.siteName}` : '') })),
-  ]
+  { value: '', label: '— All billers —' },
+  ...billers.map(b => ({ value: b.id, label: b.siteName || b.name })),
+]
 
   const productOptions = [
     { value: '', label: '— All products —' },
@@ -1145,12 +1159,12 @@ export function ReportsPage() {
 
           {/* Orders table */}
           <ReportCard>
-            <CardHead
-              title={billerUserId
-                ? `Returns — ${billers.find(b => b.id === billerUserId)?.name ?? 'selected biller'}`
-                : 'All biller returns'}
-              sub="Deliveries where biller reported damaged / missing quantities"
-            />
+        <CardHead
+  title={billerUserId
+    ? `Returns — ${billers.find(b => b.id === billerUserId)?.siteName ?? billers.find(b => b.id === billerUserId)?.name ?? 'selected biller'}`
+    : 'All biller returns'}
+  sub="Deliveries where biller reported damaged / missing quantities"
+/>
             <div style={{ padding: '0 0 4px' }}>
               <MissingByBillerTable rows={ordersToShow} billerMap={deliveryBillerMap} />
             </div>
