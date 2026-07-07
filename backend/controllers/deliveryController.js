@@ -502,6 +502,10 @@ async function mapListRow(d, enrichment = {}) {
     challanNo: d.challanNo,
     deliveryVerifiedAt: d.deliveryVerifiedAt,
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+    billingType: d.billingType,
+    invoiceNo: d.invoiceNo,
+    invoiceAmount: d.invoiceAmount,
+    billedAt: d.billedAt,
     damageTotal: d.damageTotal,
     missingTotal: d.missingTotal,
     qtyProgress: {
@@ -1039,7 +1043,8 @@ async function updateDelivery(req, res) {
 }
 
 async function listDeliveries(req, res) {
-  const limit = Math.min(200, Number(req.query.limit || 50))
+  const billerUserIdFilter = req.query.billerUserId
+  const limit = billerUserIdFilter ? Math.min(1000, Number(req.query.limit || 1000)) : Math.min(200, Number(req.query.limit || 50))
   const status = req.query.status
   const fromGodownId = req.query.fromGodownId
   const q = {}
@@ -1062,6 +1067,9 @@ async function listDeliveries(req, res) {
   }
   if (req.user.role === 'BILLER') q.billerUserId = req.user.id
   if (req.user.role === 'ADMIN' && fromGodownId) q.fromGodownId = fromGodownId
+  if (req.user.role === 'ADMIN' && billerUserIdFilter) {
+    try { q.billerUserId = new mongoose.Types.ObjectId(String(billerUserIdFilter)) } catch { /* ignore bad id */ }
+  }
 
   const list = await Delivery.find(q).sort({ deliveryAt: -1 }).limit(limit).lean()
   if (req.user.role === 'DELIVERY') {
