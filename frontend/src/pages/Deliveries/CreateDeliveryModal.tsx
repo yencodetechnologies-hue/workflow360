@@ -440,6 +440,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
   const [godownCreateBusy,  setGodownCreateBusy]  = useState(false)
   const [wizardError,       setWizardError]       = useState<string | null>(null)
   const [orderId,           setOrderId]           = useState<string | undefined>()
+  const [manualDeliveryNo,  setManualDeliveryNo]  = useState('')
   const [addProductOpen,    setAddProductOpen]    = useState(false)
   const [addProductForm,    setAddProductForm]    = useState({ name: '', sku: '', category: '', specification: '', rate: '', imagePath: '', initialStockQty: '', stockGodownId: '' })
   const [addProductBusy,    setAddProductBusy]    = useState(false)
@@ -460,7 +461,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     setCreateBillerMode(false); setNewBiller({ siteName: '', siteAddress: '', contactName: '', contactPhone: '' })
     setBranchFilter(''); setCreateGodownOpen(false)
     setNewGodown({ name: '', code: '', address: '', mobile: '', location: '', city: '', password: '' })
-    setWizardError(null); setOrderId(undefined)
+    setWizardError(null); setOrderId(undefined); setManualDeliveryNo('')
   }
 
   useEffect(() => {
@@ -629,7 +630,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     (step === 1 && ((createBillerMode || billers.length === 0) ? !newBiller.siteName.trim() : !billerId)) ||
     (step === 2 && selectedGodownIds.length === 0) ||
     (step === 3 && linesPayload.length === 0) ||
-    (step === 4 && (!customerName.trim() || !deliveryDate || !deliveryTimeSlot || createBusy))
+    (step === 4 && (!customerName.trim() || !deliveryDate || !deliveryTimeSlot || !manualDeliveryNo.trim() || createBusy))
 
   const handleNext = async () => {
     setWizardError(null)
@@ -648,6 +649,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     const token = getToken(); if (!token) return
     setCreateBusy(true)
     const body = {
+      deliveryNo: manualDeliveryNo.trim(),
       orderId: orderId || undefined, billerUserId: billerId, fromGodownId: selectedGodownIds[0],
       customerName: customerName.trim(), siteName: siteName.trim() || undefined, siteAddress: siteAddress.trim() || undefined,
       contactPhone: contactPhone.trim() || undefined,
@@ -1084,6 +1086,27 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
                     <SummaryChip label="Items" value={`${linesPayload.length} lines · ${totalUnits} units`} />
                   </div>
                 )}
+
+                {/* ── Delivery number ── */}
+                <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, border: '1.5px solid #a7f3d0', background: '#ecfdf5', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h12M4 17h8" /><rect x="14" y="14" width="6" height="6" rx="1" /></svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#059669', marginBottom: 6 }}>
+                      Delivery number <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      value={manualDeliveryNo}
+                      onChange={(e) => setManualDeliveryNo(e.target.value)}
+                      placeholder="e.g. DLV-001 or any custom number"
+                      style={{ ...fieldInp, height: 38, fontWeight: 700, fontSize: 14, letterSpacing: '0.03em', background: '#fff', borderColor: manualDeliveryNo.trim() ? '#6ee7b7' : '#e2e8f0' }}
+                    />
+                    {!manualDeliveryNo.trim() && (
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: '#94a3b8' }}>This number will appear on the delivery list and all documents.</p>
+                    )}
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 10 }}>Customer & site</p>

@@ -66,6 +66,10 @@ type DeliveryRow = {
   }>
   productCount?: number
   totalQty?: number
+  billingType?: 'FREE' | 'INVOICE'
+  invoiceNo?: string
+  invoiceAmount?: string
+  billedAt?: string
 }
 
 function formatGodownLabel(names?: string[], primary?: string): string {
@@ -679,9 +683,24 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                             returnPickupVehicleLabel={d.returnPickupVehicleLabel}
                             returnPickupDriverName={d.returnPickupDriverName}
                             returnPickupDriverPhone={d.returnPickupDriverPhone}
+                            billingType={d.billingType}
+                            invoiceNo={d.invoiceNo}
                             onUpdated={(patch) => handleStatusUpdated(d.id, patch)}
                             onError={(msg) => setError(msg)}
                           />
+                          {d.status === 'BILLED' && d.billingType && (
+                            <div style={{ marginTop: 6 }}>
+                              {d.billingType === 'FREE' ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20, background: '#ecfdf5', border: '1px solid #6ee7b7', fontSize: 11, fontWeight: 700, color: '#059669' }}>
+                                  Billed Free
+                                </span>
+                              ) : (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
+                                  Invoice {d.invoiceNo}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
