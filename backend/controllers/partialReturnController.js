@@ -167,28 +167,43 @@ async function getPartialReturnCalendar(req, res) {
 }
 
 /**
- * GET /deliveries/partial-returns/all?month=YYYY-MM&godownId=
- * Returns ALL partial-return deliveries for the month.
- * This is the DEFAULT list shown before the user picks a date.
+ * GET /deliveries/partial-returns/all?page=&limit=&month=YYYY-MM&godownId=
+ * Returns partial-return deliveries, newest-due first, paginated.
+ * This is the DEFAULT list shown before the user picks a date — by default
+ * it spans ALL months (not just the currently viewed calendar month), since
+ * the calendar's month navigation is only for browsing the dot grid, not for
+ * scoping which pending returns show in the list below it. Pass `month` to
+ * additionally narrow to a specific month if needed.
  */
 async function getAllPartialReturns(req, res) {
   try {
-    const month = req.query.month || new Date().toISOString().slice(0, 7)
-    if (!/^\d{4}-\d{2}$/.test(month))
-      return res.status(400).json({ message: 'month must be YYYY-MM' })
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20))
 
-    const { start, end } = monthRange(month)
-    const q = { ...buildBaseQuery(req.query.godownId), returnExpectedAt: { $gte: start, $lt: end } }
-    if (!applyRoleScope(q, req)) return res.json([])
+    const q = buildBaseQuery(req.query.godownId)
+    if (req.query.month) {
+      if (!/^\d{4}-\d{2}$/.test(req.query.month))
+        return res.status(400).json({ message: 'month must be YYYY-MM' })
+      const { start, end } = monthRange(req.query.month)
+      q.returnExpectedAt = { $gte: start, $lt: end }
+    }
+    if (!applyRoleScope(q, req)) return res.json({ items: [], total: 0, page, limit })
 
-    const deliveries = await Delivery.find(q)
-      .sort({ returnExpectedAt: 1 }).lean()
-
+    // hasPartialReturn() needs per-line qty, so we can't paginate purely in
+    // Mongo here — filter in app code, then paginate the filtered set.
+    const deliveries = await Delivery.find(q).sort({ returnExpectedAt: 1 }).lean()
     const partials = deliveries.filter(hasPartialReturn)
-    if (!partials.length) return res.json([])
 
-    const productMap = await loadProductMap(partials)
-    return res.json(partials.map((d) => mapDelivery(d, productMap)))
+    const total = partials.length
+    const pageItems = partials.slice((page - 1) * limit, page * limit)
+    const productMap = await loadProductMap(pageItems)
+
+    return res.json({
+      items: pageItems.map((d) => mapDelivery(d, productMap)),
+      total,
+      page,
+      limit,
+    })
   } catch (err) {
     console.error('[getAllPartialReturns]', err)
     return res.status(500).json({ message: err.message || 'Failed to load returns' })

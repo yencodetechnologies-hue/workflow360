@@ -5,6 +5,8 @@ import { getToken } from '../auth/store'
 import { Badge } from '../components/ui/Badge'
 import { Modal } from '../components/ui/Modal'
 import { Button } from '../components/ui/Button'
+import { MonthCalendar } from '../components/calendar/MonthCalendar'
+import type { CalendarDay } from '../types/reports'
 import { deliveryBadgeVariant, deliveryStatusLabel } from '../lib/deliveryStatus'
 import { formatDateTime } from '../lib/format'
 import { useReportFilters } from '../hooks/useReportFilters'
@@ -46,6 +48,16 @@ type PartialCalendarResponse = {
   days: PartialCalendarDay[]
   totalPartial: number
 }
+
+// Default (no date picked) list — spans ALL months, paginated.
+type PartialReturnListResponse = {
+  items: PartialReturnDelivery[]
+  total: number
+  page: number
+  limit: number
+}
+
+const ALL_LIST_LIMIT = 20
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -368,19 +380,6 @@ function PartialReturnRow({
   )
 }
 
-// ── Calendar grid helper ───────────────────────────────────────────────────
-
-function buildCalDays(month: string) {
-  const [y, mn] = month.split('-').map(Number)
-  const days: { date: string; dayOfWeek: number }[] = []
-  const lastDay = new Date(y, mn, 0).getDate()
-  for (let d = 1; d <= lastDay; d++) {
-    const date = `${y}-${String(mn).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    days.push({ date, dayOfWeek: new Date(y, mn - 1, d).getDay() })
-  }
-  return days
-}
-
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export function ReturnDeliveryCalendarPage() {
@@ -393,8 +392,10 @@ export function ReturnDeliveryCalendarPage() {
   const [calData, setCalData] = useState<PartialCalendarResponse | null>(null)
   const [calLoading, setCalLoading] = useState(false)
 
-  // ── All partial returns for the month (default list) ───────────────────
+  // ── All partial returns, all months, paginated (default list) ──────────
   const [allData, setAllData] = useState<PartialReturnDelivery[] | null>(null)
+  const [allTotal, setAllTotal] = useState(0)
+  const [allPage, setAllPage] = useState(1)
   const [allLoading, setAllLoading] = useState(false)
   const [allError, setAllError] = useState<string | null>(null)
 
@@ -421,20 +422,23 @@ export function ReturnDeliveryCalendarPage() {
       .finally(() => setCalLoading(false))
   }, [month, filterQuery])
 
-  // ── Load ALL partial returns for this month (default view) ─────────────
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setAllPage(1) }, [filterQuery])
+
+  // ── Load ALL partial returns across every month (default view) ─────────
   useEffect(() => {
     const token = getToken()
     if (!token) return
     setAllLoading(true)
     setAllError(null)
-    apiFetch<PartialReturnDelivery[]>(
-      `/deliveries/partial-returns/all?month=${encodeURIComponent(month)}${filterQuery}`,
+    apiFetch<PartialReturnListResponse>(
+      `/deliveries/partial-returns/all?page=${allPage}&limit=${ALL_LIST_LIMIT}${filterQuery}`,
       { token },
     )
-      .then(setAllData)
+      .then((r) => { setAllData(r.items); setAllTotal(r.total) })
       .catch((e: unknown) => setAllError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setAllLoading(false))
-  }, [month, filterQuery])
+  }, [allPage, filterQuery])
 
   // ── Load filtered list when date is selected ───────────────────────────
   useEffect(() => {
@@ -466,36 +470,31 @@ export function ReturnDeliveryCalendarPage() {
         .finally(() => setDailyLoading(false))
     } else {
       setAllLoading(true)
-      apiFetch<PartialReturnDelivery[]>(
-        `/deliveries/partial-returns/all?month=${encodeURIComponent(month)}${filterQuery}`,
+      apiFetch<PartialReturnListResponse>(
+        `/deliveries/partial-returns/all?page=${allPage}&limit=${ALL_LIST_LIMIT}${filterQuery}`,
         { token },
       )
-        .then(setAllData)
+        .then((r) => { setAllData(r.items); setAllTotal(r.total) })
         .finally(() => setAllLoading(false))
     }
   }
 
-  // ── Calendar grid ──────────────────────────────────────────────────────
-  const calDays = useMemo(() => buildCalDays(month), [month])
-  const dotMap = useMemo(() => {
-    const m: Record<string, number> = {}
-    calData?.days.forEach((d) => { m[d.date] = d.partialCount })
-    return m
-  }, [calData])
+  // ── Calendar grid (shared component — same visual grid as Delivery Calendar) ──
+  const calDaysForMonthCalendar = useMemo<CalendarDay[]>(
+    () => (calData?.days ?? []).map((d) => ({ date: d.date, total: d.partialCount, byStatus: {} })),
+    [calData],
+  )
 
   const currentMonthLabel = useMemo(() => {
     const [y, mn] = month.split('-').map(Number)
     return new Date(y, mn - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
   }, [month])
 
-  const today = todayKey()
-  const firstDow = calDays[0]?.dayOfWeek ?? 0
-  const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-  // Active list = daily (if date selected) or all-month
+  // Active list = daily (if date selected) or all-time paginated
   const activeList = selectedDate ? dailyData : allData
   const activeLoading = selectedDate ? dailyLoading : allLoading
   const activeError = selectedDate ? dailyError : allError
+  const allTotalPages = Math.max(1, Math.ceil(allTotal / ALL_LIST_LIMIT))
 
   const pendingCount = useMemo(
     () => (activeList ?? []).filter((d) => d.pendingQty > 0 && !d.reDeliveryDate).length,
@@ -580,12 +579,12 @@ export function ReturnDeliveryCalendarPage() {
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[380px_1fr] lg:items-start">
+      <div className="flex flex-col gap-5">
 
-        {/* ── Calendar card ── */}
+        {/* ── Calendar card — full width, same layout as the Delivery Calendar ── */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {/* Card header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600">
                 <svg viewBox="0 0 24 24" fill="none" width="16" height="16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -598,11 +597,17 @@ export function ReturnDeliveryCalendarPage() {
                 <p className="text-xs text-slate-400">Partial return overview</p>
               </div>
             </div>
-            <div className="rounded-lg bg-amber-50 px-3 py-1 ring-1 ring-amber-200">
-              <span className="text-base font-extrabold text-amber-700">
-                {calLoading ? '…' : (calData?.totalPartial ?? 0)}
-              </span>
-              <span className="ml-1 text-[10px] font-semibold text-amber-600">this month</span>
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-amber-50 px-3 py-1.5 text-center ring-1 ring-amber-200">
+                <span className="block text-base font-extrabold text-amber-700">
+                  {calLoading ? '…' : (calData?.totalPartial ?? 0)}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">this month</span>
+              </div>
+              <div className="rounded-lg bg-slate-50 px-3 py-1.5 text-center ring-1 ring-slate-200">
+                <span className="block text-base font-extrabold text-slate-700">{month}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">month</span>
+              </div>
             </div>
           </div>
 
@@ -627,56 +632,22 @@ export function ReturnDeliveryCalendarPage() {
             </button>
           </div>
 
-          {/* Calendar grid */}
-          <div className="px-3 pb-4">
-            {/* Day headers */}
-            <div className="mb-1 grid grid-cols-7">
-              {DAYS.map((d, i) => (
-                <div key={i} className="py-1.5 text-center text-[11px] font-bold text-slate-400">{d}</div>
-              ))}
-            </div>
-            {/* Day cells */}
-            <div className="grid grid-cols-7 gap-0.5">
-              {Array.from({ length: firstDow }).map((_, i) => <div key={`pad-${i}`} />)}
-              {calDays.map(({ date }) => {
-                const count = dotMap[date] ?? 0
-                const isSelected = date === selectedDate
-                const isToday = date === today
-                return (
-                  <button
-                    key={date}
-                    type="button"
-                    onClick={() => selectDate(date)}
-                    className={[
-                      'flex flex-col items-center justify-center rounded-lg py-1.5 transition-all text-xs',
-                      isSelected
-                        ? 'bg-amber-500 text-white font-bold'
-                        : count > 0
-                          ? 'bg-amber-50 text-slate-800 hover:bg-amber-100'
-                          : 'text-slate-600 hover:bg-slate-50',
-                      isToday && !isSelected ? 'ring-2 ring-amber-400 ring-offset-1' : '',
-                    ].join(' ')}
-                  >
-                    <span className={isSelected || isToday ? 'font-bold' : ''}>
-                      {parseInt(date.slice(8), 10)}
-                    </span>
-                    {count > 0 && (
-                      <span className={`text-[10px] font-bold ${isSelected ? 'text-white' : 'text-amber-600'}`}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+          {/* Calendar grid — full width, same shared component as the Delivery Calendar */}
+          <div className="bg-amber-50/40 px-2 pb-2 sm:px-4">
+            <MonthCalendar
+              month={month}
+              days={calDaysForMonthCalendar}
+              selectedDate={selectedDate ?? undefined}
+              onSelectDate={selectDate}
+            />
           </div>
 
           <div className="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-400">
-            🟡 Tap a date to filter · numbers show count per day · tap again to clear
+            🟡 Tap a date to filter to that day; tap again to go back to all pending returns.
           </div>
         </div>
 
-        {/* ── List panel ── */}
+        {/* ── List panel — full width, below the calendar ── */}
         <div className="flex flex-col gap-4">
 
           {/* List header */}
@@ -686,12 +657,12 @@ export function ReturnDeliveryCalendarPage() {
                 <p className="text-base font-bold text-amber-900">
                   {selectedDate
                     ? `Pending Returns — ${formatSelectedDate(selectedDate)}`
-                    : `All Pending Returns — ${currentMonthLabel}`}
+                    : `All Pending Returns (${allTotal})`}
                 </p>
                 <p className="mt-0.5 text-xs text-amber-700">
                   {selectedDate
                     ? 'Deliveries with outstanding items on this date · tap date again to show all'
-                    : 'All deliveries with items still with the client this month'}
+                    : 'All deliveries with items still with the client, across every month'}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -737,12 +708,12 @@ export function ReturnDeliveryCalendarPage() {
               <p className="font-semibold text-slate-700">
                 {selectedDate
                   ? 'No partial returns on this date'
-                  : 'No partial returns this month'}
+                  : 'No pending returns'}
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 {selectedDate
                   ? 'All items for this date were fully returned.'
-                  : 'All deliveries this month were fully returned.'}
+                  : 'Every delivery has been fully returned.'}
               </p>
             </div>
           )}
@@ -757,6 +728,31 @@ export function ReturnDeliveryCalendarPage() {
                   onSchedule={setScheduleTarget}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Pagination — only for the all-time default view */}
+          {!selectedDate && !activeLoading && !activeError && allTotal > ALL_LIST_LIMIT && (
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5">
+              <button
+                type="button"
+                disabled={allPage <= 1}
+                onClick={() => setAllPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ← Prev
+              </button>
+              <span className="text-xs font-medium text-slate-500">
+                Page {allPage} of {allTotalPages} · {allTotal} total
+              </span>
+              <button
+                type="button"
+                disabled={allPage >= allTotalPages}
+                onClick={() => setAllPage((p) => Math.min(allTotalPages, p + 1))}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>

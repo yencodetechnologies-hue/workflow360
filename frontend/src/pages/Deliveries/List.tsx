@@ -904,6 +904,10 @@ type DeliveryRow = {
     sku?: string
     qty: number
     godownName?: string
+    dispatchedQty?: number
+    returnedQty?: number
+    missingQty?: number
+    pendingQty?: number
   }>
   productCount?: number
   totalQty?: number
@@ -920,10 +924,85 @@ function formatGodownLabel(names?: string[], primary?: string): string {
   return `${names[0]}, ${names[1]} +${names.length - 2}`
 }
 
-function DeliveryProductsPanel({ lines }: { lines: DeliveryRow['linesSummary'] }) {
+function DeliveryProductsPanel({
+  lines,
+  showReturnBreakdown = false,
+}: {
+  lines: DeliveryRow['linesSummary']
+  /** When true (pending-return rows), show Delivered/Collected/Missing instead of plain Godown/Qty. */
+  showReturnBreakdown?: boolean
+}) {
   if (!lines?.length) {
     return <div style={{ fontSize: 12, color: '#94a3b8', padding: 12 }}>No products on this delivery.</div>
   }
+
+  if (showReturnBreakdown) {
+    const stillWithClient = lines.reduce((sum, l) => sum + (l.pendingQty || 0), 0)
+    return (
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+          <thead>
+            <tr>
+              {['Product', 'Delivered', 'Collected', 'Missing'].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#047857',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    textAlign: h === 'Product' ? 'left' : 'right',
+                    borderBottom: '1px solid #bbf7d0',
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((line) => (
+              <tr key={line.productId}>
+                <td style={{ padding: '8px 12px', fontSize: 13, color: '#0f172a' }}>
+                  {line.particulars || line.sku || line.productId}
+                  {line.sku && line.particulars ? (
+                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{line.sku}</span>
+                  ) : null}
+                </td>
+                <td style={{ padding: '8px 12px', fontSize: 13, color: '#374151', textAlign: 'right' }}>
+                  {line.dispatchedQty ?? line.qty}
+                </td>
+                <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 600, color: '#059669', textAlign: 'right' }}>
+                  {line.returnedQty ?? 0}
+                </td>
+                <td style={{
+                  padding: '8px 12px', fontSize: 13, fontWeight: 700, textAlign: 'right',
+                  color: (line.missingQty || 0) > 0 ? '#e11d48' : '#94a3b8',
+                }}>
+                  {line.missingQty || 0}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {stillWithClient > 0 && (
+            <tfoot>
+              <tr>
+                <td colSpan={3} style={{ padding: '8px 12px', fontSize: 12, fontWeight: 700, color: '#b45309', background: '#fffbeb' }}>
+                  Still with client
+                </td>
+                <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 700, color: '#b45309', textAlign: 'right', background: '#fffbeb' }}>
+                  {stillWithClient}
+                </td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    )
+  }
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
@@ -1600,7 +1679,10 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                                 padding: '4px 4px 8px',
                               }}
                             >
-                              <DeliveryProductsPanel lines={d.linesSummary} />
+                              <DeliveryProductsPanel
+                                lines={d.linesSummary}
+                                showReturnBreakdown={d.status === 'PENDING_RETURN' || d.status === 'RETURN_PICKUP'}
+                              />
                             </div>
                           </td>
                         </tr>
