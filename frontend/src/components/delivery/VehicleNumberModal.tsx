@@ -5,7 +5,7 @@ import { Modal } from '../ui/Modal'
 import { getToken } from '../../auth/store'
 import { searchDrivers, type DriverSuggestion } from '../../lib/driverSearchApi'
 
-export type VehicleType = 'PRIVATE' | 'PORTER'
+export type VehicleType = 'PRIVATE' | 'PORTER' | 'OWN'
 
 type FieldKey = 'vehicleNumber' | 'driverName' | 'driverPhone'
 
@@ -61,7 +61,9 @@ export function VehicleNumberModal({
       setVehicleNumber(initialValue.trim())
       setDriverName(initialDriverName.trim())
       setDriverPhone(initialDriverPhone.trim())
-      setVehicleType(initialVehicleType === 'PORTER' ? 'PORTER' : 'PRIVATE')
+      setVehicleType(
+        initialVehicleType === 'PORTER' || initialVehicleType === 'OWN' ? initialVehicleType : 'PRIVATE',
+      )
       setSelectedDriverId(null)
       setOpenField(null)
 
@@ -166,31 +168,31 @@ export function VehicleNumberModal({
     <Modal open={open} title={title} onClose={onClose}>
       {description ? <p className="mb-4 text-sm text-slate-600">{description}</p> : null}
 
-      {/* Vehicle type — on/off toggle */}
-      <div className="mb-4 flex items-center justify-between gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-        <span className="text-sm font-medium text-slate-800">
-          Porter vehicle
-          <span className="ml-1 font-normal text-slate-500">
-            ({vehicleType === 'PORTER' ? 'On = Porter' : 'Off = Private'})
-          </span>
-        </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={vehicleType === 'PORTER'}
-          onClick={() => setVehicleType(vehicleType === 'PORTER' ? 'PRIVATE' : 'PORTER')}
-          className={
-            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-1 ' +
-            (vehicleType === 'PORTER' ? 'bg-primary-600' : 'bg-slate-300')
-          }
-        >
-          <span
-            className={
-              'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ' +
-              (vehicleType === 'PORTER' ? 'translate-x-6' : 'translate-x-1')
-            }
-          />
-        </button>
+      {/* Vehicle type — tick one of three */}
+      <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <span className="mb-2 block text-sm font-medium text-slate-800">Vehicle type</span>
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {(
+            [
+              { value: 'PRIVATE', label: 'Private' },
+              { value: 'PORTER', label: 'Porter' },
+              { value: 'OWN', label: 'Own vehicle' },
+            ] as { value: VehicleType; label: string }[]
+          ).map((opt) => (
+            <label
+              key={opt.value}
+              className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800"
+            >
+              <input
+                type="checkbox"
+                checked={vehicleType === opt.value}
+                onChange={() => setVehicleType(opt.value)}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-400"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {selectedDriverId ? (

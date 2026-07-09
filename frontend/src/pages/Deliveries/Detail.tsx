@@ -676,11 +676,11 @@
 // vehicleLabel?: string
 //   driverName?: string
 //   driverPhone?: string
-//   vehicleType?: 'PRIVATE' | 'PORTER'
+//   vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
 //   returnPickupVehicleLabel?: string
 //   returnPickupDriverName?: string
 //   returnPickupDriverPhone?: string
-//   returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+//   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
 //   status: string
 //   lines: DeliveryLine[]
 //   scanProgress?: {
@@ -775,7 +775,7 @@
 //     navigator.clipboard.writeText(text).catch(() => {})
 //   }
 
-//   const assignReturnPickup = async (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER') => {
+//   const assignReturnPickup = async (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') => {
 //     const token = getToken()
 //     if (!token || !id) return
 //     setActionBusy(true)
@@ -1923,11 +1923,11 @@ type DeliveryDetail = {
 vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   returnPickupVehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
-  returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+  returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   status: string
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
@@ -2031,7 +2031,7 @@ function AdminDeliveryDetailPage() {
     navigator.clipboard.writeText(text).catch(() => {})
   }
 
-  const assignReturnPickup = async (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER') => {
+  const assignReturnPickup = async (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') => {
     const token = getToken()
     if (!token || !id) return
     setActionBusy(true)
@@ -2187,7 +2187,7 @@ function AdminDeliveryDetailPage() {
             <span className="text-slate-700">{d.vehicleLabel}</span>
             {d.vehicleType ? (
               <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                {d.vehicleType === 'PORTER' ? 'Porter' : 'Private'}
+                {d.vehicleType === 'PORTER' ? 'Porter' : d.vehicleType === 'OWN' ? 'Own' : 'Private'}
               </span>
             ) : null}
           </div>
@@ -2308,7 +2308,7 @@ function AdminDeliveryDetailPage() {
                       {d.vehicleLabel}
                       {d.vehicleType ? (
                         <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                          {d.vehicleType === 'PORTER' ? 'Porter' : 'Private'}
+                          {d.vehicleType === 'PORTER' ? 'Porter' : d.vehicleType === 'OWN' ? 'Own' : 'Private'}
                         </span>
                       ) : null}
                     </div>
@@ -2341,7 +2341,7 @@ function AdminDeliveryDetailPage() {
                       {d.returnPickupVehicleLabel}
                       {d.returnPickupVehicleType ? (
                         <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                          {d.returnPickupVehicleType === 'PORTER' ? 'Porter' : 'Private'}
+                          {d.returnPickupVehicleType === 'PORTER' ? 'Porter' : d.returnPickupVehicleType === 'OWN' ? 'Own' : 'Private'}
                         </span>
                       ) : null}
                     </div>

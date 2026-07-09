@@ -503,11 +503,11 @@ export type DeliveryStatusPatch = {
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   returnPickupVehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
-  returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+  returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
   invoiceAmount?: string
@@ -520,11 +520,11 @@ type Props = {
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   returnPickupVehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
-  returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+  returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
   onUpdated?: (patch: DeliveryStatusPatch) => void
@@ -639,7 +639,7 @@ const postVehicleTransition = async (
   vehicleNumber: string,
   driverName?: string,
   driverPhone?: string,
-  vehicleType?: 'PRIVATE' | 'PORTER',
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN',
 ) => {
     const token = getToken()
     if (!token) return
@@ -660,7 +660,7 @@ const postVehicleTransition = async (
         setValue(res.status)
         onUpdated?.({ status: res.status, vehicleLabel: res.vehicleLabel, driverName, driverPhone, vehicleType: res.vehicleType })
       } else {
-        const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' }>(
+        const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN' }>(
           `/deliveries/${deliveryId}/assign-return-pickup`,
           {
             token,

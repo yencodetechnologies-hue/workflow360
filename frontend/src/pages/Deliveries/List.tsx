@@ -871,11 +871,11 @@ type DeliveryRow = {
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   returnPickupVehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
-  returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+  returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   deliveryAt: string
   fromGodownId?: string
   billerUserId?: string
@@ -1530,7 +1530,11 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
       color: '#fff',
       letterSpacing: '0.04em',
     }}>
-      {(d.returnPickupVehicleType || d.vehicleType) === 'PORTER' ? 'Porter' : 'Private'}
+      {(d.returnPickupVehicleType || d.vehicleType) === 'PORTER'
+        ? 'Porter'
+        : (d.returnPickupVehicleType || d.vehicleType) === 'OWN'
+          ? 'Own'
+          : 'Private'}
     </span>
   ) : null}
 </td>

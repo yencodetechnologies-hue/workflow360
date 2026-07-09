@@ -1533,7 +1533,7 @@ delivery.vehicleLabel = vehicle
   delivery.driverPhone =
     String(driverPhone || driver.contactPhone || '').trim()
 
-  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
+  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
     delivery.vehicleType = vehicleType
   }
 
@@ -1729,7 +1729,7 @@ async function assignReturnPickup(req, res) {
     delivery.returnPickupVehicleLabel = vehicle
     delivery.returnPickupDriverName = driver.contactName
     delivery.returnPickupDriverPhone = driver.contactPhone
-    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
+    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
       delivery.returnPickupVehicleType = vehicleType
     }
     delivery.returnPickupAssignedAt = returnPickupAt ? new Date(returnPickupAt) : new Date()

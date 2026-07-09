@@ -421,11 +421,11 @@ export type GodownWorkflowDelivery = {
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   returnPickupVehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
-  returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
+  returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   lines?: GodownWorkflowLine[]
   scanProgress?: { dispatchComplete?: boolean }
   qtyProgress?: {
@@ -503,7 +503,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       return { status: res.status, lines: res.lines, qtyProgress: res.qtyProgress }
     })
 
-  const outForDelivery = (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER') =>
+  const outForDelivery = (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') =>
     run(async () => {
       const token = getToken()
       if (!token) return
@@ -512,11 +512,11 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       return { status: res.status, vehicleLabel: res.vehicleLabel, driverName: res.driverName, driverPhone: res.driverPhone, vehicleType: res.vehicleType }
     })
 
-  const assignReturnPickup = (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER') =>
+  const assignReturnPickup = (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupDriverName?: string; returnPickupDriverPhone?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' }>(
+      const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupDriverName?: string; returnPickupDriverPhone?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN' }>(
         `/deliveries/${delivery.id}/assign-return-pickup`,
         {
           token,

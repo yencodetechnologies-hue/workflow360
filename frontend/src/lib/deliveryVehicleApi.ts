@@ -63,7 +63,7 @@ type VehicleResponse = {
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
-  vehicleType?: 'PRIVATE' | 'PORTER'
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
 }
 
 export async function postDeliveryVehicle(
@@ -74,7 +74,7 @@ export async function postDeliveryVehicle(
   _options?: { forAdmin?: boolean },
   driverName?: string,
   driverPhone?: string,
-  vehicleType?: 'PRIVATE' | 'PORTER',
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN',
 ): Promise<VehicleResponse> {
   const payload = {
     vehicleNumber,

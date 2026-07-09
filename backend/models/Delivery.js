@@ -52,7 +52,7 @@ const deliverySchema = mongoose.Schema(
     vehicleLabel: { type: String, trim: true },
     driverName: { type: String, trim: true },
     driverPhone: { type: String, trim: true },
-    vehicleType: { type: String, enum: ['PRIVATE', 'PORTER'], default: 'PRIVATE' },
+    vehicleType: { type: String, enum: ['PRIVATE', 'PORTER', 'OWN'], default: 'PRIVATE' },
 
     lines: { type: [deliveryLineSchema], default: [] },
 
@@ -85,7 +85,7 @@ const deliverySchema = mongoose.Schema(
     returnPickupVehicleLabel: { type: String, trim: true },
     returnPickupDriverName: { type: String, trim: true },
     returnPickupDriverPhone: { type: String, trim: true },
-    returnPickupVehicleType: { type: String, enum: ['PRIVATE', 'PORTER'], default: 'PRIVATE' },
+    returnPickupVehicleType: { type: String, enum: ['PRIVATE', 'PORTER', 'OWN'], default: 'PRIVATE' },
     returnPickupAssignedAt: { type: Date },
     returnPickupAssignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
