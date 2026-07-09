@@ -210,17 +210,45 @@ function formatDateTime(iso?: string) {
 
 async function captureCardAsBlob(element: HTMLElement): Promise<Blob> {
   const html2canvas = (await import('html2canvas')).default
+  // Render at a high, fixed pixel density so the exported PNG is crisp
+  // regardless of the device's own screen resolution/zoom level. A plain
+  // scale:2 could still look soft on high-DPI phones, so we factor in the
+  // device pixel ratio too (capped so file size stays reasonable).
+  const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1
+  const scale = Math.min(4, Math.max(3, dpr * 2))
   const canvas = await html2canvas(element, {
     backgroundColor: '#ffffff',
-    scale: 2,
+    scale,
     useCORS: true,
     logging: false,
+    imageTimeout: 15000,
+    // Let html2canvas measure the element at its natural size instead of
+    // the (often narrower) window width, avoiding text reflow/blur.
+    windowWidth: document.documentElement.scrollWidth,
+    windowHeight: document.documentElement.scrollHeight,
+    // html2canvas doesn't run CSS animations/transitions — it snapshots
+    // whatever keyframe the animated element happens to resolve to, which
+    // for our mount-in fade/slide (opacity 0 → 1) comes out as a hazy,
+    // washed-out "smoke white" card. The card has finished animating on
+    // screen by the time someone taps Download, so on the *clone* only
+    // (never the live page) we force every animated node to its settled
+    // end state — full opacity, no transform — before html2canvas paints it.
+    onclone: (clonedDoc) => {
+      const nodes = clonedDoc.querySelectorAll<HTMLElement>(
+        '[class*="animate-"]'
+      )
+      nodes.forEach((node) => {
+        node.style.animation = 'none'
+        node.style.opacity = '1'
+        node.style.transform = 'none'
+      })
+    },
   })
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob)
       else reject(new Error('Failed to create image'))
-    }, 'image/png')
+    }, 'image/png', 1)
   })
 }
 

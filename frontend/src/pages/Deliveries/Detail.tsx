@@ -1929,6 +1929,10 @@ vehicleLabel?: string
   returnPickupDriverPhone?: string
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER'
   status: string
+  billingType?: 'FREE' | 'INVOICE'
+  invoiceNo?: string
+  invoiceAmount?: string
+  billedAt?: string
   lines: DeliveryLine[]
   scanProgress?: {
     dispatchComplete?: boolean
@@ -2263,9 +2267,23 @@ function AdminDeliveryDetailPage() {
                 returnPickupDriverName={d.returnPickupDriverName}
                 returnPickupDriverPhone={d.returnPickupDriverPhone}
                 returnPickupVehicleType={d.returnPickupVehicleType}
+                billingType={d.billingType}
+                invoiceNo={d.invoiceNo}
                 onUpdated={() => load()}
                 onError={(msg) => setError(msg)}
               />
+              {d.status === 'BILLED' && d.billingType ? (
+                d.billingType === 'FREE' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                    Billed Free
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+                    Invoice {d.invoiceNo}
+                    {d.invoiceAmount ? <span className="font-normal text-blue-500">· ₹{d.invoiceAmount}</span> : null}
+                  </span>
+                )
+              ) : null}
             </div>
             <div>
               <span className="text-slate-600">Scheduled: </span>
