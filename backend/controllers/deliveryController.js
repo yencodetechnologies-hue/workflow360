@@ -1076,7 +1076,7 @@ async function listDeliveries(req, res) {
     try { q.billerUserId = new mongoose.Types.ObjectId(String(billerUserIdFilter)) } catch { /* ignore bad id */ }
   }
 
-  const list = await Delivery.find(q).sort({ deliveryAt: -1 }).limit(limit).lean()
+  const list = await Delivery.find(q).sort({ createdAt: -1 }).limit(limit).lean()
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }

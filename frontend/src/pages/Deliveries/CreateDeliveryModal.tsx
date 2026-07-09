@@ -357,7 +357,7 @@ function SearchableBillerSelect({
 
       {open && (
         <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 20,
+          marginTop: 6, zIndex: 5,
           background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
         }}>
