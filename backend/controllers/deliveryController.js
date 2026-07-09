@@ -510,6 +510,9 @@ async function mapListRow(d, enrichment = {}) {
     billedAt: d.billedAt,
     damageTotal: d.damageTotal,
     missingTotal: d.missingTotal,
+    billerPendingReturnAt: d.billerPendingReturnAt,
+    billerPendingReturnSlot: d.billerPendingReturnSlot,
+    billerDamagedLines: d.billerDamagedLines,
     qtyProgress: {
       dispatchComplete,
     },
