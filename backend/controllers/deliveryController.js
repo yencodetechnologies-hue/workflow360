@@ -1076,7 +1076,7 @@ async function listDeliveries(req, res) {
     try { q.billerUserId = new mongoose.Types.ObjectId(String(billerUserIdFilter)) } catch { /* ignore bad id */ }
   }
 
-  const list = await Delivery.find(q).sort({ createdAt: -1 }).limit(limit).lean()
+  const list = await Delivery.find(q).sort({ deliveryAt: -1 }).limit(limit).lean()
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }
@@ -1178,6 +1178,10 @@ async function getDelivery(req, res) {
     returnPickupDriverPhone: d.returnPickupDriverPhone,
     returnPickupVehicleType: d.returnPickupVehicleType,
     status: d.status,
+    billingType: d.billingType,
+    invoiceNo: d.invoiceNo,
+    invoiceAmount: d.invoiceAmount,
+    billedAt: d.billedAt,
     // selfDelivery: d.selfDelivery,
     // assignedDeliveryUserId: d.assignedDeliveryUserId ? String(d.assignedDeliveryUserId) : undefined,
     // vehicleLabel: d.vehicleLabel,
@@ -1213,10 +1217,6 @@ async function getDelivery(req, res) {
     billerPendingReturnAt: d.billerPendingReturnAt,
     billerPendingReturnSlot: d.billerPendingReturnSlot,
     billerPendingReturnNote: d.billerPendingReturnNote,
-    billingType: d.billingType,
-    invoiceNo: d.invoiceNo,
-    invoiceAmount: d.invoiceAmount,
-    billedAt: d.billedAt,
     deliveryVerifyUrl: urls.deliveryVerifyUrl,
     billerReturnUrl: urls.billerReturnUrl,
     stockByGodown,
@@ -1533,7 +1533,7 @@ delivery.vehicleLabel = vehicle
   delivery.driverPhone =
     String(driverPhone || driver.contactPhone || '').trim()
 
-  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
+  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
     delivery.vehicleType = vehicleType
   }
 
@@ -1729,7 +1729,7 @@ async function assignReturnPickup(req, res) {
     delivery.returnPickupVehicleLabel = vehicle
     delivery.returnPickupDriverName = driver.contactName
     delivery.returnPickupDriverPhone = driver.contactPhone
-    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
+    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
       delivery.returnPickupVehicleType = vehicleType
     }
     delivery.returnPickupAssignedAt = returnPickupAt ? new Date(returnPickupAt) : new Date()
@@ -2230,15 +2230,19 @@ async function returnChallanPdf(req, res) {
     return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
   }
 
-  const [billerMissingLines, billerDamagedLines] = await Promise.all([
+  const [billerMissingLines, billerDamagedLines, billerCollectedLines, billerPendingReturnLines] = await Promise.all([
     populateBillerReturnLines(delivery.billerMissingLines),
     populateBillerReturnLines(delivery.billerDamagedLines),
+    populateBillerReturnLines(delivery.billerCollectedLines),
+    populateBillerReturnLines(delivery.billerPendingReturnLines),
   ])
 
   const pdfDelivery = {
     ...delivery,
     billerMissingLines,
     billerDamagedLines,
+    billerCollectedLines,
+    billerPendingReturnLines,
   }
 
   const returnLines = buildReturnLines(pdfDelivery)

@@ -104,3 +104,17 @@
     padding: 20px 24px 32px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   APP FOOTER — sits below main content on every page.
+   Mobile: extra bottom padding so it clears the fixed bottom nav.
+   ───────────────────────────────────────────────────────────── */
+.app-footer {
+  padding: 14px 16px calc(80px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  .app-footer {
+    padding: 14px 24px;
+  }
+}

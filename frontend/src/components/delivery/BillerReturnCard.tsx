@@ -146,6 +146,7 @@ type DeliveryLineSummary = {
 type BillerReturnCardProps = {
   status: string
   billerReturnSubmittedAt?: string
+  deliveryAt?: string
   lines?: DeliveryLineSummary[]
   billerMissingLines?: BillerReturnLine[]
   billerDamagedLines?: BillerReturnLine[]
@@ -153,15 +154,19 @@ type BillerReturnCardProps = {
   damageTotal?: number
   missingTotal?: number
   billerPendingReturnLines?: BillerReturnLine[]
-  billerPendingReturnAt?: string
-  billerPendingReturnSlot?: 'MORNING' | 'AFTERNOON' | 'EVENING'
-  billerPendingReturnNote?: string
 }
 
-const SLOT_LABELS: Record<'MORNING' | 'AFTERNOON' | 'EVENING', string> = {
-  MORNING: 'Morning',
-  AFTERNOON: 'Afternoon',
-  EVENING: 'Evening',
+// How many days a still-pending item has been sitting with the client,
+// counted from the delivery date. Computed live off today's date rather
+// than a manually scheduled return date.
+function daysWithClientSince(deliveryAt?: string): number | null {
+  if (!deliveryAt) return null
+  const start = new Date(deliveryAt)
+  if (Number.isNaN(start.getTime())) return null
+  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const today = new Date()
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  return Math.max(0, Math.round((todayDay.getTime() - startDay.getTime()) / 86_400_000))
 }
 
 const RETURN_ELIGIBLE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN', 'COMPLETED'])
@@ -211,16 +216,14 @@ function CombinedReturnLineList({
 export function BillerReturnCard({
   status,
   billerReturnSubmittedAt,
+  deliveryAt,
+  lines,
   billerMissingLines,
   billerDamagedLines,
   billerCollectedLines,
-  damageTotal,
-  missingTotal,
   billerPendingReturnLines,
-  billerPendingReturnAt,
-  billerPendingReturnSlot,
-  billerPendingReturnNote,
 }: BillerReturnCardProps) {
+  const daysWithClient = daysWithClientSince(deliveryAt)
   // If biller already submitted, show submitted state regardless of delivery status
   if (!billerReturnSubmittedAt) {
     if (!RETURN_ELIGIBLE_STATUSES.has(status)) {
@@ -245,7 +248,27 @@ export function BillerReturnCard({
     ...missing.map((l) => ({ ...l, kind: 'Missing' as const })),
     ...damaged.map((l) => ({ ...l, kind: 'Damaged' as const })),
   ]
-  const combinedQty = (damageTotal ?? 0) + (missingTotal ?? 0) || combinedLines.reduce((s, l) => s + (Number(l.qty) || 0), 0)
+  const combinedQty = combinedLines.reduce((s, l) => s + (Number(l.qty) || 0), 0)
+
+  // Per-product breakdown: delivered / collected / missing / still remaining.
+  const missingByProduct = new Map<string, number>()
+  for (const l of damaged) missingByProduct.set(l.productId, (missingByProduct.get(l.productId) || 0) + l.qty)
+  for (const l of missing) missingByProduct.set(l.productId, (missingByProduct.get(l.productId) || 0) + l.qty)
+
+  const pendingByProduct = new Map<string, number>()
+  for (const l of billerPendingReturnLines ?? []) {
+    pendingByProduct.set(l.productId, (pendingByProduct.get(l.productId) || 0) + l.qty)
+  }
+
+  const summaryRows = (lines ?? []).map((l) => ({
+    productId: l.productId,
+    label: l.particulars || l.sku || l.productId,
+    sku: l.sku,
+    delivered: l.dispatchedQty ?? 0,
+    collected: l.returnedQty ?? 0,
+    missingQty: missingByProduct.get(l.productId) || 0,
+    remaining: pendingByProduct.get(l.productId) || 0,
+  }))
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
@@ -264,6 +287,37 @@ export function BillerReturnCard({
           <span className="text-right font-medium text-slate-800">{combinedQty}</span>
         </div>
       </div>
+
+      {summaryRows.length > 0 ? (
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="grid grid-cols-5 border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+            <span className="col-span-2">Product</span>
+            <span className="text-right">Delivered</span>
+            <span className="text-right">Collected</span>
+            <span className="text-right">Missing</span>
+          </div>
+          {summaryRows.map((r) => (
+            <div key={r.productId} className="grid grid-cols-5 items-center border-b border-slate-100 px-3 py-2 text-sm last:border-0">
+              <span className="col-span-2 truncate font-medium text-slate-900">{r.label}</span>
+              <span className="text-right text-slate-700">{r.delivered}</span>
+              <span className="text-right text-emerald-700 font-semibold">{r.collected}</span>
+              <span className={`text-right font-semibold ${r.missingQty > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                {r.missingQty || '—'}
+              </span>
+            </div>
+          ))}
+          {summaryRows.some((r) => r.remaining > 0) ? (
+            <div className="grid grid-cols-5 items-center bg-amber-50 px-3 py-2 text-sm">
+              <span className="col-span-2 font-semibold text-amber-900">Still with client</span>
+              <span />
+              <span />
+              <span className="text-right font-bold text-amber-800">
+                {summaryRows.reduce((s, r) => s + r.remaining, 0)}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-4">
         <CombinedReturnLineList title="Damage/Missing" lines={combinedLines} emptyLabel="None reported." />
@@ -298,10 +352,9 @@ export function BillerReturnCard({
             <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-800">
               Pending return (still with customer)
             </h3>
-            {billerPendingReturnAt ? (
+            {daysWithClient != null ? (
               <span className="text-xs font-medium text-amber-800">
-                Due {new Date(billerPendingReturnAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                {billerPendingReturnSlot ? ` · ${SLOT_LABELS[billerPendingReturnSlot]}` : ''}
+                With client {daysWithClient} day{daysWithClient === 1 ? '' : 's'}
               </span>
             ) : null}
           </div>
@@ -315,9 +368,6 @@ export function BillerReturnCard({
               </li>
             ))}
           </ul>
-          {billerPendingReturnNote ? (
-            <p className="mt-2 text-xs text-amber-800">Note: {billerPendingReturnNote}</p>
-          ) : null}
         </div>
       ) : null}
     </div>
