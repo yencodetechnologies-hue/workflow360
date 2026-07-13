@@ -3390,6 +3390,26 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                           <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', whiteSpace: 'nowrap' }}>
                             {formatDateTime(d.deliveryAt)}
                           </span>
+                          {(() => {
+                            const totalPending = d.linesSummary?.reduce((s, l) => s + (l.pendingQty ?? 0), 0) ?? 0
+                            const days = totalPending > 0 ? daysWithClientSince(d.deliveryAt) : null
+                            if (days === null) return null
+                            const urgent = days >= 7
+                            return (
+                              <div style={{ marginTop: 4 }}>
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                                  background: urgent ? '#fef2f2' : '#fffbeb',
+                                  color: urgent ? '#dc2626' : '#b45309',
+                                  border: `1px solid ${urgent ? '#fecaca' : '#fde68a'}`,
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {urgent ? '⚠ ' : ''}{totalPending} qty · {days}d pending
+                                </span>
+                              </div>
+                            )
+                          })()}
                         </td>
 
                         {!isGodownUser && (

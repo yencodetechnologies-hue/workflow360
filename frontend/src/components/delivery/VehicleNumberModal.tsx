@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
 import { getToken } from '../../auth/store'
 import { searchDrivers, type DriverSuggestion } from '../../lib/driverSearchApi'
 
 export type VehicleType = 'PRIVATE' | 'PORTER' | 'OWN'
-
-type FieldKey = 'vehicleNumber' | 'driverName' | 'driverPhone'
 
 type Props = {
   open: boolean
@@ -37,14 +34,14 @@ export function VehicleNumberModal({
   initialValue = '',
   initialDriverName = '',
   initialDriverPhone = '',
-  initialVehicleType = 'PRIVATE',
+  initialVehicleType = 'OWN',
   onClose,
   onConfirm,
 }: Props) {
   const [vehicleNumber, setVehicleNumber] = useState('')
   const [driverName,    setDriverName]    = useState('')
   const [driverPhone,   setDriverPhone]   = useState('')
-  const [vehicleType,   setVehicleType]   = useState<VehicleType>('PRIVATE')
+  const [vehicleType,   setVehicleType]   = useState<VehicleType>('OWN')
 
   // Existing drivers, loaded once per open. Each of the three fields below
   // searches this same list independently (vehicle number field matches on
@@ -53,7 +50,6 @@ export function VehicleNumberModal({
   // full details, or just keep typing to add a new one.
   const [drivers, setDrivers] = useState<DriverSuggestion[]>([])
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null)
-  const [openField, setOpenField] = useState<FieldKey | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -62,10 +58,9 @@ export function VehicleNumberModal({
       setDriverName(initialDriverName.trim())
       setDriverPhone(initialDriverPhone.trim())
       setVehicleType(
-        initialVehicleType === 'PORTER' || initialVehicleType === 'OWN' ? initialVehicleType : 'PRIVATE',
+        initialVehicleType === 'PORTER' || initialVehicleType === 'PRIVATE' ? initialVehicleType : 'OWN',
       )
       setSelectedDriverId(null)
-      setOpenField(null)
 
       const token = getToken()
       if (token) {
@@ -82,179 +77,203 @@ export function VehicleNumberModal({
       setVehicleNumber('')
       setDriverName('')
       setDriverPhone('')
-      setVehicleType('PRIVATE')
+      setVehicleType('OWN')
       setDrivers([])
       setSelectedDriverId(null)
-      setOpenField(null)
     }
   }, [open, initialValue, initialDriverName, initialDriverPhone, initialVehicleType])
 
+  // ── Derived lists for separate pickers ──────────────────────────────────
+  // All unique drivers (by id) — for the "Select driver" dropdown
+  const allDriverOptions = drivers
+
+  // All unique vehicle numbers — for the "Select vehicle" dropdown
+  const vehicleOptions = Array.from(
+    new Map(drivers.filter((d) => d.vehicleNumber).map((d) => [d.vehicleNumber, d])).values()
+  )
+
+  const [driverSearch,  setDriverSearch]  = useState('')
+  const [vehicleSearch, setVehicleSearch] = useState('')
+  const [driverOpen,    setDriverOpen]    = useState(false)
+  const [vehicleOpen,   setVehicleOpen]   = useState(false)
+  const driverBoxRef  = useRef<HTMLDivElement | null>(null)
+  const vehicleBoxRef = useRef<HTMLDivElement | null>(null)
+
   useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
-        setOpenField(null)
-      }
+    if (open) { setDriverSearch(''); setVehicleSearch(''); setDriverOpen(false); setVehicleOpen(false) }
+  }, [open])
+
+  useEffect(() => {
+    function onOut(e: MouseEvent) {
+      if (driverBoxRef.current && !driverBoxRef.current.contains(e.target as Node)) setDriverOpen(false)
+      if (vehicleBoxRef.current && !vehicleBoxRef.current.contains(e.target as Node)) setVehicleOpen(false)
     }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
   }, [])
 
-  const matchKey: Record<FieldKey, keyof DriverSuggestion> = {
-    vehicleNumber: 'vehicleNumber',
-    driverName: 'driverName',
-    driverPhone: 'driverPhone',
-  }
+  const filteredDrivers = allDriverOptions.filter((d) => {
+    const q = driverSearch.trim().toLowerCase()
+    if (!q) return true
+    return d.driverName.toLowerCase().includes(q) || d.driverPhone.toLowerCase().includes(q)
+  })
 
-  const suggestionsFor = (field: FieldKey, value: string) => {
-    const q = value.trim().toLowerCase()
-    if (!q) return []
-    const key = matchKey[field]
-    return drivers.filter((d) => (d[key] || '').toLowerCase().includes(q)).slice(0, 8)
-  }
+  const filteredVehicles = vehicleOptions.filter((d) => {
+    const q = vehicleSearch.trim().toLowerCase()
+    if (!q) return true
+    return d.vehicleNumber.toLowerCase().includes(q)
+  })
 
-  const pickSuggestion = (d: DriverSuggestion) => {
-    setVehicleNumber(d.vehicleNumber)
+  const pickDriver = (d: DriverSuggestion) => {
     setDriverName(d.driverName)
     setDriverPhone(d.driverPhone)
+    // only pre-fill vehicle if not already typed one
+    if (!vehicleNumber.trim()) setVehicleNumber(d.vehicleNumber)
     setSelectedDriverId(d.id)
-    setOpenField(null)
+    setDriverOpen(false)
+    setDriverSearch('')
   }
 
-  const fieldChanged = (field: FieldKey, value: string) => {
+  const pickVehicle = (d: DriverSuggestion) => {
+    setVehicleNumber(d.vehicleNumber)
+    // only pre-fill driver if not already typed one
+    if (!driverName.trim() && !driverPhone.trim()) {
+      setDriverName(d.driverName)
+      setDriverPhone(d.driverPhone)
+      setSelectedDriverId(d.id)
+    }
+    setVehicleOpen(false)
+    setVehicleSearch('')
+  }
+
+  const fieldChanged = (field: 'vehicleNumber' | 'driverName' | 'driverPhone', value: string) => {
     setSelectedDriverId(null)
-    setOpenField(value.trim() ? field : null)
     if (field === 'vehicleNumber') setVehicleNumber(value)
     if (field === 'driverName') setDriverName(value)
     if (field === 'driverPhone') setDriverPhone(value)
   }
 
   const handleConfirm = () => {
-    void onConfirm(
-      vehicleNumber.trim(),
-      driverName.trim(),
-      driverPhone.trim(),
-      vehicleType,
-    )
+    void onConfirm(vehicleNumber.trim(), driverName.trim(), driverPhone.trim(), vehicleType)
   }
 
-  const renderDropdown = (field: FieldKey, value: string) => {
-    if (openField !== field) return null
-    const results = suggestionsFor(field, value)
-    if (!results.length) return null
-    return (
-      <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-        {results.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => pickSuggestion(d)}
-            className={
-              'flex w-full items-center justify-between gap-3 border-b border-slate-50 px-3 py-2 text-left last:border-b-0 hover:bg-slate-50 ' +
-              (d.id === selectedDriverId ? 'bg-emerald-50' : 'bg-white')
-            }
-          >
-            <span className="truncate text-sm font-semibold text-slate-900">
-              {d.driverName || 'Unnamed driver'}
-              <span className="ml-1.5 font-normal text-slate-400">{d.vehicleNumber}</span>
-            </span>
-            <span className="shrink-0 text-xs font-semibold text-emerald-700">{d.driverPhone || ''}</span>
-          </button>
-        ))}
-      </div>
-    )
+  const inp: React.CSSProperties = {
+    width: '100%', height: 36, padding: '0 10px', border: '1px solid #e2e8f0',
+    borderRadius: 8, fontSize: 13, color: '#111827', background: '#f9fafb',
+    outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
   }
 
   return (
     <Modal open={open} title={title} onClose={onClose}>
       {description ? <p className="mb-4 text-sm text-slate-600">{description}</p> : null}
 
-      {/* Vehicle type — tick one of three */}
+      {/* Vehicle type */}
       <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
         <span className="mb-2 block text-sm font-medium text-slate-800">Vehicle type</span>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
-          {(
-            [
-              { value: 'PRIVATE', label: 'Private' },
-              { value: 'PORTER', label: 'Porter' },
-              { value: 'OWN', label: 'Own vehicle' },
-            ] as { value: VehicleType; label: string }[]
-          ).map((opt) => (
-            <label
-              key={opt.value}
-              className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800"
-            >
-              <input
-                type="checkbox"
-                checked={vehicleType === opt.value}
-                onChange={() => setVehicleType(opt.value)}
-                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-400"
-              />
+          {([ { value: 'OWN', label: 'Own vehicle' }, { value: 'PRIVATE', label: 'Private' }, { value: 'PORTER', label: 'Porter' } ] as { value: VehicleType; label: string }[]).map((opt) => (
+            <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+              <input type="checkbox" checked={vehicleType === opt.value} onChange={() => setVehicleType(opt.value)}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-2 focus:ring-primary-400" />
               {opt.label}
             </label>
           ))}
         </div>
       </div>
 
+      <div ref={boxRef} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* ── Driver picker ────────────────────────────────────── */}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Select driver</div>
+          <div ref={driverBoxRef} style={{ position: 'relative' }}>
+            <input
+              value={driverSearch || (driverName ? `${driverName}${driverPhone ? ' · ' + driverPhone : ''}` : '')}
+              onFocus={() => { setDriverSearch(''); setDriverOpen(true) }}
+              onChange={(e) => { setDriverSearch(e.target.value); setDriverOpen(true); setSelectedDriverId(null) }}
+              placeholder="Search by name or phone…"
+              autoComplete="off"
+              style={{ ...inp, paddingRight: 32 }}
+            />
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>▾</span>
+            {driverOpen && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 3, zIndex: 20, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
+                {filteredDrivers.length === 0 ? (
+                  <div style={{ padding: '12px 14px', fontSize: 13, color: '#94a3b8' }}>No drivers found</div>
+                ) : filteredDrivers.map((d) => (
+                  <button key={d.id} type="button" onClick={() => pickDriver(d)}
+                    style={{ width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none', borderBottom: '1px solid #f8fafc', background: d.id === selectedDriverId ? '#ecfdf5' : '#fff', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{d.driverName || 'Unnamed'}</span>
+                    <span style={{ fontSize: 12, color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' }}>{d.driverPhone}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Manual name + phone inputs */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>Driver name</div>
+              <input value={driverName} onChange={(e) => fieldChanged('driverName', e.target.value)} placeholder="Full name" autoComplete="off" style={inp} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>Phone</div>
+              <input value={driverPhone} onChange={(e) => fieldChanged('driverPhone', e.target.value)} placeholder="Mobile" autoComplete="off" style={inp} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Vehicle picker ────────────────────────────────────── */}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Select vehicle</div>
+          <div ref={vehicleBoxRef} style={{ position: 'relative' }}>
+            <input
+              value={vehicleSearch || vehicleNumber}
+              onFocus={() => { setVehicleSearch(''); setVehicleOpen(true) }}
+              onChange={(e) => { setVehicleSearch(e.target.value); setVehicleOpen(true) }}
+              placeholder="Search or enter vehicle number…"
+              autoComplete="off"
+              style={{ ...inp, paddingRight: 32 }}
+            />
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>▾</span>
+            {vehicleOpen && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 3, zIndex: 20, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
+                {filteredVehicles.length === 0 ? (
+                  <div style={{ padding: '12px 14px', fontSize: 13, color: '#94a3b8' }}>No vehicles found</div>
+                ) : filteredVehicles.map((d) => (
+                  <button key={d.vehicleNumber} type="button" onClick={() => pickVehicle(d)}
+                    style={{ width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none', borderBottom: '1px solid #f8fafc', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{d.vehicleNumber}</span>
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>{d.driverName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Manual entry */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>Or type vehicle number</div>
+            <input value={vehicleNumber} onChange={(e) => fieldChanged('vehicleNumber', e.target.value.toUpperCase())} placeholder="e.g. TN01AB1234" autoComplete="off" style={{ ...inp, fontFamily: 'monospace', fontWeight: 700 }} />
+          </div>
+        </div>
+
+      </div>
+
       {selectedDriverId ? (
-        <div className="mb-3 flex items-center gap-2 text-xs">
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
-            Existing driver selected
-          </span>
-          <button
-            type="button"
-            onClick={() => { setSelectedDriverId(null); setVehicleNumber(''); setDriverName(''); setDriverPhone('') }}
-            className="font-semibold text-slate-500 hover:text-slate-700"
-          >
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          <span style={{ borderRadius: 20, background: '#ecfdf5', padding: '2px 10px', fontWeight: 700, color: '#059669' }}>Existing driver selected</span>
+          <button type="button" onClick={() => { setSelectedDriverId(null); setVehicleNumber(''); setDriverName(''); setDriverPhone('') }}
+            style={{ background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: '#64748b', cursor: 'pointer' }}>
             Clear / enter new driver
           </button>
         </div>
       ) : null}
 
-      <div ref={boxRef} className="space-y-3">
-        <div className="relative">
-          <Input
-            label="Vehicle number"
-            value={vehicleNumber}
-            onChange={(e) => fieldChanged('vehicleNumber', e.target.value)}
-            onFocus={() => vehicleNumber.trim() && setOpenField('vehicleNumber')}
-            placeholder="e.g. TN-01-AB-1234"
-            autoComplete="off"
-          />
-          {renderDropdown('vehicleNumber', vehicleNumber)}
-        </div>
-
-        <div className="relative">
-          <Input
-            label="Driver name"
-            value={driverName}
-            onChange={(e) => fieldChanged('driverName', e.target.value)}
-            onFocus={() => driverName.trim() && setOpenField('driverName')}
-            placeholder="Driver's full name"
-            autoComplete="off"
-          />
-          {renderDropdown('driverName', driverName)}
-        </div>
-
-        <div className="relative">
-          <Input
-            label="Driver phone number"
-            value={driverPhone}
-            onChange={(e) => fieldChanged('driverPhone', e.target.value)}
-            onFocus={() => driverPhone.trim() && setOpenField('driverPhone')}
-            placeholder="e.g. 9876543210"
-            autoComplete="off"
-          />
-          {renderDropdown('driverPhone', driverPhone)}
-        </div>
-      </div>
-
       <div className="mt-5 flex gap-2">
         <Button onClick={handleConfirm} disabled={busy || !vehicleNumber.trim() || !driverName.trim() || !driverPhone.trim()}>
           {confirmLabel}
         </Button>
-        <Button variant="secondary" onClick={onClose} disabled={busy}>
-          Cancel
-        </Button>
+        <Button variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
       </div>
     </Modal>
   )
