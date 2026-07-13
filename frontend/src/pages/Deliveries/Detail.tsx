@@ -4847,50 +4847,62 @@ function AdminDeliveryDetailPage() {
                 {formatDateTime(d.returnExpectedAt)}
               </div>
             ) : null}
-            {d.vehicleLabel ? (
-              <div>
-                <span className="text-slate-600">Vehicle: </span>
-                {d.vehicleLabel}
-                {d.vehicleType ? (
-                  <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                    {d.vehicleType === 'PORTER' ? 'Porter' : d.vehicleType === 'OWN' ? 'Own' : 'Private'}
-                  </span>
+            {(d.vehicleLabel || d.driverName || d.driverPhone || d.returnPickupVehicleLabel || d.returnPickupDriverName || d.returnPickupDriverPhone) ? (
+              <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                {(d.vehicleLabel || d.driverName || d.driverPhone) ? (
+                  <div className="space-y-2">
+                    {d.vehicleLabel ? (
+                      <div>
+                        <span className="text-slate-600">Vehicle: </span>
+                        {d.vehicleLabel}
+                        {d.vehicleType ? (
+                          <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            {d.vehicleType === 'PORTER' ? 'Porter' : d.vehicleType === 'OWN' ? 'Own' : 'Private'}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {d.driverName ? (
+                      <div>
+                        <span className="text-slate-600">Driver: </span>
+                        {d.driverName}
+                      </div>
+                    ) : null}
+                    {d.driverPhone ? (
+                      <div>
+                        <span className="text-slate-600">Driver phone: </span>
+                        {d.driverPhone}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
-              </div>
-            ) : null}
-            {d.driverName ? (
-              <div>
-                <span className="text-slate-600">Driver: </span>
-                {d.driverName}
-              </div>
-            ) : null}
-            {d.driverPhone ? (
-              <div>
-                <span className="text-slate-600">Driver phone: </span>
-                {d.driverPhone}
-              </div>
-            ) : null}
-            {d.returnPickupVehicleLabel ? (
-              <div>
-                <span className="text-slate-600">Return pickup vehicle: </span>
-                {d.returnPickupVehicleLabel}
-                {d.returnPickupVehicleType ? (
-                  <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                    {d.returnPickupVehicleType === 'PORTER' ? 'Porter' : d.returnPickupVehicleType === 'OWN' ? 'Own' : 'Private'}
-                  </span>
+                {(d.returnPickupVehicleLabel || d.returnPickupDriverName || d.returnPickupDriverPhone) ? (
+                  <div className="space-y-2">
+                    {d.returnPickupVehicleLabel ? (
+                      <div>
+                        <span className="text-slate-600">Return pickup vehicle: </span>
+                        {d.returnPickupVehicleLabel}
+                        {d.returnPickupVehicleType ? (
+                          <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            {d.returnPickupVehicleType === 'PORTER' ? 'Porter' : d.returnPickupVehicleType === 'OWN' ? 'Own' : 'Private'}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {d.returnPickupDriverName ? (
+                      <div>
+                        <span className="text-slate-600">Return pickup driver: </span>
+                        {d.returnPickupDriverName}
+                      </div>
+                    ) : null}
+                    {d.returnPickupDriverPhone ? (
+                      <div>
+                        <span className="text-slate-600">Return pickup driver phone: </span>
+                        {d.returnPickupDriverPhone}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
-              </div>
-            ) : null}
-            {d.returnPickupDriverName ? (
-              <div>
-                <span className="text-slate-600">Return pickup driver: </span>
-                {d.returnPickupDriverName}
-              </div>
-            ) : null}
-            {d.returnPickupDriverPhone ? (
-              <div>
-                <span className="text-slate-600">Return pickup driver phone: </span>
-                {d.returnPickupDriverPhone}
               </div>
             ) : null}
             {d.contactPhone ? (
