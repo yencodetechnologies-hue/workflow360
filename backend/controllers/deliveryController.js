@@ -1076,7 +1076,7 @@ async function listDeliveries(req, res) {
     try { q.billerUserId = new mongoose.Types.ObjectId(String(billerUserIdFilter)) } catch { /* ignore bad id */ }
   }
 
-  const list = await Delivery.find(q).sort({ deliveryAt: -1 }).limit(limit).lean()
+  const list = await Delivery.find(q).sort({ createdAt: -1, _id: -1 }).limit(limit).lean()
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }
@@ -1533,7 +1533,7 @@ delivery.vehicleLabel = vehicle
   delivery.driverPhone =
     String(driverPhone || driver.contactPhone || '').trim()
 
-  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
+  if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
     delivery.vehicleType = vehicleType
   }
 
@@ -1729,7 +1729,7 @@ async function assignReturnPickup(req, res) {
     delivery.returnPickupVehicleLabel = vehicle
     delivery.returnPickupDriverName = driver.contactName
     delivery.returnPickupDriverPhone = driver.contactPhone
-    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE') {
+    if (vehicleType === 'PORTER' || vehicleType === 'PRIVATE' || vehicleType === 'OWN') {
       delivery.returnPickupVehicleType = vehicleType
     }
     delivery.returnPickupAssignedAt = returnPickupAt ? new Date(returnPickupAt) : new Date()

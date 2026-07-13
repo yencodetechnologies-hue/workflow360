@@ -57,9 +57,7 @@ export function VehicleNumberModal({
       setVehicleNumber(initialValue.trim())
       setDriverName(initialDriverName.trim())
       setDriverPhone(initialDriverPhone.trim())
-      setVehicleType(
-        initialVehicleType === 'PORTER' || initialVehicleType === 'PRIVATE' ? initialVehicleType : 'OWN',
-      )
+      setVehicleType('OWN')
       setSelectedDriverId(null)
 
       const token = getToken()
