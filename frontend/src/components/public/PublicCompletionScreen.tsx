@@ -154,6 +154,7 @@ export type PublicCompletionScreenProps = {
   completedAtLabel?: string
   verifierName?: string
   hasSignature?: boolean
+  afterLines?: React.ReactNode
 }
 
 function CheckIcon() {
@@ -265,6 +266,7 @@ export function PublicCompletionScreen({
   completedAtLabel,
   verifierName,
   hasSignature,
+  afterLines,
 }: PublicCompletionScreenProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [sharing, setSharing] = useState<'whatsapp' | 'email' | 'download' | null>(null)
@@ -435,6 +437,7 @@ export function PublicCompletionScreen({
             </ul>
           </div>
         ) : null}
+        {afterLines ? <div className="mt-6">{afterLines}</div> : null}
       </div>
 
       {/* Share buttons — outside the capturable area */}
