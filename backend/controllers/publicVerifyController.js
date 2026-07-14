@@ -62,6 +62,7 @@ const lines = await populateLineDetails(delivery)
       deliveryVerifiedAt: delivery.deliveryVerifiedAt,
       deliveryLineChecks: delivery.deliveryLineChecks,
       hasSignature: Boolean(delivery.deliverySignature),
+      deliverySignature: delivery.deliverySignature,
       canSubmit: true,
     })
   } catch (err) {
@@ -104,6 +105,53 @@ async function postDeliveryVerify(req, res) {
         return res.status(400).json({ message: 'All line items must be acknowledged with ok: true' })
     }
 
+    // Delivered qty defaults to the full dispatched qty for each line, but
+    // the recipient can enter fewer than what was dispatched (e.g. 8 of 10)
+    // — the shortfall is treated as an immediate on-the-spot return, which
+    // needs to be restocked into the source godown right away. Because a
+    // verification can be re-submitted (to correct a mistake, say), we only
+    // ever apply the INCREMENTAL change in immediate-return qty versus what
+    // was already recorded last time, so resubmitting the same numbers never
+    // double-restocks.
+    const prevChecks = delivery.deliveryLineChecks || []
+
+    const ledgerEntries = []
+    for (let idx = 0; idx < deliveryLines.length; idx++) {
+      const line = deliveryLines[idx]
+      const row = mapped[idx]
+      const dispatched = Number(line.qty) || 0
+      const deliveredQtyRaw = row.qtyAck != null ? Number(row.qtyAck) : dispatched
+      const deliveredQty = Math.max(0, Math.min(dispatched, Number.isFinite(deliveredQtyRaw) ? deliveredQtyRaw : dispatched))
+      row.qtyAck = deliveredQty
+      const immediateReturnQty = dispatched - deliveredQty
+
+      const prevRow = prevChecks[idx]
+      const prevDeliveredQty =
+        prevRow && prevRow.qtyAck != null ? Math.max(0, Math.min(dispatched, Number(prevRow.qtyAck))) : dispatched
+      const prevImmediateReturnQty = dispatched - prevDeliveredQty
+
+      const delta = immediateReturnQty - prevImmediateReturnQty
+      if (delta !== 0) {
+        line.returnedQty = Math.max(0, (Number(line.returnedQty) || 0) + delta)
+        const gid = line.godownId || delivery.fromGodownId
+        if (gid) {
+          ledgerEntries.push({
+            godownId: new mongoose.Types.ObjectId(String(gid)),
+            productId: new mongoose.Types.ObjectId(String(line.productId)),
+            qtyDelta: delta,
+            reason: 'RETURN',
+            refType: 'DeliveryVerify',
+            refId: String(delivery._id),
+            note: `Immediate return at delivery - ${delivery.deliveryNo}`,
+          })
+        }
+      }
+    }
+    if (ledgerEntries.length > 0) {
+      await InventoryLedger.insertMany(ledgerEntries)
+    }
+    delivery.markModified('lines')
+
     delivery.deliveryVerifierName = String(verifierName).trim()
     delivery.deliveryVerifiedAt = new Date()
     delivery.deliveryLineChecks = mapped
@@ -113,7 +161,7 @@ async function postDeliveryVerify(req, res) {
     delivery.status = 'DELIVERED'
     await delivery.save()
 
-    return res.json({ ok: true, deliveryVerifiedAt: delivery.deliveryVerifiedAt })
+    return res.json({ ok: true, deliveryVerifiedAt: delivery.deliveryVerifiedAt, deliverySignature: delivery.deliverySignature })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Failed' })
   }
@@ -149,6 +197,8 @@ const lines = await populateLineDetails(delivery)
       damageTotal: delivery.damageTotal,
       missingTotal: delivery.missingTotal,
       billerReturnSubmittedAt: delivery.billerReturnSubmittedAt,
+      billerReturnName: delivery.billerReturnName,
+      billerSignature: delivery.billerSignature,
       billerPendingReturnLines: delivery.billerPendingReturnLines,
       canSubmit: true,
     })
@@ -161,7 +211,7 @@ const lines = await populateLineDetails(delivery)
 async function postBillerReturn(req, res) {
   try {
     const token = decodeURIComponent(String(req.params.token || '').trim())
-    const { damagedLines, missingLines, collectedLines } = req.body || {}
+    const { damagedLines, missingLines, collectedLines, returnedByName, signature } = req.body || {}
     if (!token) return res.status(400).json({ message: 'token required' })
 
     const delivery = await Delivery.findOne({ billerReturnVerifyToken: token })
@@ -317,6 +367,12 @@ async function postBillerReturn(req, res) {
     delivery.missingTotal = Math.round(missingTotal * 100) / 100
     delivery.billerReturnSubmittedAt = new Date()
     delivery.billerPendingReturnLines = billerPendingReturnLines
+    if (returnedByName && String(returnedByName).trim()) {
+      delivery.billerReturnName = String(returnedByName).trim().slice(0, 200)
+    }
+    if (signature && typeof signature === 'string' && signature.startsWith('data:image')) {
+      delivery.billerSignature = signature.slice(0, 500_000)
+    }
     // Only fully COMPLETED when nothing is still outstanding with the
     // customer; otherwise the delivery stays in PENDING_RETURN so it shows
     // up correctly on the "Pending return" tab and the Return Calendar.
@@ -328,6 +384,8 @@ async function postBillerReturn(req, res) {
       damageTotal: delivery.damageTotal,
       missingTotal: delivery.missingTotal,
       billerReturnSubmittedAt: delivery.billerReturnSubmittedAt,
+      billerReturnName: delivery.billerReturnName,
+      billerSignature: delivery.billerSignature,
       billerPendingReturnLines: delivery.billerPendingReturnLines,
     })
   } catch (err) {

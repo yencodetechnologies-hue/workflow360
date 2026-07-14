@@ -435,7 +435,9 @@ type GetRes = {
   lines: Line[]
   deliveryVerifierName?: string
   deliveryVerifiedAt?: string
+  deliveryLineChecks?: { productId: string; qtyAck?: number; ok?: boolean }[]
   hasSignature?: boolean
+  deliverySignature?: string
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
   invoiceAmount?: string
@@ -464,6 +466,10 @@ export function PublicDeliveryVerifyPage() {
   const [error, setError] = useState<string | null>(null)
   const [verifierName, setVerifierName] = useState('')
   const [checks, setChecks] = useState<boolean[]>([])
+  // Delivered qty per line (indexed to match data.lines / checks). Defaults
+  // to the full dispatched qty; if the recipient enters fewer, the shortfall
+  // is treated as an immediate on-the-spot return and restocked right away.
+  const [deliveredQty, setDeliveredQty] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [hasDrawn, setHasDrawn] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -478,6 +484,13 @@ export function PublicDeliveryVerifyPage() {
         setData(r)
         setPhase('form')
         setChecks(r.lines.map(() => false))
+        setDeliveredQty(
+          r.lines.map((l, i) => {
+            const prev = r.deliveryLineChecks?.[i]
+            const prevQty = prev && prev.productId === l.productId && prev.qtyAck != null ? prev.qtyAck : l.qty
+            return String(prevQty)
+          }),
+        )
         if (r.deliveryVerifierName) setVerifierName(r.deliveryVerifierName)
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
@@ -565,6 +578,22 @@ export function PublicDeliveryVerifyPage() {
       next[index] = checked
       return next
     })
+    if (!checked) {
+      setDeliveredQty((prev) => {
+        const next = [...prev]
+        const line = data?.lines[index]
+        if (line) next[index] = String(line.qty)
+        return next
+      })
+    }
+  }
+
+  const setLineDeliveredQty = (index: number, value: string) => {
+    setDeliveredQty((prev) => {
+      const next = [...prev]
+      next[index] = value
+      return next
+    })
   }
 
   const toggleSelectAll = () => {
@@ -587,7 +616,7 @@ export function PublicDeliveryVerifyPage() {
           lineChecks: data.lines.map((l, i) => ({
             productId: l.productId,
             ok: !!checks[i],
-            qtyAck: l.qty,
+            qtyAck: Math.max(0, Math.min(l.qty, Number(deliveredQty[i]) || 0)),
           })),
         }),
       })
@@ -633,13 +662,6 @@ export function PublicDeliveryVerifyPage() {
     )
   }
 
-  const completionLines = data.lines.map((l) => ({
-    productId: l.productId,
-    particulars: l.particulars,
-    sku: l.sku,
-    qty: l.qty,
-  }))
-
   const completionMeta = [
     { label: 'Site', value: data.siteName || '—' },
     { label: 'Vehicle', value: data.vehicleLabel || '—' },
@@ -654,6 +676,78 @@ export function PublicDeliveryVerifyPage() {
   ]
 
   if (phase === 'thankYou') {
+    const deliveredByProduct = new Map<string, number>()
+    const dispatchedByProduct = new Map<string, number>()
+    for (const l of data.lines) {
+      dispatchedByProduct.set(l.productId, (dispatchedByProduct.get(l.productId) || 0) + (Number(l.qty) || 0))
+    }
+    for (let i = 0; i < data.lines.length; i++) {
+      const l = data.lines[i]
+      const check = data.deliveryLineChecks?.[i]
+      const delivered = check?.qtyAck != null ? Number(check.qtyAck) : l.qty
+      deliveredByProduct.set(l.productId, (deliveredByProduct.get(l.productId) || 0) + delivered)
+    }
+
+    const productRows = Array.from(dispatchedByProduct.keys()).map((productId) => {
+      const line = data.lines.find((l) => l.productId === productId)
+      const dispatched = dispatchedByProduct.get(productId) || 0
+      const delivered = Math.min(dispatched, deliveredByProduct.get(productId) || 0)
+      const immediateReturn = Math.max(0, dispatched - delivered)
+      return {
+        productId,
+        particulars: line?.particulars,
+        sku: line?.sku,
+        dispatched,
+        delivered,
+        immediateReturn,
+      }
+    })
+    const deliveredTotal = productRows.reduce((s, r) => s + r.delivered, 0)
+    const immediateReturnTotal = productRows.reduce((s, r) => s + r.immediateReturn, 0)
+
+    const deliveryTable = (
+      <div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
+          {[
+            { label: 'Delivered', value: deliveredTotal, color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+            { label: 'Immediate return', value: immediateReturnTotal, color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+          ].map((s, i) => (
+            <div key={s.label} style={{ padding: '10px 8px', textAlign: 'center', background: s.bg, borderRight: i < 1 ? `1px solid ${s.border}` : undefined }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: s.color, marginTop: 3, opacity: 0.8 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px', padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Delivered</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Immediate return</div>
+          </div>
+          {productRows.map((r, i) => (
+            <div key={r.productId} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < productRows.length - 1 ? '1px solid #f1f5f9' : undefined }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>{r.particulars || r.productId}</div>
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{r.sku} · Dispatched {r.dispatched}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ display: 'inline-block', borderRadius: 99, background: '#ecfdf5', color: '#059669', fontSize: 12, fontWeight: 700, padding: '2px 8px' }}>{r.delivered}</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                {r.immediateReturn > 0 ? <span style={{ display: 'inline-block', borderRadius: 99, background: '#fffbeb', color: '#d97706', fontSize: 12, fontWeight: 700, padding: '2px 8px' }}>{r.immediateReturn}</span> : <span style={{ color: '#e2e8f0', fontSize: 12 }}>—</span>}
+              </div>
+            </div>
+          ))}
+          {immediateReturnTotal > 0 ? (
+            <div style={{ padding: '8px 12px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 11, fontWeight: 600, color: '#b45309' }}>
+              ⏱ {immediateReturnTotal} qty short-delivered, recorded as immediate return and restocked to the godown
+            </div>
+          ) : null}
+        </div>
+      </div>
+    )
+
     return (
       <div className={pageShell}>
         <PublicCompletionScreen
@@ -664,10 +758,12 @@ export function PublicDeliveryVerifyPage() {
           deliveryNo={data.deliveryNo}
           customerName={data.customerName}
           meta={completionMeta}
-          lines={completionLines}
+          lines={[]}
           completedAt={data.deliveryVerifiedAt}
           verifierName={data.deliveryVerifierName || verifierName.trim() || undefined}
           hasSignature={data.hasSignature}
+          signatureUrl={data.deliverySignature}
+          afterLines={deliveryTable}
         />
       </div>
     )
@@ -738,34 +834,62 @@ export function PublicDeliveryVerifyPage() {
               </label>
 
               <div className="divide-y divide-slate-100">
-                {data.lines.map((l, i) => (
-                  <label
-                    key={`line-${i}`}
-                    className={`flex cursor-pointer items-start gap-3 px-4 py-4 transition-colors ${
-                      checks[i] ? 'bg-primary-50/60 hover:bg-primary-50' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                      checked={!!checks[i]}
-                      onChange={(e) => toggleLine(i, e.target.checked)}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start gap-2">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
-                          {i + 1}
-                        </span>
+                {data.lines.map((l, i) => {
+                  const dQty = Math.max(0, Math.min(l.qty, Number(deliveredQty[i]) || 0))
+                  const immediateReturn = Math.max(0, l.qty - dQty)
+                  return (
+                    <div
+                      key={`line-${i}`}
+                      className={`transition-colors ${
+                        checks[i] ? 'bg-primary-50/60' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <label className="flex cursor-pointer items-start gap-3 px-4 py-4">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                          checked={!!checks[i]}
+                          onChange={(e) => toggleLine(i, e.target.checked)}
+                        />
                         <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-slate-900">{l.particulars || l.productId}</div>
-                          <div className="text-xs text-slate-500">
-                            {l.sku} · Qty {l.qty}
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
+                              {i + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-slate-900">{l.particulars || l.productId}</div>
+                              <div className="text-xs text-slate-500">
+                                {l.sku} · Qty {l.qty}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </label>
+
+                      {checks[i] ? (
+                        <div className="px-4 pb-4">
+                          <Input
+                            label="Delivered qty"
+                            type="number"
+                            min={0}
+                            max={l.qty}
+                            value={deliveredQty[i] ?? String(l.qty)}
+                            onChange={(e) => setLineDeliveredQty(i, e.target.value)}
+                          />
+                          {immediateReturn > 0 ? (
+                            <p className="mt-1.5 text-xs font-medium text-amber-700">
+                              {immediateReturn} qty short — will be recorded as an immediate return and restocked
+                            </p>
+                          ) : (
+                            <p className="mt-1.5 text-xs font-medium text-emerald-700">
+                              ✓ Full qty delivered
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
-                  </label>
-                ))}
+                  )
+                })}
               </div>
             </div>
 

@@ -120,6 +120,8 @@ const deliverySchema = mongoose.Schema(
     deliverySignature: { type: String },
 
     billerReturnSubmittedAt: { type: Date },
+    billerReturnName: { type: String, trim: true },
+    billerSignature: { type: String },
     billerDamagedLines: { type: [billerReturnLineSchema], default: [] },
     billerMissingLines: { type: [billerReturnLineSchema], default: [] },
     // Items physically collected back from the biller right now (undamaged) —

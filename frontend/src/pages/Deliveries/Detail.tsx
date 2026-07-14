@@ -4496,6 +4496,8 @@ vehicleLabel?: string
   deliveryVerifiedAt?: string
   deliverySignature?: string
   billerReturnSubmittedAt?: string
+  billerReturnName?: string
+  billerSignature?: string
   billerMissingLines?: BillerReturnLine[]
   billerDamagedLines?: BillerReturnLine[]
   billerCollectedLines?: BillerReturnLine[]
@@ -4936,6 +4938,8 @@ function AdminDeliveryDetailPage() {
             <BillerReturnCard
               status={d.status}
               billerReturnSubmittedAt={d.billerReturnSubmittedAt}
+              billerReturnName={d.billerReturnName}
+              billerSignature={d.billerSignature}
               deliveryAt={d.deliveryAt}
               lines={d.lines}
               billerMissingLines={d.billerMissingLines}

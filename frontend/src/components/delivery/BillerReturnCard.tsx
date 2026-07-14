@@ -146,6 +146,8 @@ type DeliveryLineSummary = {
 type BillerReturnCardProps = {
   status: string
   billerReturnSubmittedAt?: string
+  billerReturnName?: string
+  billerSignature?: string
   deliveryAt?: string
   lines?: DeliveryLineSummary[]
   billerMissingLines?: BillerReturnLine[]
@@ -216,8 +218,9 @@ function CombinedReturnLineList({
 export function BillerReturnCard({
   status,
   billerReturnSubmittedAt,
+  billerReturnName,
+  billerSignature,
   deliveryAt,
-  lines,
   billerMissingLines,
   billerDamagedLines,
   billerCollectedLines,
@@ -249,26 +252,7 @@ export function BillerReturnCard({
     ...damaged.map((l) => ({ ...l, kind: 'Damaged' as const })),
   ]
   const combinedQty = combinedLines.reduce((s, l) => s + (Number(l.qty) || 0), 0)
-
-  // Per-product breakdown: delivered / collected / missing / still remaining.
-  const missingByProduct = new Map<string, number>()
-  for (const l of damaged) missingByProduct.set(l.productId, (missingByProduct.get(l.productId) || 0) + l.qty)
-  for (const l of missing) missingByProduct.set(l.productId, (missingByProduct.get(l.productId) || 0) + l.qty)
-
-  const pendingByProduct = new Map<string, number>()
-  for (const l of billerPendingReturnLines ?? []) {
-    pendingByProduct.set(l.productId, (pendingByProduct.get(l.productId) || 0) + l.qty)
-  }
-
-  const summaryRows = (lines ?? []).map((l) => ({
-    productId: l.productId,
-    label: l.particulars || l.sku || l.productId,
-    sku: l.sku,
-    delivered: l.dispatchedQty ?? 0,
-    collected: l.returnedQty ?? 0,
-    missingQty: missingByProduct.get(l.productId) || 0,
-    remaining: pendingByProduct.get(l.productId) || 0,
-  }))
+  const hasSignature = Boolean(billerSignature)
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
@@ -286,36 +270,24 @@ export function BillerReturnCard({
           <span className="text-slate-500">Damage/Missing qty</span>
           <span className="text-right font-medium text-slate-800">{combinedQty}</span>
         </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-slate-500">Returned by</span>
+          <span className="text-right font-medium text-slate-800">{billerReturnName || '—'}</span>
+        </div>
+        {hasSignature ? (
+          <div className="pt-1">
+            <Badge variant="green">Signature on file</Badge>
+          </div>
+        ) : null}
       </div>
 
-      {summaryRows.length > 0 ? (
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="grid grid-cols-5 border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
-            <span className="col-span-2">Product</span>
-            <span className="text-right">Delivered</span>
-            <span className="text-right">Collected</span>
-            <span className="text-right">Missing</span>
-          </div>
-          {summaryRows.map((r) => (
-            <div key={r.productId} className="grid grid-cols-5 items-center border-b border-slate-100 px-3 py-2 text-sm last:border-0">
-              <span className="col-span-2 truncate font-medium text-slate-900">{r.label}</span>
-              <span className="text-right text-slate-700">{r.delivered}</span>
-              <span className="text-right text-emerald-700 font-semibold">{r.collected}</span>
-              <span className={`text-right font-semibold ${r.missingQty > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                {r.missingQty || '—'}
-              </span>
-            </div>
-          ))}
-          {summaryRows.some((r) => r.remaining > 0) ? (
-            <div className="grid grid-cols-5 items-center bg-amber-50 px-3 py-2 text-sm">
-              <span className="col-span-2 font-semibold text-amber-900">Still with client</span>
-              <span />
-              <span />
-              <span className="text-right font-bold text-amber-800">
-                {summaryRows.reduce((s, r) => s + r.remaining, 0)}
-              </span>
-            </div>
-          ) : null}
+      {hasSignature ? (
+        <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <img
+            src={billerSignature}
+            alt="Biller return signature"
+            className="mx-auto block max-h-40 w-full object-contain bg-white p-2"
+          />
         </div>
       ) : null}
 

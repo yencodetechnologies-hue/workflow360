@@ -1208,6 +1208,8 @@ async function getDelivery(req, res) {
     deliveryLineChecks: d.deliveryLineChecks,
     deliverySignature: d.deliverySignature,
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
+    billerReturnName: d.billerReturnName,
+    billerSignature: d.billerSignature,
     billerDamagedLines,
     billerMissingLines,
     billerCollectedLines,

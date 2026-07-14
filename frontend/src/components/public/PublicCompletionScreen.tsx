@@ -154,6 +154,7 @@ export type PublicCompletionScreenProps = {
   completedAtLabel?: string
   verifierName?: string
   hasSignature?: boolean
+  signatureUrl?: string
   afterLines?: React.ReactNode
 }
 
@@ -266,6 +267,7 @@ export function PublicCompletionScreen({
   completedAtLabel,
   verifierName,
   hasSignature,
+  signatureUrl,
   afterLines,
 }: PublicCompletionScreenProps) {
   const cardRef = useRef<HTMLDivElement>(null)
@@ -412,12 +414,22 @@ export function PublicCompletionScreen({
               <span className="text-right font-medium text-slate-800">{verifierName}</span>
             </div>
           ) : null}
-          {hasSignature ? (
+          {hasSignature || signatureUrl ? (
             <div className="pt-1">
               <Badge variant="green">Signature on file</Badge>
             </div>
           ) : null}
         </div>
+
+        {signatureUrl ? (
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <img
+              src={signatureUrl}
+              alt="Signature"
+              className="mx-auto block max-h-40 w-full object-contain bg-white p-2"
+            />
+          </div>
+        ) : null}
 
         {lines.length > 0 ? (
           <div className="mt-6">

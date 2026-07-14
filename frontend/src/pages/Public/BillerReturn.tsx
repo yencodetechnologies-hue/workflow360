@@ -33,6 +33,7 @@ type GetRes = {
   missingTotal?: number
   billerReturnSubmittedAt?: string
   billerReturnName?: string
+  billerSignature?: string
   billerDamagedLines?: { productId: string; qty: number }[]
   billerMissingLines?: { productId: string; qty: number }[]
   billerCollectedLines?: { productId: string; qty: number }[]
@@ -421,6 +422,7 @@ export function PublicBillerReturnPage() {
           lines={[]}
           completedAt={data.billerReturnSubmittedAt}
           completedAtLabel="Submitted on"
+          signatureUrl={data.billerSignature}
           afterLines={returnTable}
         />
       </div>
