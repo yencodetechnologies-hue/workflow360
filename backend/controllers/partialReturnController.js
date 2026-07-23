@@ -314,6 +314,7 @@
 const mongoose = require('mongoose')
 const Delivery  = require('../models/Delivery')
 const Product   = require('../models/Product')
+const { logActivity } = require('../utils/activityLog')
 
 // ── date helpers (IST calendar days — matches reportController) ────────────
 // Frontend date keys and returnExpectedAt are local IST days; UTC midnight
@@ -604,6 +605,19 @@ async function scheduleReDelivery(req, res) {
     delivery.reDeliveryNote = (note || '').trim() || undefined
 
     await delivery.save()
+
+    logActivity({
+      req,
+      action: 'RE_DELIVERY_SCHEDULED',
+      category: 'DELIVERY',
+      targetType: 'DELIVERY',
+      targetId: String(delivery._id),
+      targetName: delivery.deliveryNo || delivery.customerName || String(delivery._id),
+      details: {
+        reDeliveryDate: delivery.reDeliveryDate,
+        reDeliveryNote: delivery.reDeliveryNote,
+      },
+    })
 
     // Return the pending summary so frontend can confirm
     const pendingLines = (delivery.lines || [])

@@ -8,6 +8,7 @@ const {
   shrinkOrderQtyForImmediateReturns,
   applyLineImmediateShortfall,
 } = require('../utils/immediateReturn')
+const { logActivity } = require('../utils/activityLog')
 
 function allowedLineProductIds(delivery) {
   return new Set((delivery.lines || []).map((l) => String(l.productId)))
@@ -205,6 +206,25 @@ async function postDeliveryVerify(req, res) {
     }
     delivery.status = 'DELIVERED'
     await delivery.save()
+
+    logActivity({
+      req,
+      actor: {
+        name: String(verifierName).trim(),
+        role: 'PUBLIC',
+      },
+      action: 'DELIVERY_LINK_USED',
+      category: 'DELIVERY',
+      targetType: 'DELIVERY',
+      targetId: String(delivery._id),
+      targetName: delivery.deliveryNo || delivery.customerName || String(delivery._id),
+      details: {
+        linkType: 'delivery-verify',
+        verifierName: String(verifierName).trim(),
+        status: delivery.status,
+        lineCheckCount: mapped.length,
+      },
+    })
 
     return res.json({ ok: true, deliveryVerifiedAt: delivery.deliveryVerifiedAt, deliverySignature: delivery.deliverySignature })
   } catch (err) {
@@ -588,6 +608,35 @@ async function postReturnByToken(req, res, tokenField) {
     if (billerPendingReturnLines.length > 0) delivery.phase = 'RETURN'
     delivery.markModified('lines')
     await delivery.save()
+
+    const linkType =
+      tokenField === 'pendingReturnAssignVerifyToken' ? 'pending-return-assign' : 'biller-return'
+    const actorName =
+      (returnedByName && String(returnedByName).trim()) ||
+      delivery.customerName ||
+      'Public link'
+
+    logActivity({
+      req,
+      actor: {
+        name: actorName,
+        role: 'PUBLIC',
+      },
+      action: 'DELIVERY_LINK_USED',
+      category: 'DELIVERY',
+      targetType: 'DELIVERY',
+      targetId: String(delivery._id),
+      targetName: delivery.deliveryNo || delivery.customerName || String(delivery._id),
+      details: {
+        linkType,
+        status: delivery.status,
+        damageTotal: delivery.damageTotal,
+        missingTotal: delivery.missingTotal,
+        collectedLineCount: (delivery.billerCollectedLines || []).length,
+        pendingLineCount: (delivery.billerPendingReturnLines || []).length,
+        isPendingResubmit: Boolean(isPendingResubmit),
+      },
+    })
 
     return res.json({
       ok: true,

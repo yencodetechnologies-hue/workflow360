@@ -32,6 +32,54 @@ const {
   applyLineImmediateShortfall,
   repairLegacyImmediateReturnOnDelivery,
 } = require('../utils/immediateReturn')
+const { logActivity } = require('../utils/activityLog')
+
+function deliveryActivityTarget(delivery) {
+  return {
+    targetType: 'DELIVERY',
+    targetId: String(delivery._id),
+    targetName: delivery.deliveryNo || delivery.customerName || String(delivery._id),
+  }
+}
+
+function snapshotDeliveryHeader(delivery) {
+  return {
+    deliveryNo: delivery.deliveryNo || undefined,
+    customerName: delivery.customerName || undefined,
+    siteName: delivery.siteName || undefined,
+    siteAddress: delivery.siteAddress || undefined,
+    contactPhone: delivery.contactPhone || undefined,
+    billerUserId: delivery.billerUserId ? String(delivery.billerUserId) : undefined,
+    deliveryAt: delivery.deliveryAt ? new Date(delivery.deliveryAt).toISOString() : undefined,
+    returnExpectedAt: delivery.returnExpectedAt
+      ? new Date(delivery.returnExpectedAt).toISOString()
+      : undefined,
+    deliveryTimeSlot: delivery.deliveryTimeSlot || undefined,
+    returnTimeSlot: delivery.returnTimeSlot || undefined,
+    selfDelivery: Boolean(delivery.selfDelivery),
+    vehicleLabel: delivery.vehicleLabel || undefined,
+  }
+}
+
+function compactDeliveryLines(lines, delivery) {
+  return (lines || []).map((l) => ({
+    productId: String(l.productId),
+    godownId: String(godownIdForLine(l, delivery) || ''),
+    qty: Number(l.qty) || 0,
+  }))
+}
+
+function buildHeaderChanges(before, after) {
+  const changes = {}
+  for (const key of Object.keys(after)) {
+    const from = before[key]
+    const to = after[key]
+    if (String(from ?? '') !== String(to ?? '')) {
+      changes[key] = { from: from ?? null, to: to ?? null }
+    }
+  }
+  return changes
+}
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
@@ -816,6 +864,19 @@ async function createDelivery(req, res) {
     await syncOrderStatus(delivery, 'PROCESSED')
     await notifyDeliveryProcessed(delivery)
 
+    logActivity({
+      req,
+      action: 'DELIVERY_CREATED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        deliveryNo: delivery.deliveryNo,
+        status: delivery.status,
+        customerName: delivery.customerName,
+        lineCount: (delivery.lines || []).length,
+      },
+    })
+
     const urls = shareUrls(delivery, req)
     return res.status(201).json({
       id: String(delivery._id),
@@ -1101,6 +1162,10 @@ async function updateDelivery(req, res) {
       })
     }
 
+    const beforeHeader = snapshotDeliveryHeader(delivery)
+    const beforeLines = compactDeliveryLines(delivery.lines, delivery)
+    let linesTouched = false
+
     if (deliveryNoTrimmed) {
       const oldDeliveryNo = delivery.deliveryNo
       delivery.deliveryNo = deliveryNoTrimmed
@@ -1128,6 +1193,7 @@ async function updateDelivery(req, res) {
     }
 
     if (Array.isArray(lines) && lines.length > 0) {
+      linesTouched = true
       const parsed = normalizeIncomingLines(lines, fromGodownId)
       if (parsed.error) return res.status(400).json({ message: parsed.error })
 
@@ -1178,6 +1244,25 @@ async function updateDelivery(req, res) {
     }
 
     await delivery.save()
+
+    const afterHeader = snapshotDeliveryHeader(delivery)
+    const afterLines = compactDeliveryLines(delivery.lines, delivery)
+    const changes = buildHeaderChanges(beforeHeader, afterHeader)
+    const linesChanged = linesTouched && JSON.stringify(beforeLines) !== JSON.stringify(afterLines)
+    if (linesChanged) {
+      changes.lines = { from: beforeLines, to: afterLines }
+    }
+
+    logActivity({
+      req,
+      action: 'DELIVERY_UPDATED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        changes,
+        linesChanged,
+      },
+    })
 
     const urls = shareUrls(delivery, req)
     return res.json({
@@ -1575,8 +1660,23 @@ async function deleteDelivery(req, res) {
       }
     }
 
+    const deletedMeta = {
+      deliveryNo: delivery.deliveryNo,
+      status: delivery.status,
+      customerName: delivery.customerName,
+    }
+    const target = deliveryActivityTarget(delivery)
+
     await DeliveryScanEvent.deleteMany({ deliveryId: delivery._id })
     await Delivery.findByIdAndDelete(delivery._id)
+
+    logActivity({
+      req,
+      action: 'DELIVERY_DELETED',
+      category: 'DELIVERY',
+      ...target,
+      details: deletedMeta,
+    })
 
     return res.json({ ok: true })
   } catch (err) {
@@ -1650,6 +1750,25 @@ async function updateDeliveryStatus(req, res) {
 
     await delivery.save()
     await syncOrderStatus(delivery, status)
+
+    logActivity({
+      req,
+      action: 'DELIVERY_STATUS_UPDATED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        from: previousStatus,
+        to: status,
+        ...(status === 'BILLED'
+          ? {
+              billingType: delivery.billingType,
+              invoiceNo: delivery.invoiceNo,
+              invoiceName: delivery.invoiceName,
+              invoiceAmount: delivery.invoiceAmount,
+            }
+          : {}),
+      },
+    })
 
     return res.json({
       ok: true, status: delivery.status, previousStatus,
@@ -1751,6 +1870,14 @@ async function regenerateDeliveryTokens(req, res) {
 
     await delivery.save()
 
+    logActivity({
+      req,
+      action: 'DELIVERY_TOKENS_REGENERATED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: { status: delivery.status },
+    })
+
     const urls = shareUrls(delivery, req)
     return res.json({
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
@@ -1775,6 +1902,14 @@ async function markPacked(req, res) {
     await delivery.save()
     await syncOrderStatus(delivery, 'PACKED')
     await notifyDeliveryPacked(delivery)
+
+    logActivity({
+      req,
+      action: 'DELIVERY_MARKED_PACKED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: { packedAt: delivery.packedAt },
+    })
 
     return res.json({ ok: true, status: delivery.status, packedAt: delivery.packedAt })
   } catch (err) {
@@ -1882,6 +2017,19 @@ async function outForDelivery(req, res) {
     await syncOrderStatus(delivery, 'OUT_FOR_DELIVERY')
     await notifyOutForDelivery(delivery, driver._id)
 
+    logActivity({
+      req,
+      action: 'DELIVERY_OUT_FOR_DELIVERY',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        vehicleLabel: delivery.vehicleLabel,
+        driverName: delivery.driverName,
+        driverPhone: delivery.driverPhone,
+        vehicleType: delivery.vehicleType,
+      },
+    })
+
     return res.json({
       ok: true,
       status: delivery.status,
@@ -1958,6 +2106,20 @@ async function updateOutForDeliveryVehicle(req, res, existingDelivery, vehicleNu
       await syncOrderStatus(delivery, 'OUT_FOR_DELIVERY')
       await notifyOutForDelivery(delivery, driver._id)
     }
+
+    logActivity({
+      req,
+      action: promoteToOutForDelivery ? 'DELIVERY_OUT_FOR_DELIVERY' : 'DELIVERY_VEHICLE_UPDATED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        vehicleLabel: delivery.vehicleLabel,
+        driverName: delivery.driverName,
+        driverPhone: delivery.driverPhone,
+        vehicleType: delivery.vehicleType,
+        promoted: Boolean(promoteToOutForDelivery),
+      },
+    })
 
 return res.json({
       ok: true,
@@ -2043,6 +2205,19 @@ async function assignReturnPickup(req, res) {
     await delivery.save()
 
     await notifyReturnPickupAssigned(delivery, driver._id)
+
+    logActivity({
+      req,
+      action: 'DELIVERY_RETURN_PICKUP_ASSIGNED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        returnPickupVehicleLabel: delivery.returnPickupVehicleLabel,
+        returnPickupDriverName: delivery.returnPickupDriverName,
+        returnPickupAssignedAt: delivery.returnPickupAssignedAt,
+        vehicleType: delivery.returnPickupVehicleType,
+      },
+    })
 
     return res.json({
       ok: true,
@@ -2226,6 +2401,19 @@ async function scan(req, res, action) {
       }),
     ])
 
+    logActivity({
+      req,
+      action: 'DELIVERY_SCAN',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        scanAction: action,
+        tagId: normalizedTag,
+        note: note || undefined,
+        deliveryStatus: delivery.status,
+      },
+    })
+
     const required = requiredQtyByProduct(delivery)
     const returnPickupRequired = returnPickupRequiredQtyByProduct(delivery)
     const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds)
@@ -2304,6 +2492,14 @@ async function confirmDispatch(req, res) {
 
     await delivery.save()
 
+    logActivity({
+      req,
+      action: 'DELIVERY_DISPATCH_CONFIRMED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: { status: delivery.status },
+    })
+
     const stockByGodown = await stockByGodownForDelivery(delivery)
     return res.json({
       ok: true,
@@ -2370,6 +2566,17 @@ async function confirmReturn(req, res) {
     delivery.billerPendingReturnLines = pendingLines
     delivery.markModified('lines')
     await delivery.save()
+
+    logActivity({
+      req,
+      action: 'DELIVERY_RETURN_CONFIRMED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        status: delivery.status,
+        returnedByProduct: Object.fromEntries(returnedQtyByProduct(delivery)),
+      },
+    })
 
     const stockByGodown = await stockByGodownForDelivery(delivery)
     return res.json({
@@ -2456,6 +2663,17 @@ async function markDelivered(req, res) {
     await delivery.save()
     await syncOrderStatus(delivery, 'DELIVERED')
 
+    logActivity({
+      req,
+      action: 'DELIVERY_MARKED_DELIVERED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        status: delivery.status,
+        lineChecks: checks,
+      },
+    })
+
     return res.json({
       ok: true,
       status: delivery.status,
@@ -2511,6 +2729,19 @@ async function closeReturn(req, res) {
     await delivery.save()
     await syncOrderStatus(delivery, 'COMPLETED')
 
+    logActivity({
+      req,
+      action: 'DELIVERY_RETURN_CLOSED',
+      category: 'DELIVERY',
+      ...deliveryActivityTarget(delivery),
+      details: {
+        status: delivery.status,
+        missingTagIds: missingTags,
+        missingQtyByProduct,
+        restockedQtyByProduct: restockByProduct,
+      },
+    })
+
     const stockByGodown = await stockByGodownForDelivery(delivery)
     return res.json({
       status: 'ok',
@@ -2558,6 +2789,21 @@ async function enrollTag(req, res) {
       currentGodownId: godownId || undefined,
       status: 'IN_STOCK',
     })
+
+    logActivity({
+      req,
+      action: 'ASSET_TAG_ENROLLED',
+      category: 'DELIVERY',
+      targetType: 'ASSET_TAG',
+      targetId: String(tag._id),
+      targetName: tag.tagId,
+      details: {
+        tagId: tag.tagId,
+        productId: String(productId),
+        godownId: godownId ? String(godownId) : undefined,
+      },
+    })
+
     return res.status(201).json({ id: String(tag._id), tagId: tag.tagId })
   } catch (err) {
     if (err.code === 11000) {

@@ -45,6 +45,24 @@ const ACTION_LABELS: Record<string, string> = {
   GODOWN_CREATED: 'Godown created',
   GODOWN_UPDATED: 'Godown updated',
   GODOWN_DELETED: 'Godown deleted',
+  DELIVERY_CREATED: 'Delivery created',
+  DELIVERY_UPDATED: 'Delivery updated',
+  DELIVERY_DELETED: 'Delivery deleted',
+  DELIVERY_LINK_USED: 'Delivery link used',
+  DELIVERY_STATUS_UPDATED: 'Delivery status updated',
+  DELIVERY_TOKENS_REGENERATED: 'Delivery links regenerated',
+  DELIVERY_MARKED_PACKED: 'Delivery marked packed',
+  DELIVERY_OUT_FOR_DELIVERY: 'Out for delivery',
+  DELIVERY_VEHICLE_UPDATED: 'Delivery vehicle updated',
+  DELIVERY_VEHICLE_VERIFIED: 'Delivery vehicle verified',
+  DELIVERY_RETURN_PICKUP_ASSIGNED: 'Return pickup assigned',
+  DELIVERY_SCAN: 'Delivery scan',
+  DELIVERY_DISPATCH_CONFIRMED: 'Dispatch confirmed',
+  DELIVERY_RETURN_CONFIRMED: 'Return confirmed',
+  DELIVERY_MARKED_DELIVERED: 'Marked delivered',
+  DELIVERY_RETURN_CLOSED: 'Return closed',
+  ASSET_TAG_ENROLLED: 'Asset tag enrolled',
+  RE_DELIVERY_SCHEDULED: 'Re-delivery scheduled',
 }
 
 const CATEGORY_META: Record<string, { bg: string; color: string; border: string; soft: string; label: string }> = {
@@ -59,6 +77,7 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
   GODOWN: { bg: '#fffbeb', color: '#b45309' },
   DELIVERY: { bg: '#eff6ff', color: '#1d4ed8' },
   BILLER: { bg: '#ecfdf5', color: '#047857' },
+  PUBLIC: { bg: '#f0fdfa', color: '#0f766e' },
 }
 
 function isDestructive(action: string) {
