@@ -1,9 +1,35 @@
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
+const Order = require('../models/Order')
 const Product = require('../models/Product')
 const User = require('../models/User')
 const InventoryLedger = require('../models/InventoryLedger')
 const { parseRate, populateLineDetails } = require('../utils/deliveryLineDetails')
+
+// A short-delivery (recipient acknowledges fewer than dispatched) means the
+// customer's order for that product is really only for what they kept —
+// the rest went straight back to the godown. Shrink the linked order's line
+// qty to match, so the order no longer overstates what the customer has.
+async function shrinkOrderQtyForImmediateReturns(orderId, deltaByGodownProduct) {
+  if (!orderId || deltaByGodownProduct.size === 0) return
+  const order = await Order.findById(orderId)
+  if (!order) return
+
+  let changed = false
+  for (const [key, delta] of deltaByGodownProduct.entries()) {
+    if (delta <= 0) continue
+    const [gid, pid] = key.split('|')
+    const line = order.lines.find(
+      (l) => String(l.productId) === pid && (!gid || !l.godownId || String(l.godownId) === gid),
+    )
+    if (!line) continue
+    line.qty = Math.max(0, (Number(line.qty) || 0) - delta)
+    changed = true
+  }
+  if (!changed) return
+  order.lines = order.lines.filter((l) => l.qty > 0)
+  await order.save()
+}
 
 function allowedLineProductIds(delivery) {
   return new Set((delivery.lines || []).map((l) => String(l.productId)))
@@ -114,6 +140,7 @@ async function postDeliveryVerify(req, res) {
     const prevChecks = delivery.deliveryLineChecks || []
 
     const ledgerEntries = []
+    const orderDeltaByGodownProduct = new Map()
     for (let idx = 0; idx < deliveryLines.length; idx++) {
       const line = deliveryLines[idx]
       const row = mapped[idx]
@@ -143,11 +170,16 @@ async function postDeliveryVerify(req, res) {
             note: `Immediate return at delivery - ${delivery.deliveryNo}`,
           })
         }
+        if (delta > 0) {
+          const key = `${gid ? String(gid) : ''}|${String(line.productId)}`
+          orderDeltaByGodownProduct.set(key, (orderDeltaByGodownProduct.get(key) || 0) + delta)
+        }
       }
     }
     if (ledgerEntries.length > 0) {
       await InventoryLedger.insertMany(ledgerEntries)
     }
+    await shrinkOrderQtyForImmediateReturns(delivery.orderId, orderDeltaByGodownProduct)
     delivery.markModified('lines')
 
     delivery.deliveryVerifierName = String(verifierName).trim()
