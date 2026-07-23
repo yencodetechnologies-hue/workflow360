@@ -3076,7 +3076,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
 
             {/* refresh */}
             <button
-              onClick={loadDeliveries}
+              onClick={() => loadDeliveries()}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 height: 36, padding: '0 16px', borderRadius: 9,
