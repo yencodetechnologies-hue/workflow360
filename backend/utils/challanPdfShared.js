@@ -529,7 +529,7 @@ function drawHeader(doc, title) {
 
   const textX = logoX + logoSize + 14
   doc.fillColor(BRAND.white).font('Helvetica-Bold').fontSize(18)
-  doc.text('WalkerAgencies', textX, MARGIN + 20, { lineBreak: false })
+  doc.text('Walker Group of Companies', textX, MARGIN + 20, { lineBreak: false })
   doc.font('Helvetica').fontSize(9)
   doc.text('Logistics & delivery management', textX, MARGIN + 42, { lineBreak: false })
 
@@ -718,7 +718,7 @@ function drawFooter(doc) {
   doc.font('Helvetica').fontSize(8).fillColor(BRAND.muted)
   // Draw text using absolute y; lineBreak:false prevents any page overflow
   doc.text(
-    `Walker Agencies · Generated on ${formatDateTime(new Date())}`,
+    `Walker Group of Companies · Generated on ${formatDateTime(new Date())}`,
     MARGIN,
     footerY + 5,
     { width: CONTENT_WIDTH, align: 'center', lineBreak: false },

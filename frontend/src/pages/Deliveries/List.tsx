@@ -3534,7 +3534,10 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
         deliveryId={editDeliveryId}
         onClose={() => setEditDeliveryId(null)}
         onCreated={loadDeliveries}
-        onUpdated={loadDeliveries}
+        onUpdated={(info) => {
+          if (info) patchDeliveryRow(info.id, { deliveryNo: info.deliveryNo })
+          loadDeliveries()
+        }}
       />
     </div>
   )

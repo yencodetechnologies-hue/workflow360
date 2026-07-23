@@ -69,7 +69,7 @@ export function ReturnPickupVehicleModal({
     <VehicleNumberModal
       open={open}
       title="Assign return pickup"
-      description="Enter the vehicle number and driver details for the driver collecting returns."
+      description="Type the driver name — matching drivers fill phone and vehicle automatically. All fields stay editable."
       confirmLabel="Assign"
       busy={busy}
       initialValue={initialValue}

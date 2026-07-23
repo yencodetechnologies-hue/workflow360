@@ -846,7 +846,7 @@ const postVehicleTransition = async (
       <VehicleNumberModal
         open={vehicleOutOpen}
         title="Out for delivery"
-        description="Enter or update the vehicle number for the driver."
+        description="Type the driver name — matching drivers fill phone and vehicle automatically. All fields stay editable."
         confirmLabel="Confirm"
         busy={busy}
         initialValue={vehicleLabel}

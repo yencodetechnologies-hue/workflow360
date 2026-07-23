@@ -933,6 +933,7 @@ async function updateDelivery(req, res) {
     }
 
     const {
+      deliveryNo: deliveryNoInput,
       customerName,
       siteName,
       siteAddress,
@@ -953,6 +954,22 @@ async function updateDelivery(req, res) {
     }
     if (!billerUserId) return res.status(400).json({ message: 'billerUserId required' })
 
+    const deliveryNoTrimmed = deliveryNoInput != null ? String(deliveryNoInput).trim() : ''
+    if (deliveryNoInput != null && !deliveryNoTrimmed) {
+      return res.status(400).json({ message: 'Delivery number is required' })
+    }
+    if (deliveryNoTrimmed && deliveryNoTrimmed !== delivery.deliveryNo) {
+      const existing = await Delivery.findOne({
+        deliveryNo: deliveryNoTrimmed,
+        _id: { $ne: delivery._id },
+      }).lean()
+      if (existing) {
+        return res.status(400).json({
+          message: `Delivery number "${deliveryNoTrimmed}" already exists. Please use a different number.`,
+        })
+      }
+    }
+
     const biller = await User.findById(billerUserId).lean()
     if (!biller || biller.role !== 'BILLER') return res.status(400).json({ message: 'Invalid biller user' })
 
@@ -964,6 +981,14 @@ async function updateDelivery(req, res) {
       })
     }
 
+    if (deliveryNoTrimmed) {
+      const oldDeliveryNo = delivery.deliveryNo
+      delivery.deliveryNo = deliveryNoTrimmed
+      // Keep challan in sync when it matched the previous delivery number (create sets both equal)
+      if (!delivery.challanNo || delivery.challanNo === oldDeliveryNo) {
+        delivery.challanNo = deliveryNoTrimmed
+      }
+    }
     delivery.customerName = customerName
     delivery.siteName = siteName
     delivery.siteAddress = siteAddress

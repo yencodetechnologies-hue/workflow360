@@ -39,7 +39,7 @@ export type CreateDeliveryPrefill = {
 }
 
 type DeliveryDetailForEdit = {
-  id: string; billerUserId?: string; customerName: string; siteName?: string;
+  id: string; deliveryNo?: string; billerUserId?: string; customerName: string; siteName?: string;
   siteAddress?: string; contactPhone?: string; fromGodownId: string;
   deliveryAt: string; returnExpectedAt?: string; deliveryTimeSlot?: string; returnTimeSlot?: string;
   selfDelivery?: boolean; vehicleLabel?: string; status: string;
@@ -51,7 +51,7 @@ type DeliveryDetailForEdit = {
 
 type Props = {
   open: boolean; onClose: () => void; onCreated: () => void;
-  onUpdated?: () => void; deliveryId?: string | null; prefill?: CreateDeliveryPrefill | null
+  onUpdated?: (info?: { id: string; deliveryNo: string }) => void; deliveryId?: string | null; prefill?: CreateDeliveryPrefill | null
 }
 
 // ── Step icons ──────────────────────────────────────────────────────────────
@@ -502,6 +502,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
     setEditLoading(true); setWizardError(null)
     try {
       const d = await apiFetch<DeliveryDetailForEdit>(`/deliveries/${id}`, { token })
+      setManualDeliveryNo(d.deliveryNo || '')
       setBillerId(d.billerUserId || ''); setCustomerName(d.customerName)
       setSiteName(d.siteName || ''); setSiteAddress(d.siteAddress || '')
       setContactPhone(d.contactPhone || ''); setVehicleLabel(d.vehicleLabel || '')
@@ -665,7 +666,7 @@ export function CreateDeliveryModal({ open, onClose, onCreated, onUpdated, deliv
       setCreateLinks({ id: res.id, deliveryVerifyUrl: res.deliveryVerifyUrl, billerReturnUrl: res.billerReturnUrl })
       window.dispatchEvent(new CustomEvent('godown-stock-changed'))
       setGodownProducts({})
-      if (isEditMode) onUpdated?.(); else onCreated()
+      if (isEditMode) onUpdated?.({ id: res.id, deliveryNo: res.deliveryNo }); else onCreated()
     } catch (e: unknown) { setWizardError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : isEditMode ? 'Update failed' : 'Create failed') }
     finally { setCreateBusy(false) }
   }

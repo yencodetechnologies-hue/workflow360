@@ -736,7 +736,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       <VehicleNumberModal
         open={vehicleOpen}
         title={status === 'OUT_FOR_DELIVERY' ? 'Change vehicle' : 'Out for delivery'}
-        description="Enter the vehicle number and driver details for the delivery."
+        description="Type the driver name — matching drivers fill phone and vehicle automatically. All fields stay editable."
         confirmLabel="Confirm"
         busy={controlsDisabled}
         initialValue={delivery.vehicleLabel}
