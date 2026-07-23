@@ -32,46 +32,92 @@ const getProductById = async (req, res) => {
     }
 };
 
-// @desc    Create a product
+/**
+ * Pick a free s_no. Product names (particulars) may be duplicated;
+ * only serial numbers must stay unique. If the client sends a taken
+ * (or empty) s_no, allocate the next available numeric value.
+ */
+async function allocateSNo(preferred) {
+    const products = await Product.find({}).select('s_no').lean()
+    const used = new Set(
+        products.map((p) => String(p.s_no ?? '').trim()).filter(Boolean),
+    )
+    let max = 0
+    for (const s of used) {
+        const n = parseInt(s, 10)
+        if (!Number.isNaN(n)) max = Math.max(max, n)
+    }
+    const pref = preferred != null ? String(preferred).trim() : ''
+    if (pref && !used.has(pref)) return pref
+    let next = max + 1
+    while (used.has(String(next))) next += 1
+    return String(next)
+}
+
+// @desc    Create a product (duplicate particulars / names allowed)
 // @route   POST /api/products
 // @access  Public
 const createProduct = async (req, res) => {
     try {
         const { s_no, category, particulars, specification, rate, image_path, image_status, sku, unit, reorderLevel } = req.body;
-          console.log("createProduct called")
-  console.log(req.body,"prduct body")
 
-        const productExists = await Product.findOne({ s_no });
-
-        if (productExists) {
-            return res.status(400).json({ message: 'Product already exists' });
+        if (!particulars || !String(particulars).trim()) {
+            return res.status(400).json({ message: 'Product name (particulars) is required' });
+        }
+        if (!category || !String(category).trim()) {
+            return res.status(400).json({ message: 'Category is required' });
         }
 
+        const allocatedSNo = await allocateSNo(s_no)
+        const resolvedSku = (sku && String(sku).trim()) || `SKU-${allocatedSNo}`
+
         const product = await Product.create({
-            s_no,
-            category,
-            particulars,
+            s_no: allocatedSNo,
+            category: String(category).trim(),
+            particulars: String(particulars).trim(),
             specification,
             rate,
             image_path,
             image_status,
-            sku,
+            sku: resolvedSku,
             unit,
             reorderLevel
         });
-   console.log("Created:", product)
+
         if (product) {
             res.status(201).json(product);
         } else {
             res.status(400).json({ message: 'Invalid product data' });
         }
     } catch (error) {
-           console.error("CREATE PRODUCT ERROR:", error);
-    res.status(500).json({
-        message: error.message,
-        name: error.name,
-        errors: error.errors
-    });
+        // Race: another create took the same s_no/productId — retry once with a fresh serial
+        if (error && error.code === 11000) {
+            try {
+                const { category, particulars, specification, rate, image_path, image_status, unit, reorderLevel } = req.body;
+                const allocatedSNo = await allocateSNo(null)
+                const product = await Product.create({
+                    s_no: allocatedSNo,
+                    category: String(category).trim(),
+                    particulars: String(particulars).trim(),
+                    specification,
+                    rate,
+                    image_path,
+                    image_status,
+                    sku: `SKU-${allocatedSNo}`,
+                    unit,
+                    reorderLevel
+                });
+                return res.status(201).json(product);
+            } catch (retryErr) {
+                return res.status(500).json({ message: retryErr.message });
+            }
+        }
+        console.error('CREATE PRODUCT ERROR:', error);
+        res.status(500).json({
+            message: error.message,
+            name: error.name,
+            errors: error.errors
+        });
     }
 };
 
