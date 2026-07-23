@@ -6,6 +6,8 @@ type HandoverLine = {
   particulars?: string
   sku?: string
   qty: number
+  /** Qty acknowledged at delivery verify / mark-delivered (preferred when set). */
+  qtyAck?: number
 }
 
 type DeliveryHandoverCardProps = {
@@ -86,17 +88,20 @@ export function DeliveryHandoverCard({
         <div className="mt-4">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Verified items</h3>
           <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {lines.map((l, i) => (
+            {lines.map((l, i) => {
+              const shownQty = l.qtyAck != null ? l.qtyAck : l.qty
+              return (
               <li key={`${l.productId}-${i}`} className="flex items-start gap-3 p-3">
                 <LineCheckIcon />
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-slate-900">{l.particulars || l.productId}</div>
                   <div className="text-xs text-slate-500">
-                    {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
+                    {l.sku ? `${l.sku} · ` : ''}Qty {shownQty}
                   </div>
                 </div>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </div>
       ) : null}

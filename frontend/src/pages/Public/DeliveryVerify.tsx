@@ -755,7 +755,7 @@ export function PublicDeliveryVerifyPage() {
           ))}
           {immediateReturnTotal > 0 ? (
             <div style={{ padding: '8px 12px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 11, fontWeight: 600, color: '#b45309' }}>
-              ⏱ {immediateReturnTotal} qty short-delivered, recorded as immediate return and restocked to the godown
+              ⏱ {immediateReturnTotal} qty short-delivered — restocked to godown; ordered qty reduced to match
             </div>
           ) : null}
         </div>
@@ -887,7 +887,7 @@ export function PublicDeliveryVerifyPage() {
                           />
                           {immediateReturn > 0 ? (
                             <p className="mt-1.5 text-xs font-medium text-amber-700">
-                              {immediateReturn} qty short — will be recorded as an immediate return and restocked
+                              {immediateReturn} qty short — restocked to godown; ordered qty becomes {dQty}
                             </p>
                           ) : (
                             <p className="mt-1.5 text-xs font-medium text-emerald-700">

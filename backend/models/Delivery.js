@@ -6,6 +6,8 @@ const deliveryLineSchema = mongoose.Schema(
     godownId: { type: mongoose.Schema.Types.ObjectId, ref: 'Godown' },
     qty: { type: Number, required: true, min: 0 },
     dispatchedQty: { type: Number, default: 0, min: 0 },
+    // Biller/staff return reconciliation only. Short-delivery at verify shrinks
+    // qty + dispatchedQty instead of incrementing returnedQty.
     returnedQty: { type: Number, default: 0, min: 0 },
   },
   { _id: false }, 

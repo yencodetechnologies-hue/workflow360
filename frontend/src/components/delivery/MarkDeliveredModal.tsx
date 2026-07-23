@@ -60,7 +60,7 @@ export function MarkDeliveredModal({ open, busy = false, lines, onClose, onConfi
   return (
     <Modal open={open} title="Mark delivered — quantities" onClose={onClose}>
       <p className="mb-3 text-sm text-slate-600">
-        Enter how many were delivered. Any shortfall is returned to godown stock automatically.
+        Enter how many were delivered. Any shortfall is restocked to godown and the ordered qty is reduced to match.
       </p>
 
       <div className="space-y-3">
@@ -91,7 +91,7 @@ export function MarkDeliveredModal({ open, busy = false, lines, onClose, onConfi
 
       {totalRestock > 0 ? (
         <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-100">
-          {totalRestock} unit{totalRestock === 1 ? '' : 's'} will be added back to stock.
+          {totalRestock} unit{totalRestock === 1 ? '' : 's'} will be restocked; ordered qty becomes the delivered amount.
         </p>
       ) : null}
 

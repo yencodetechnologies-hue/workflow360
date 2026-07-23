@@ -4939,7 +4939,16 @@ function AdminDeliveryDetailPage() {
               deliveryVerifierName={d.deliveryVerifierName}
               vehicleLabel={d.vehicleLabel}
               deliverySignature={d.deliverySignature}
-              lines={d.lines}
+              lines={d.lines.map((l) => {
+                const check = d.deliveryLineChecks?.find((c) => c.productId === l.productId)
+                return {
+                  productId: l.productId,
+                  particulars: l.particulars,
+                  sku: l.sku,
+                  qty: l.qty,
+                  qtyAck: check?.qtyAck,
+                }
+              })}
             />
             <BillerReturnCard
               status={d.status}

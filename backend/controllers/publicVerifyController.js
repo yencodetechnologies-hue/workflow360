@@ -1,35 +1,13 @@
 const mongoose = require('mongoose')
 const Delivery = require('../models/Delivery')
-const Order = require('../models/Order')
 const Product = require('../models/Product')
 const User = require('../models/User')
 const InventoryLedger = require('../models/InventoryLedger')
 const { parseRate, populateLineDetails } = require('../utils/deliveryLineDetails')
-
-// A short-delivery (recipient acknowledges fewer than dispatched) means the
-// customer's order for that product is really only for what they kept —
-// the rest went straight back to the godown. Shrink the linked order's line
-// qty to match, so the order no longer overstates what the customer has.
-async function shrinkOrderQtyForImmediateReturns(orderId, deltaByGodownProduct) {
-  if (!orderId || deltaByGodownProduct.size === 0) return
-  const order = await Order.findById(orderId)
-  if (!order) return
-
-  let changed = false
-  for (const [key, delta] of deltaByGodownProduct.entries()) {
-    if (delta <= 0) continue
-    const [gid, pid] = key.split('|')
-    const line = order.lines.find(
-      (l) => String(l.productId) === pid && (!gid || !l.godownId || String(l.godownId) === gid),
-    )
-    if (!line) continue
-    line.qty = Math.max(0, (Number(line.qty) || 0) - delta)
-    changed = true
-  }
-  if (!changed) return
-  order.lines = order.lines.filter((l) => l.qty > 0)
-  await order.save()
-}
+const {
+  shrinkOrderQtyForImmediateReturns,
+  applyLineImmediateShortfall,
+} = require('../utils/immediateReturn')
 
 function allowedLineProductIds(delivery) {
   return new Set((delivery.lines || []).map((l) => String(l.productId)))
@@ -135,50 +113,28 @@ async function postDeliveryVerify(req, res) {
 
     // Delivered qty defaults to the full dispatched qty for each line, but
     // the recipient can enter fewer than what was dispatched (e.g. 8 of 10)
-    // — the shortfall is treated as an immediate on-the-spot return, which
-    // needs to be restocked into the source godown right away.
-    const prevChecks = delivery.deliveryLineChecks || []
-
+    // — the shortfall is treated as an immediate on-the-spot return: restock
+    // godown, shrink line.qty + dispatchedQty to what was kept, and shrink the
+    // linked order. returnedQty stays reserved for the biller return flow.
     const ledgerEntries = []
     const orderDeltaByGodownProduct = new Map()
     for (let idx = 0; idx < deliveryLines.length; idx++) {
       const line = deliveryLines[idx]
       const row = mapped[idx]
-      const dispatched = Number(line.qty) || 0
-      const deliveredQtyRaw = row.qtyAck != null ? Number(row.qtyAck) : dispatched
-      const deliveredQty = Math.max(0, Math.min(dispatched, Number.isFinite(deliveredQtyRaw) ? deliveredQtyRaw : dispatched))
-      row.qtyAck = deliveredQty
-      const immediateReturnQty = dispatched - deliveredQty
-
-      const prevRow = prevChecks[idx]
-      const prevDeliveredQty =
-        prevRow && prevRow.qtyAck != null ? Math.max(0, Math.min(dispatched, Number(prevRow.qtyAck))) : dispatched
-      const prevImmediateReturnQty = dispatched - prevDeliveredQty
-
-      const delta = immediateReturnQty - prevImmediateReturnQty
-      if (delta !== 0) {
-        // This is a short-delivery, not a biller-submitted return — restock
-        // the shortfall and shrink the line's own qty to match what was
-        // actually kept, rather than recording it under returnedQty (which
-        // is reserved for the biller return reconciliation flow).
-        line.qty = Math.max(0, (Number(line.qty) || 0) - delta)
-        const gid = line.godownId || delivery.fromGodownId
-        if (gid) {
-          ledgerEntries.push({
-            godownId: new mongoose.Types.ObjectId(String(gid)),
-            productId: new mongoose.Types.ObjectId(String(line.productId)),
-            qtyDelta: delta,
-            reason: 'RETURN',
-            refType: 'DeliveryVerify',
-            refId: String(delivery._id),
-            note: `Immediate return at delivery - ${delivery.deliveryNo}`,
-          })
-        }
-        if (delta > 0) {
-          const key = `${gid ? String(gid) : ''}|${String(line.productId)}`
-          orderDeltaByGodownProduct.set(key, (orderDeltaByGodownProduct.get(key) || 0) + delta)
-        }
+      if (!row || String(row.productId) !== String(line.productId)) {
+        return res.status(400).json({ message: 'lineChecks must match delivery lines in order' })
       }
+      const baseline = Number(line.dispatchedQty) > 0 ? Number(line.dispatchedQty) : Number(line.qty) || 0
+      const deliveredQtyRaw = row.qtyAck != null ? Number(row.qtyAck) : baseline
+      const deliveredQty = Math.max(
+        0,
+        Math.min(baseline, Number.isFinite(deliveredQtyRaw) ? deliveredQtyRaw : baseline),
+      )
+      row.qtyAck = deliveredQty
+      applyLineImmediateShortfall(line, deliveredQty, delivery, orderDeltaByGodownProduct, ledgerEntries, {
+        refType: 'DeliveryVerify',
+        note: `Immediate return at delivery - ${delivery.deliveryNo}`,
+      })
     }
     if (ledgerEntries.length > 0) {
       await InventoryLedger.insertMany(ledgerEntries)

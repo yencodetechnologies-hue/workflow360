@@ -27,6 +27,10 @@ const {
   godownCanAccessDelivery,
   godownAccessDeniedMessage,
 } = require('../utils/godownAccess')
+const {
+  shrinkOrderQtyForImmediateReturns,
+  applyLineImmediateShortfall,
+} = require('../utils/immediateReturn')
 
 function makeDeliveryNo() {
   const n = Math.floor(10000 + Math.random() * 89999)
@@ -2235,36 +2239,35 @@ async function markDelivered(req, res) {
       }
     }
 
-    // Per line: delivered qty (default = full dispatched). Shortfall is restocked
-    // immediately so only the delivered amount remains outstanding on the delivery.
-    const restockMap = new Map()
+    // Per line: delivered qty (default = full dispatched). Shortfall is an
+    // immediate return — restock, shrink qty + dispatchedQty to kept amount,
+    // shrink linked order. returnedQty is reserved for biller return flow.
+    const ledgerEntries = []
+    const orderDeltaByGodownProduct = new Map()
     const checks = []
     for (const line of delivery.lines || []) {
       const pid = String(line.productId)
-      const dispatched = Number(line.dispatchedQty) || Number(line.qty) || 0
-      let delivered = deliveredByProduct.has(pid) ? deliveredByProduct.get(pid) : dispatched
-      if (delivered > dispatched) {
+      const baseline = Number(line.dispatchedQty) > 0 ? Number(line.dispatchedQty) : Number(line.qty) || 0
+      let delivered = deliveredByProduct.has(pid) ? deliveredByProduct.get(pid) : baseline
+      if (delivered > baseline) {
         return res.status(400).json({
-          message: `Delivered qty cannot exceed dispatched (${dispatched}) for product ${pid}`,
+          message: `Delivered qty cannot exceed dispatched (${baseline}) for product ${pid}`,
         })
       }
-      delivered = Math.max(0, Math.min(dispatched, Number(delivered) || 0))
-      const shortfall = dispatched - delivered
-      if (shortfall > 0) {
-        restockMap.set(pid, (restockMap.get(pid) || 0) + shortfall)
-      }
+      delivered = Math.max(0, Math.min(baseline, Number(delivered) || 0))
+      applyLineImmediateShortfall(line, delivered, delivery, orderDeltaByGodownProduct, ledgerEntries, {
+        refType: 'Delivery',
+        note: `Immediate return at delivery - ${delivery.deliveryNo}`,
+        byUserId: req.user.id,
+      })
       checks.push({ productId: line.productId, qtyAck: delivered, ok: true })
     }
 
-    if (restockMap.size > 0) {
-      const returnResult = await applyReturnToLines(delivery, req.user.id, restockMap, {
-        rejectUnknown: true,
-      })
-      if (!returnResult.ok) {
-        return res.status(returnResult.status).json({ message: returnResult.message })
-      }
+    if (ledgerEntries.length > 0) {
+      await InventoryLedger.insertMany(ledgerEntries)
       delivery.markModified('lines')
     }
+    await shrinkOrderQtyForImmediateReturns(delivery.orderId, orderDeltaByGodownProduct)
 
     delivery.deliveryLineChecks = checks
     delivery.status = 'DELIVERED'
