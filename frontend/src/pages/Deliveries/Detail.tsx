@@ -4511,6 +4511,10 @@ vehicleLabel?: string
   billerPendingReturnAt?: string
   billerPendingReturnSlot?: 'MORNING' | 'AFTERNOON' | 'EVENING'
   billerPendingReturnNote?: string
+  pendingReturnCollectedLines?: BillerReturnLine[]
+  pendingReturnCollectedAt?: string
+  pendingReturnCollectedName?: string
+  pendingReturnSignature?: string
   deliveryVerifyUrl?: string
   billerReturnUrl?: string
   pendingReturnAssignUrl?: string
@@ -5045,12 +5049,12 @@ function AdminDeliveryDetailPage() {
             />
             <PendingReturnCollectedCard
               status={d.status}
-              billerReturnSubmittedAt={d.billerReturnSubmittedAt}
-              billerReturnName={d.billerReturnName}
-              billerSignature={d.billerSignature}
-              deliveryAt={d.deliveryAt}
-              billerCollectedLines={d.billerCollectedLines}
+              pendingReturnCollectedLines={d.pendingReturnCollectedLines}
+              pendingReturnCollectedAt={d.pendingReturnCollectedAt}
+              pendingReturnCollectedName={d.pendingReturnCollectedName}
+              pendingReturnSignature={d.pendingReturnSignature}
               billerPendingReturnLines={d.billerPendingReturnLines}
+              deliveryAt={d.deliveryAt}
             />
           </CardContent>
         </Card>

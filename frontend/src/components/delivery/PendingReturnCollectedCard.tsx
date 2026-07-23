@@ -11,12 +11,12 @@ type ReturnLine = {
 
 type Props = {
   status: string
-  billerReturnSubmittedAt?: string
-  billerReturnName?: string
-  billerSignature?: string
-  deliveryAt?: string
-  billerCollectedLines?: ReturnLine[]
+  pendingReturnCollectedLines?: ReturnLine[]
+  pendingReturnCollectedAt?: string
+  pendingReturnCollectedName?: string
+  pendingReturnSignature?: string
   billerPendingReturnLines?: ReturnLine[]
+  deliveryAt?: string
 }
 
 const RETURN_PHASE_STATUSES = new Set(['DELIVERED', 'RETURN_PICKUP', 'PENDING_RETURN', 'COMPLETED'])
@@ -34,56 +34,52 @@ function daysWithClientSince(deliveryAt?: string): number | null {
 
 export function PendingReturnCollectedCard({
   status,
-  billerReturnSubmittedAt,
-  billerReturnName,
-  billerSignature,
-  deliveryAt,
-  billerCollectedLines,
+  pendingReturnCollectedLines,
+  pendingReturnCollectedAt,
+  pendingReturnCollectedName,
+  pendingReturnSignature,
   billerPendingReturnLines,
+  deliveryAt,
 }: Props) {
-  const collected = billerCollectedLines ?? []
+  const collected = pendingReturnCollectedLines ?? []
   const pending = billerPendingReturnLines ?? []
-  const hasActivity =
-    collected.length > 0 ||
-    pending.length > 0 ||
-    Boolean(billerSignature) ||
-    status === 'PENDING_RETURN' ||
-    status === 'RETURN_PICKUP'
+  const hasCollected = collected.length > 0
+  const showPlaceholder =
+    RETURN_PHASE_STATUSES.has(status) &&
+    (status === 'PENDING_RETURN' || status === 'RETURN_PICKUP' || pending.length > 0)
 
-  if (!RETURN_PHASE_STATUSES.has(status) && !hasActivity) return null
+  if (!hasCollected && !showPlaceholder) return null
 
-  if (!billerReturnSubmittedAt && collected.length === 0 && pending.length === 0) {
+  if (!hasCollected) {
     return (
       <div className="rounded-xl border border-slate-200 p-3">
         <div className="font-semibold text-slate-900">Pending return collected</div>
         <div className="mt-1 text-amber-700">
-          Pending — share pending return assign link for balance products still with the customer
+          Pending — products collected on the pending return pickup will appear here
         </div>
       </div>
     )
   }
 
-  if (!hasActivity) return null
-
   const collectedQty = collected.reduce((s, l) => s + (Number(l.qty) || 0), 0)
   const pendingQty = pending.reduce((s, l) => s + (Number(l.qty) || 0), 0)
-  const hasSignature = Boolean(billerSignature)
+  const hasSignature = Boolean(pendingReturnSignature)
   const daysWithClient = daysWithClientSince(deliveryAt)
 
   return (
     <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="font-semibold text-slate-900">Pending return collected</div>
-        {collectedQty > 0 ? <Badge variant="green">Collected</Badge> : null}
+        <Badge variant="green">Collected</Badge>
         {pendingQty > 0 ? <Badge variant="amber">Balance pending</Badge> : null}
       </div>
 
       <div className="mt-3 space-y-2 rounded-xl bg-white/80 px-4 py-3 text-sm">
-        {billerReturnSubmittedAt ? (
+        {pendingReturnCollectedAt ? (
           <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Submitted on</span>
+            <span className="text-slate-500">Collected on</span>
             <span className="text-right font-medium text-slate-800">
-              {formatDateTime(billerReturnSubmittedAt)}
+              {formatDateTime(pendingReturnCollectedAt)}
             </span>
           </div>
         ) : null}
@@ -92,12 +88,10 @@ export function PendingReturnCollectedCard({
           <span className="text-right font-medium text-slate-800">{collectedQty}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-slate-500">Still with customer</span>
-          <span className="text-right font-medium text-slate-800">{pendingQty}</span>
-        </div>
-        <div className="flex justify-between gap-4">
           <span className="text-slate-500">Returned by</span>
-          <span className="text-right font-medium text-slate-800">{billerReturnName || '—'}</span>
+          <span className="text-right font-medium text-slate-800">
+            {pendingReturnCollectedName || '—'}
+          </span>
         </div>
         {hasSignature ? (
           <div className="pt-1">
@@ -109,38 +103,36 @@ export function PendingReturnCollectedCard({
       {hasSignature ? (
         <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
           <img
-            src={billerSignature}
+            src={pendingReturnSignature}
             alt="Pending return signature"
             className="mx-auto block max-h-40 w-full object-contain bg-white p-2"
           />
         </div>
       ) : null}
 
-      {collected.length > 0 ? (
-        <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Collected &amp; restocked
-          </h3>
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {collected.map((l, i) => (
-              <li key={`collected-${l.productId}-${i}`} className="p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="font-semibold text-slate-900">
-                    {l.particulars || l.sku || l.productId}
-                  </div>
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                    Collected
-                  </span>
+      <div className="mt-4">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Collected on pending return
+        </h3>
+        <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          {collected.map((l, i) => (
+            <li key={`pending-collected-${l.productId}-${i}`} className="p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="font-semibold text-slate-900">
+                  {l.particulars || l.sku || l.productId}
                 </div>
-                <div className="text-xs text-slate-500">
-                  {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
-                </div>
-                {l.note ? <div className="mt-1 text-xs text-slate-600">Note: {l.note}</div> : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                  Collected
+                </span>
+              </div>
+              <div className="text-xs text-slate-500">
+                {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
+              </div>
+              {l.note ? <div className="mt-1 text-xs text-slate-600">Note: {l.note}</div> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {pending.length > 0 ? (
         <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3">
@@ -161,7 +153,6 @@ export function PendingReturnCollectedCard({
                 <div className="text-xs text-slate-500">
                   {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
                 </div>
-                {l.note ? <div className="mt-1 text-xs text-slate-600">Note: {l.note}</div> : null}
               </li>
             ))}
           </ul>

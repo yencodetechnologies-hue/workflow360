@@ -274,25 +274,32 @@ export function PublicBillerReturnPage({
     return { damage, missing: 0, damagedQtyTotal }
   }, [data, formLines, damagedQty])
 
+  const isPendingPickupForm =
+    mode === 'pendingReturnAssign' || Boolean(data?.pendingResubmit || data?.linkKind === 'pendingReturnAssign')
+
   // Whatever isn't reported as damaged/missing or collected now is still
   // outstanding with the customer — these are the items that need a
   // scheduled return date & time-of-day.
   const pendingSummary = useMemo(() => {
     const lines = formLines
       .map((l) => {
-        // collectedQty now stores "pending left with client" directly
-        const pending = Number(collectedQty[l.productId]) || 0
+        const dmg = Number(damagedQty[l.productId]) || 0
+        const entered = Number(collectedQty[l.productId]) || 0
+        // Pending-return form: collectedQty = qty being collected now.
+        // First biller return form: collectedQty = qty left with client.
+        const pending = isPendingPickupForm
+          ? Math.max(0, l.qty - dmg - entered)
+          : entered
         return { productId: l.productId, particulars: l.particulars, sku: l.sku, qty: pending }
       })
       .filter((l) => l.qty > 0)
     const total = lines.reduce((s, l) => s + l.qty, 0)
     return { lines, total }
-  }, [formLines, collectedQty])
+  }, [formLines, collectedQty, damagedQty, isPendingPickupForm])
 
   const handleSubmit = async () => {
     if (!token || !data) return
     const t = decodeURIComponent(token)
-    // collected = dispatched - damaged - pendingLeft
     const damagedLines = formLines.map((l) => ({
       productId: l.productId,
       qty: Number(damagedQty[l.productId]) || 0,
@@ -301,8 +308,12 @@ export function PublicBillerReturnPage({
     const collectedLines = formLines.map((l) => {
       const dispatched = l.qty
       const dmg = Number(damagedQty[l.productId]) || 0
-      const pending = Number(collectedQty[l.productId]) || 0 // collectedQty now stores "pending left"
-      const collected = Math.max(0, dispatched - dmg - pending)
+      const entered = Number(collectedQty[l.productId]) || 0
+      // Pending return: enter how many are collected now (e.g. 1 of 3).
+      // First biller return: enter how many stay with client; collected is the rest.
+      const collected = isPendingPickupForm
+        ? Math.min(Math.max(0, entered), Math.max(0, dispatched - dmg))
+        : Math.max(0, dispatched - dmg - entered)
       return { productId: l.productId, qty: collected, note: remarks[l.productId]?.trim() || undefined }
     })
     setSubmitting(true)
@@ -622,7 +633,7 @@ export function PublicBillerReturnPage({
                             }
                           />
                           <Input
-                            label="Pending left with client"
+                            label={isPendingPickupForm ? 'Collected qty' : 'Pending left with client'}
                             type="number"
                             min={0}
                             max={l.qty}
@@ -634,7 +645,22 @@ export function PublicBillerReturnPage({
                         </div>
                         {(() => {
                           const dmg = Number(damagedQty[l.productId]) || 0
-                          const pending = Number(collectedQty[l.productId]) || 0
+                          const entered = Number(collectedQty[l.productId]) || 0
+                          if (isPendingPickupForm) {
+                            const collected = Math.min(Math.max(0, entered), Math.max(0, l.qty - dmg))
+                            const pending = Math.max(0, l.qty - dmg - collected)
+                            return collected > 0 ? (
+                              <p className="mt-1.5 text-xs font-medium text-emerald-700">
+                                {collected} qty collecting now
+                                {pending > 0 ? ` · ${pending} still with client` : ''}
+                              </p>
+                            ) : pending > 0 ? (
+                              <p className="mt-1.5 text-xs font-medium text-amber-700">
+                                Enter collected qty — {pending} currently still with client
+                              </p>
+                            ) : null
+                          }
+                          const pending = entered
                           const collected = Math.max(0, l.qty - dmg - pending)
                           return pending > 0 ? (
                             <p className="mt-1.5 text-xs font-medium text-amber-700">

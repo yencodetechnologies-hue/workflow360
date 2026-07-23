@@ -146,6 +146,13 @@ const deliverySchema = mongoose.Schema(
     billerPendingReturnSlot: { type: String, enum: ['MORNING', 'AFTERNOON', 'EVENING'] },
     billerPendingReturnNote: { type: String, trim: true },
 
+    // Products collected specifically during a pending-return pickup
+    // (balance return) — separate from the initial billerCollectedLines.
+    pendingReturnCollectedLines: { type: [billerReturnLineSchema], default: [] },
+    pendingReturnCollectedAt: { type: Date },
+    pendingReturnCollectedName: { type: String, trim: true },
+    pendingReturnSignature: { type: String },
+
     // ── Partial return / re-delivery fields ──────────────────────────────
     // Set when admin schedules a new delivery date for items the client
     // did not return on the original returnExpectedAt date.

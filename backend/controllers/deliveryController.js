@@ -1323,6 +1323,7 @@ async function getDelivery(req, res) {
     billerDamagedLines,
     billerCollectedLines,
     billerPendingReturnLines,
+    pendingReturnCollectedLines,
   ] = await Promise.all([
     scannedCountsByProduct(d.dispatchedTagIds),
     scannedCountsByProduct(d.deliveredTagIds || []),
@@ -1333,6 +1334,7 @@ async function getDelivery(req, res) {
     populateBillerReturnLines(d.billerDamagedLines),
     populateBillerReturnLines(d.billerCollectedLines),
     populateBillerReturnLines(d.billerPendingReturnLines),
+    populateBillerReturnLines(d.pendingReturnCollectedLines),
   ])
 
   return res.json({
@@ -1404,6 +1406,10 @@ async function getDelivery(req, res) {
     billerPendingReturnAt: d.billerPendingReturnAt,
     billerPendingReturnSlot: d.billerPendingReturnSlot,
     billerPendingReturnNote: d.billerPendingReturnNote,
+    pendingReturnCollectedLines,
+    pendingReturnCollectedAt: d.pendingReturnCollectedAt,
+    pendingReturnCollectedName: d.pendingReturnCollectedName,
+    pendingReturnSignature: d.pendingReturnSignature,
     deliveryVerifyUrl: urls.deliveryVerifyUrl,
     billerReturnUrl: urls.billerReturnUrl,
     pendingReturnAssignUrl: urls.pendingReturnAssignUrl,

@@ -541,6 +541,40 @@ async function postReturnByToken(req, res, tokenField) {
     if (signature && typeof signature === 'string' && signature.startsWith('data:image')) {
       delivery.billerSignature = signature.slice(0, 500_000)
     }
+
+    // Track only this pending-return batch's collected products for the Detail card.
+    if (isPendingResubmit && batchCollectedByProduct.size > 0) {
+      const prevPendingCollected = new Map()
+      for (const l of delivery.pendingReturnCollectedLines || []) {
+        const pid = String(l.productId)
+        prevPendingCollected.set(pid, (prevPendingCollected.get(pid) || 0) + (Number(l.qty) || 0))
+      }
+      for (const [pid, qty] of batchCollectedByProduct.entries()) {
+        prevPendingCollected.set(pid, (prevPendingCollected.get(pid) || 0) + qty)
+      }
+      const pendingReturnCollectedLines = []
+      for (const [pid, qty] of prevPendingCollected.entries()) {
+        if (qty <= 0) continue
+        const noteFromBatch = collectedIn.find((r) => String(r.productId) === pid)?.note
+        const prevNote = (delivery.pendingReturnCollectedLines || []).find(
+          (l) => String(l.productId) === pid,
+        )?.note
+        pendingReturnCollectedLines.push({
+          productId: pid,
+          qty,
+          note: noteFromBatch ? String(noteFromBatch).slice(0, 500) : prevNote,
+        })
+      }
+      delivery.pendingReturnCollectedLines = pendingReturnCollectedLines
+      delivery.pendingReturnCollectedAt = new Date()
+      if (returnedByName && String(returnedByName).trim()) {
+        delivery.pendingReturnCollectedName = String(returnedByName).trim().slice(0, 200)
+      }
+      if (signature && typeof signature === 'string' && signature.startsWith('data:image')) {
+        delivery.pendingReturnSignature = signature.slice(0, 500_000)
+      }
+    }
+
     delivery.status = billerPendingReturnLines.length > 0 ? 'PENDING_RETURN' : 'COMPLETED'
     if (billerPendingReturnLines.length > 0) delivery.phase = 'RETURN'
     delivery.markModified('lines')
@@ -554,6 +588,10 @@ async function postReturnByToken(req, res, tokenField) {
       billerReturnName: delivery.billerReturnName,
       billerSignature: delivery.billerSignature,
       billerPendingReturnLines: delivery.billerPendingReturnLines,
+      pendingReturnCollectedLines: delivery.pendingReturnCollectedLines,
+      pendingReturnCollectedAt: delivery.pendingReturnCollectedAt,
+      pendingReturnCollectedName: delivery.pendingReturnCollectedName,
+      pendingReturnSignature: delivery.pendingReturnSignature,
       status: delivery.status,
     })
   } catch (err) {
