@@ -16,7 +16,9 @@ async function requireAuth(req, res, next) {
     const secret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev_jwt_secret_change_me')
     if (!secret) return res.status(500).json({ message: 'JWT_SECRET not configured' })
 
-    const payload = jwt.verify(token, secret)
+    // Tokens are issued without expiry. ignoreExpiration keeps older tokens
+    // (signed when JWT_EXPIRES_IN / 7d was still set) from failing with "jwt expired".
+    const payload = jwt.verify(token, secret, { ignoreExpiration: true })
     const user = await User.findById(payload.sub).lean()
     if (!user || !user.active) return res.status(401).json({ message: 'Invalid token' })
 
