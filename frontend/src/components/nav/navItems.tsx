@@ -40,9 +40,10 @@ export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
       { label: 'My godown', to: myGodown, icon: <GodownIcon /> },
       // { label: 'Orders', to: '/orders', icon: ordersIcon() },
       { label: 'Delivery Manager', to: '/deliveries', icon: <DeliveryIcon /> },
-    
+
       { label: 'Calendar', to: '/calendar', icon: <CalendarIcon /> },
       { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
+      { label: 'Product Report', to: '/products/report', icon: <ReportsIcon /> },
     ]
   }
   return [
@@ -52,6 +53,7 @@ export function navItemsForRole(role: Role, godownId?: string): NavItem[] {
     { label: 'Products', to: '/products', icon: <ProductIcon /> },
     { label: 'Delivery Manager', to: '/deliveries', icon: <DeliveryIcon /> },
     { label: 'Reports', to: '/reports', icon: <ReportsIcon /> },
+    { label: 'Product Report', to: '/products/report', icon: <ReportsIcon /> },
     { label: 'Activity Logs', to: '/activity-logs', icon: <ActivityLogsIcon /> },
   ]
 }

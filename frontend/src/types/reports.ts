@@ -165,6 +165,28 @@ export type ProductReturnRow = {
   deliveries: ProductReturnDeliveryLine[]
 }
 
+export type ProductSummaryDeliveryLine = {
+  id: string
+  deliveryNo: string
+  customerName?: string
+  deliveryAt?: string
+  qty: number
+  note?: string
+}
+
+export type ProductSummaryRow = {
+  productId: string
+  sNo?: string
+  particulars?: string
+  sku?: string
+  totalStock: number
+  currentStock: number
+  outOfDeliveryQty: number
+  outOfDeliveryDeliveries: ProductSummaryDeliveryLine[]
+  missingQty: number
+  missingDeliveries: ProductSummaryDeliveryLine[]
+}
+
 export type StockReportRow = {
   godownId: string
   godownName?: string

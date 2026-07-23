@@ -137,6 +137,7 @@ import { LoginPage } from './pages/Login'
 import { BillersPage } from './pages/Masters/Billers'
 import { DeliveryPersonsPage } from './pages/Masters/DeliveryPersons'
 import { ProductsGodownRedirect } from './pages/ProductsGodownRedirect'
+import { ProductReportPage } from './pages/Products/Report'
 import { CalendarPage } from './pages/Calendar'
 import { ReturnDeliveryCalendarPage } from './pages/ReturnDeliveryCalendar' // ← NEW
 import { ReportsPage } from './pages/Reports'
@@ -187,6 +188,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
                 <ProductsGodownRedirect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/products/report"
+            element={
+              <ProtectedRoute roles={['ADMIN', 'BILLER', 'GODOWN']}>
+                <ProductReportPage />
               </ProtectedRoute>
             }
           />

@@ -1812,6 +1812,103 @@ async function returnsByProduct(req, res) {
   return res.json(rows)
 }
 
+// ── PRODUCT REPORT (S.No/Name/SKU + total/current stock + out-of-delivery + missing) ──
+
+async function productsSummaryReport(req, res) {
+  ensureGodownQueryParam(req)
+  const godownId = String(req.query.godownId || '').trim()
+  if (godownId && !mongoose.Types.ObjectId.isValid(godownId)) {
+    return res.status(400).json({ message: 'Invalid godownId' })
+  }
+
+  const ledgerMatch = {}
+  if (godownId) ledgerMatch.godownId = new mongoose.Types.ObjectId(godownId)
+
+  const stockRows = await InventoryLedger.aggregate([
+    { $match: ledgerMatch },
+    {
+      $group: {
+        _id: '$productId',
+        currentStock: { $sum: '$qtyDelta' },
+        totalStock: { $sum: { $cond: [{ $gt: ['$qtyDelta', 0] }, '$qtyDelta', 0] } },
+      },
+    },
+  ])
+  const stockByProduct = new Map(stockRows.map((r) => [String(r._id), r]))
+
+  const deliveryQuery = {}
+  applyRoleScope(req, deliveryQuery)
+  if (godownId) deliveryQuery.$or = [{ fromGodownId: new mongoose.Types.ObjectId(godownId) }, { 'lines.godownId': new mongoose.Types.ObjectId(godownId) }]
+  const deliveries = await Delivery.find(deliveryQuery).lean()
+
+  const outByProduct = new Map()
+  const missingByProduct = new Map()
+
+  for (const d of deliveries) {
+    for (const line of d.lines || []) {
+      const dispatched = Number(line.dispatchedQty) || 0
+      const returned = Number(line.returnedQty) || 0
+      const outstanding = Math.max(0, dispatched - returned)
+      if (outstanding <= 0) continue
+      const pid = String(line.productId)
+      if (!outByProduct.has(pid)) outByProduct.set(pid, { qty: 0, deliveries: [] })
+      const row = outByProduct.get(pid)
+      row.qty += outstanding
+      row.deliveries.push({
+        id: String(d._id),
+        deliveryNo: d.deliveryNo,
+        customerName: d.customerName,
+        deliveryAt: d.deliveryAt,
+        qty: outstanding,
+      })
+    }
+    for (const line of d.billerMissingLines || []) {
+      if (!line.qty || line.qty <= 0) continue
+      const pid = String(line.productId)
+      if (!missingByProduct.has(pid)) missingByProduct.set(pid, { qty: 0, deliveries: [] })
+      const row = missingByProduct.get(pid)
+      row.qty += line.qty
+      row.deliveries.push({
+        id: String(d._id),
+        deliveryNo: d.deliveryNo,
+        customerName: d.customerName,
+        deliveryAt: d.deliveryAt,
+        qty: line.qty,
+        note: line.note,
+      })
+    }
+  }
+
+  const products = await Product.find({}).sort({ s_no: 1, particulars: 1 }).lean()
+
+  const search = String(req.query.search || '').trim().toLowerCase()
+  const rows = products
+    .map((p) => {
+      const pid = String(p._id)
+      const stock = stockByProduct.get(pid) || { currentStock: 0, totalStock: 0 }
+      const out = outByProduct.get(pid)
+      const missing = missingByProduct.get(pid)
+      return {
+        productId: pid,
+        sNo: p.s_no,
+        particulars: p.particulars,
+        sku: p.sku || p.s_no,
+        totalStock: stock.totalStock,
+        currentStock: stock.currentStock,
+        outOfDeliveryQty: out?.qty || 0,
+        outOfDeliveryDeliveries: out?.deliveries || [],
+        missingQty: missing?.qty || 0,
+        missingDeliveries: missing?.deliveries || [],
+      }
+    })
+    .filter((r) => {
+      if (!search) return true
+      return (r.particulars || '').toLowerCase().includes(search) || (r.sku || '').toLowerCase().includes(search)
+    })
+
+  return res.json(rows)
+}
+
 async function customerProductsReport(req, res) {
   const customerName = String(req.query.customerName || '').trim()
   if (!customerName) return res.status(400).json({ message: 'customerName required' })
@@ -1921,5 +2018,6 @@ module.exports = {
   customerProductsReport,
   returnsByBiller,
   returnsByProduct,
+  productsSummaryReport,
   statusCounts,
 }
