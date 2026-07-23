@@ -509,6 +509,8 @@ export type DeliveryStatusPatch = {
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
+  returnPickupRemark?: string
+  returnPickupSignature?: string
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
   invoiceName?: string
@@ -679,7 +681,11 @@ const postVehicleTransition = async (
         setValue(res.status)
         onUpdated?.({ status: res.status, vehicleLabel: res.vehicleLabel, driverName, driverPhone, vehicleType: res.vehicleType })
       } else {
-        const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN' }>(
+        const res = await apiFetch<{
+          status: string
+          returnPickupVehicleLabel?: string
+          returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
+        }>(
           `/deliveries/${deliveryId}/assign-return-pickup`,
           {
             token,
@@ -813,7 +819,12 @@ const postVehicleTransition = async (
     setVehicleReturnOpen(false)
   }
 
-  const options = isAdmin ? DELIVERY_STATUS_OPTIONS : statusOptionsForSelect(status, { forGodown: isGodown })
+  const options = (isAdmin ? DELIVERY_STATUS_OPTIONS : statusOptionsForSelect(status, { forGodown: isGodown })).map(
+    (o) =>
+      status === 'PENDING_RETURN' && o.value === 'RETURN_PICKUP'
+        ? { ...o, label: 'Pending return assign' }
+        : o,
+  )
   const selectValue = options.some((o) => o.value === value) ? value : (options[0]?.value ?? 'PROCESSED')
 
   return (
@@ -858,14 +869,14 @@ const postVehicleTransition = async (
           {status === 'OUT_FOR_DELIVERY' ? 'Change vehicle' : status === 'COMPLETED' ? 'Edit driver info' : 'Set vehicle'}
         </button>
       ) : null}
-      {status === 'RETURN_PICKUP' ? (
+      {status === 'RETURN_PICKUP' || status === 'PENDING_RETURN' ? (
         <button
           type="button"
           disabled={busy}
           onClick={openVehicleReturnModal}
           className="text-xs font-semibold text-primary-700 hover:text-primary-900 disabled:opacity-60"
         >
-          Change vehicle
+          {status === 'PENDING_RETURN' ? 'Pending return assign' : 'Change vehicle'}
         </button>
       ) : null}
 
@@ -893,10 +904,9 @@ const postVehicleTransition = async (
         initialDriverPhone={returnPickupDriverPhone}
         initialVehicleType={returnPickupVehicleType}
         onClose={cancelVehicleModal}
-          onConfirm={(v, driverName, driverPhone, vehicleType) =>
-    postVehicleTransition('return', v, driverName, driverPhone, vehicleType)
-  }
-
+        onConfirm={({ vehicleNumber, driverName, driverPhone, vehicleType }) =>
+          postVehicleTransition('return', vehicleNumber, driverName, driverPhone, vehicleType)
+        }
       />
 
       <MarkDeliveredModal

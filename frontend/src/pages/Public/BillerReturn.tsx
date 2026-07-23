@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { PublicCompletionScreen } from '../../components/public/PublicCompletionScreen'
 import { Button } from '../../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
@@ -39,6 +39,9 @@ type GetRes = {
   billerCollectedLines?: { productId: string; qty: number; note?: string }[]
   billerPendingReturnLines?: PendingLine[]
   canSubmit?: boolean
+  pendingResubmit?: boolean
+  linkKind?: 'billerReturn' | 'pendingReturnAssign'
+  allLines?: Line[]
 }
 
 // How many days a still-pending item has been sitting with the client,
@@ -82,8 +85,21 @@ function aggregateLines(lines: Line[]): Line[] {
   return Array.from(byProduct.values())
 }
 
-export function PublicBillerReturnPage() {
+export function PublicBillerReturnPage({
+  mode: modeProp = 'billerReturn',
+}: {
+  mode?: 'billerReturn' | 'pendingReturnAssign'
+} = {}) {
   const { token } = useParams()
+  const location = useLocation()
+  // Prefer path detection so the pending-return route always hits the right API,
+  // even if the mode prop is lost during HMR / remounts.
+  const mode: 'billerReturn' | 'pendingReturnAssign' =
+    location.pathname.startsWith('/p/pending-return') || modeProp === 'pendingReturnAssign'
+      ? 'pendingReturnAssign'
+      : 'billerReturn'
+  const apiBase =
+    mode === 'pendingReturnAssign' ? '/public/pending-return-assign' : '/public/biller-return'
   const [data, setData] = useState<GetRes | null>(null)
   const [phase, setPhase] = useState<Phase>('form')
   const [error, setError] = useState<string | null>(null)
@@ -105,41 +121,51 @@ export function PublicBillerReturnPage() {
   useEffect(() => {
     if (!token) return
     const t = decodeURIComponent(token)
-    apiFetch<GetRes>(`/public/biller-return/${encodeURIComponent(t)}`)
+    apiFetch<GetRes>(`${apiBase}/${encodeURIComponent(t)}`)
       .then((r) => {
         setData(r)
         const agg = aggregateLines(r.lines)
         const z: Record<string, string> = {}
         for (const l of agg) z[l.productId] = '0'
 
-        const dmg = { ...z }
-        if (r.billerDamagedLines) {
-          for (const l of r.billerDamagedLines) dmg[l.productId] = String((Number(dmg[l.productId]) || 0) + l.qty)
-        }
-        const col = { ...z }
-        if (r.billerCollectedLines) {
-          for (const l of r.billerCollectedLines) col[l.productId] = String((Number(col[l.productId]) || 0) + l.qty)
-        }
-        setDamagedQty(dmg)
-        setCollectedQty(col)
+        // Pending-product form: start fresh (qty baseline is outstanding only).
+        // First full submit: pre-fill previously reported damage/collected.
+        if (r.pendingResubmit || mode === 'pendingReturnAssign' || (r.canSubmit && r.billerReturnSubmittedAt)) {
+          setDamagedQty({ ...z })
+          setCollectedQty({ ...z })
+          setRemarks({})
+        } else {
+          const dmg = { ...z }
+          if (r.billerDamagedLines) {
+            for (const l of r.billerDamagedLines) dmg[l.productId] = String((Number(dmg[l.productId]) || 0) + l.qty)
+          }
+          const col = { ...z }
+          if (r.billerCollectedLines) {
+            for (const l of r.billerCollectedLines) col[l.productId] = String((Number(col[l.productId]) || 0) + l.qty)
+          }
+          setDamagedQty(dmg)
+          setCollectedQty(col)
 
-        const rmk: Record<string, string> = {}
-        for (const l of [...(r.billerDamagedLines || []), ...(r.billerCollectedLines || [])]) {
-          if (l.note) rmk[l.productId] = l.note
+          const rmk: Record<string, string> = {}
+          for (const l of [...(r.billerDamagedLines || []), ...(r.billerCollectedLines || [])]) {
+            if (l.note) rmk[l.productId] = l.note
+          }
+          setRemarks(rmk)
         }
-        setRemarks(rmk)
 
-        // Pre-check products that already have a qty entered
-        const preChecks = agg.map((l) => Number(dmg[l.productId]) > 0 || Number(col[l.productId]) > 0)
-        setChecks(preChecks)
+        setChecks(agg.map(() => false))
         if (r.billerReturnName) setReturnedByName(r.billerReturnName)
-        // Already submitted → always show thank-you (never an "expired" / form state)
-        setPhase(r.billerReturnSubmittedAt || r.canSubmit === false ? 'thankYou' : 'form')
+        // Keep form open when outstanding pending products can still be submitted.
+        setPhase(r.canSubmit ? 'form' : 'thankYou')
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
-  }, [token])
+  }, [token, apiBase, mode])
 
   const formLines = useMemo(() => (data ? aggregateLines(data.lines) : []), [data])
+  const thankYouLines = useMemo(
+    () => (data ? aggregateLines(data.allLines?.length ? data.allLines : data.lines) : []),
+    [data],
+  )
 
   // Sync indeterminate state on select-all checkbox
   useEffect(() => {
@@ -282,7 +308,7 @@ export function PublicBillerReturnPage() {
     setSubmitting(true)
     setError(null)
     try {
-      await apiFetch(`/public/biller-return/${encodeURIComponent(t)}`, {
+      await apiFetch(`${apiBase}/${encodeURIComponent(t)}`, {
         method: 'POST',
         body: JSON.stringify({
           damagedLines: damagedLines.filter((x) => x.qty > 0),
@@ -291,7 +317,7 @@ export function PublicBillerReturnPage() {
           signature: getSignatureDataUrl(),
         }),
       })
-      const refreshed = await apiFetch<GetRes>(`/public/biller-return/${encodeURIComponent(t)}`)
+      const refreshed = await apiFetch<GetRes>(`${apiBase}/${encodeURIComponent(t)}`)
       setData(refreshed)
       setPhase('thankYou')
     } catch (e: unknown) {
@@ -299,7 +325,7 @@ export function PublicBillerReturnPage() {
       const alreadyUsed = /already been submitted|can only be used once/i.test(msg)
       if (alreadyUsed) {
         try {
-          const refreshed = await apiFetch<GetRes>(`/public/biller-return/${encodeURIComponent(t)}`)
+          const refreshed = await apiFetch<GetRes>(`${apiBase}/${encodeURIComponent(t)}`)
           setData(refreshed)
           setPhase('thankYou')
           setError(null)
@@ -358,7 +384,24 @@ export function PublicBillerReturnPage() {
   const pendingLinesDisplay = data.billerPendingReturnLines || []
   const pendingDays = daysWithClient(data.deliveryAt)
 
-  if (phase === 'thankYou' || data.billerReturnSubmittedAt) {
+  if (mode === 'pendingReturnAssign' && !data.canSubmit && !data.billerReturnSubmittedAt) {
+    return (
+      <div className={pageShell}>
+        <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center shadow-sm">
+          <div className="text-lg font-semibold text-slate-900">Pending return pickup</div>
+          <div className="mt-1 text-sm text-slate-600">
+            {data.deliveryNo} · {data.customerName}
+          </div>
+          <p className="mt-4 text-sm text-slate-600">
+            There are no products still pending with the customer for this delivery. Nothing left to
+            report on this link.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'thankYou' || (data.billerReturnSubmittedAt && !data.canSubmit)) {
     const collectedQtyTotal = (data.billerCollectedLines || []).reduce((s, l) => s + (Number(l.qty) || 0), 0)
     const pendingTotal = pendingLinesDisplay.reduce((s, l) => s + l.qty, 0)
 
@@ -397,12 +440,12 @@ export function PublicBillerReturnPage() {
           </div>
 
           {/* Rows */}
-          {formLines.map((l, i) => {
+          {thankYouLines.map((l, i) => {
             const collected = collectedByProduct.get(l.productId) || 0
             const damaged = damagedByProduct.get(l.productId) || 0
             const pending = pendingByProduct.get(l.productId) || 0
             return (
-              <div key={l.productId} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 70px 60px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < formLines.length - 1 ? '1px solid #f1f5f9' : undefined }}>
+              <div key={l.productId} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 70px 60px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < thankYouLines.length - 1 ? '1px solid #f1f5f9' : undefined }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>{l.particulars || l.productId}</div>
                   <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{l.sku} · Dispatched {l.qty}</div>
@@ -465,10 +508,19 @@ export function PublicBillerReturnPage() {
       <div className="mx-auto max-w-2xl space-y-4">
         {/* Header card */}
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm">
-          <div className="text-lg font-semibold text-slate-900">Biller return & damage</div>
+          <div className="text-lg font-semibold text-slate-900">
+            {mode === 'pendingReturnAssign' || data.pendingResubmit
+              ? 'Pending return pickup'
+              : 'Biller return & damage'}
+          </div>
           <div className="mt-1 text-sm text-slate-600">
             {data.deliveryNo} · {data.customerName}
           </div>
+          {mode === 'pendingReturnAssign' || data.pendingResubmit ? (
+            <p className="mt-2 text-xs font-medium text-amber-800">
+              Only products not yet picked up from the customer are listed below.
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             {data.siteName ? <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Site: {data.siteName}</span> : null}
             {data.vehicleLabel ? <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Vehicle: {data.vehicleLabel}</span> : null}
@@ -544,7 +596,11 @@ export function PublicBillerReturnPage() {
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-slate-900">{l.particulars || l.productId}</div>
                             <div className="text-xs text-slate-500">
-                              {l.sku} · Dispatched qty {l.qty} · Rate basis {l.parsedRate ?? '—'}
+                              {l.sku}
+                              {data.pendingResubmit
+                                ? ` · Pending qty ${l.qty}`
+                                : ` · Dispatched qty ${l.qty}`}{' '}
+                              · Rate basis {l.parsedRate ?? '—'}
                             </div>
                           </div>
                         </div>

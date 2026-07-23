@@ -169,7 +169,15 @@ export type ProductSummaryDeliveryLine = {
   id: string
   deliveryNo: string
   customerName?: string
+  siteName?: string
+  siteAddress?: string
+  status?: string
   deliveryAt?: string
+  selfDelivery?: boolean
+  vehicleType?: 'PRIVATE' | 'PORTER' | 'OWN' | string
+  vehicleLabel?: string
+  godownName?: string
+  fromGodownId?: string
   qty: number
   note?: string
 }

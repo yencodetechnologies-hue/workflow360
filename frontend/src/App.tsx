@@ -153,6 +153,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/p/delivery/:token" element={<PublicDeliveryVerifyPage />} />
       <Route path="/p/biller/:token" element={<PublicBillerReturnPage />} />
+      <Route path="/p/pending-return/:token" element={<PublicBillerReturnPage mode="pendingReturnAssign" />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>

@@ -7,6 +7,8 @@ export type MarkDeliveredLine = {
   productId: string
   qty: number
   dispatchedQty?: number
+  returnedQty?: number
+  pendingQty?: number
   particulars?: string
   productName?: string
 }

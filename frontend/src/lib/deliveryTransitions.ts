@@ -52,7 +52,7 @@ export function transitionKind(from: string, to: string, options?: { forAdmin?: 
   }
   if (to === 'CANCELLED') return 'patch'
   if (to === 'OUT_FOR_DELIVERY') return 'vehicleOut'
-  if (to === 'RETURN_PICKUP' && from === 'DELIVERED') return 'vehicleReturn'
+  if (to === 'RETURN_PICKUP' && (from === 'DELIVERED' || from === 'PENDING_RETURN')) return 'vehicleReturn'
   if (to === 'OUT_FOR_DELIVERY' || to === 'RETURN_PICKUP') return 'blocked'
   if (isAdjacentInChain(from, to)) return 'patch'
   return 'blocked'
@@ -64,6 +64,9 @@ export function allowedNextStatuses(current: string): DeliveryStatus[] {
   const extras: DeliveryStatus[] = []
   if (normalized !== 'COMPLETED' && normalized !== 'CANCELLED') extras.push('CANCELLED')
   if (normalized === 'CANCELLED') extras.push('PROCESSED')
+  // Balance pickup: always allow assigning return vehicle from pending return.
+  if (normalized === 'PENDING_RETURN') extras.push('RETURN_PICKUP')
+  if (normalized === 'DELIVERED') extras.push('RETURN_PICKUP')
   const currentOption =
     normalized === current ? (current as DeliveryStatus) : ('OUT_FOR_DELIVERY' as DeliveryStatus)
   return [...new Set([currentOption, ...adjacent, ...extras])]

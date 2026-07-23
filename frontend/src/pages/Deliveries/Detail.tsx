@@ -4427,6 +4427,7 @@ import {
 import { DriverDeliveryDetail } from '../../components/delivery/DriverDeliveryDetail'
 import { BillerReturnCard } from '../../components/delivery/BillerReturnCard'
 import { DeliveryHandoverCard } from '../../components/delivery/DeliveryHandoverCard'
+import { PendingReturnCollectedCard } from '../../components/delivery/PendingReturnCollectedCard'
 import { CreateDeliveryModal } from './CreateDeliveryModal'
 import { ChallanPdfIcon, openDeliveryChallanPdf, openReturnChallanPdf } from '../../lib/openChallanPdf'
 import { groupLinesByGodown } from '../../lib/deliveryLineGroups'
@@ -4474,6 +4475,8 @@ vehicleLabel?: string
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
+  returnPickupRemark?: string
+  returnPickupSignature?: string
   status: string
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
@@ -4510,6 +4513,7 @@ vehicleLabel?: string
   billerPendingReturnNote?: string
   deliveryVerifyUrl?: string
   billerReturnUrl?: string
+  pendingReturnAssignUrl?: string
   dispatchedTagIds?: string[]
   pickedUpTagIds?: string[]
   deliveredTagIds?: string[]
@@ -4580,7 +4584,12 @@ function AdminDeliveryDetailPage() {
     navigator.clipboard.writeText(text).catch(() => {})
   }
 
-  const assignReturnPickup = async (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') => {
+  const assignReturnPickup = async (payload: {
+    vehicleNumber: string
+    driverName: string
+    driverPhone: string
+    vehicleType: 'PRIVATE' | 'PORTER' | 'OWN'
+  }) => {
     const token = getToken()
     if (!token || !id) return
     setActionBusy(true)
@@ -4588,7 +4597,12 @@ function AdminDeliveryDetailPage() {
       await apiFetch(`/deliveries/${id}/assign-return-pickup`, {
         token,
         method: 'POST',
-        body: JSON.stringify({ vehicleNumber, driverName, driverPhone, vehicleType }),
+        body: JSON.stringify({
+          vehicleNumber: payload.vehicleNumber,
+          driverName: payload.driverName,
+          driverPhone: payload.driverPhone,
+          vehicleType: payload.vehicleType,
+        }),
       })
       setReturnPickupModalOpen(false)
       load()
@@ -4626,7 +4640,7 @@ function AdminDeliveryDetailPage() {
     }
   }
   const canAssignReturnPickup =
-    d?.status === 'DELIVERED' && (isAdmin || isGodownUser)
+    ['DELIVERED', 'PENDING_RETURN', 'RETURN_PICKUP'].includes(d?.status ?? '') && (isAdmin || isGodownUser)
 
   const linesByGodown = useMemo(() => {
     if (!d) return []
@@ -4654,12 +4668,45 @@ function AdminDeliveryDetailPage() {
       ...(d.billerMissingLines || []),
     ])
     const pendingByProduct = qtyByProduct(d.billerPendingReturnLines)
+    // Fall back to outstanding qty when biller pending lines are empty
+    // (dispatched − max(reported damage/collected, returned)).
+    if (pendingByProduct.size === 0) {
+      const reported = new Map<string, number>()
+      for (const l of [...(d.billerDamagedLines || []), ...(d.billerCollectedLines || [])]) {
+        const pid = String(l.productId)
+        reported.set(pid, (reported.get(pid) || 0) + (Number(l.qty) || 0))
+      }
+      for (const l of d.lines) {
+        const pid = String(l.productId)
+        const dispatched = Number(l.dispatchedQty) > 0 ? Number(l.dispatchedQty) : Number(l.qty) || 0
+        const remaining = Math.max(
+          0,
+          dispatched - Math.max(reported.get(pid) || 0, Number(l.returnedQty) || 0),
+        )
+        if (remaining > 0) pendingByProduct.set(pid, (pendingByProduct.get(pid) || 0) + remaining)
+      }
+    }
     const hasReturnActivity =
       d.lines.some((l) => (l.returnedQty ?? 0) > 0) ||
       missingByProduct.size > 0 ||
       pendingByProduct.size > 0
     return { missingByProduct, pendingByProduct, hasReturnActivity }
   }, [d])
+
+  const pendingProductsForLink = useMemo(() => {
+    if (!d) return []
+    const { pendingByProduct } = returnQtyByProduct
+    if (pendingByProduct.size === 0) return []
+    return [...pendingByProduct.entries()].map(([productId, qty]) => {
+      const line = d.lines.find((l) => l.productId === productId)
+      const fromBiller = d.billerPendingReturnLines?.find((l) => l.productId === productId)
+      return {
+        productId,
+        qty,
+        particulars: fromBiller?.particulars || line?.particulars || productId,
+      }
+    })
+  }, [d, returnQtyByProduct])
 
   if (!id) return null
 
@@ -4797,10 +4844,14 @@ function AdminDeliveryDetailPage() {
       {showReturnPhase ? (
         <ReturnReconciliationCard
           status={d.status}
-          billerReturnUrl={d.billerReturnUrl}
+          billerReturnUrl={d.pendingReturnAssignUrl || d.billerReturnUrl}
           billerReturnSubmittedAt={d.billerReturnSubmittedAt}
+          billerReturnName={d.billerReturnName}
+          billerSignature={d.billerSignature}
           damageTotal={d.damageTotal}
           missingTotal={d.missingTotal}
+          pendingProducts={pendingProductsForLink}
+          collectedProducts={d.billerCollectedLines || []}
           onCopyLink={copy}
         />
       ) : null}
@@ -4808,7 +4859,7 @@ function AdminDeliveryDetailPage() {
       {canAssignReturnPickup && isAdmin && !isGodownUser ? (
         <div className="mb-4">
           <Button onClick={() => setReturnPickupModalOpen(true)} disabled={actionBusy}>
-            Assign return pickup
+            {d.status === 'PENDING_RETURN' ? 'Pending return assign' : 'Assign return pickup'}
           </Button>
         </div>
       ) : null}
@@ -4992,6 +5043,15 @@ function AdminDeliveryDetailPage() {
               missingTotal={d.missingTotal}
               billerPendingReturnLines={d.billerPendingReturnLines}
             />
+            <PendingReturnCollectedCard
+              status={d.status}
+              billerReturnSubmittedAt={d.billerReturnSubmittedAt}
+              billerReturnName={d.billerReturnName}
+              billerSignature={d.billerSignature}
+              deliveryAt={d.deliveryAt}
+              billerCollectedLines={d.billerCollectedLines}
+              billerPendingReturnLines={d.billerPendingReturnLines}
+            />
           </CardContent>
         </Card>
 
@@ -5005,7 +5065,11 @@ function AdminDeliveryDetailPage() {
                 onClick={() => {
                   const token = getToken()
                   if (!token || !id) return
-                  apiFetch<{ deliveryVerifyUrl: string; billerReturnUrl: string }>(`/deliveries/${id}/regenerate-tokens`, {
+                  apiFetch<{
+                    deliveryVerifyUrl: string
+                    billerReturnUrl: string
+                    pendingReturnAssignUrl: string
+                  }>(`/deliveries/${id}/regenerate-tokens`, {
                     token,
                     method: 'POST',
                   })
@@ -5041,6 +5105,35 @@ function AdminDeliveryDetailPage() {
                   Copy
                 </Button>
               ) : null}
+            </div>
+            <div>
+              <div className="font-semibold text-slate-800">Pending return assign</div>
+              <div className="break-all text-slate-600">{d.pendingReturnAssignUrl || '?'}</div>
+              {d.pendingReturnAssignUrl ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-1"
+                  onClick={() => copy(d.pendingReturnAssignUrl || '')}
+                >
+                  Copy
+                </Button>
+              ) : null}
+              {pendingProductsForLink.length > 0 ? (
+                <ul className="mt-2 space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-950">
+                  <li className="mb-1 font-semibold text-amber-900">Not picked up from customer</li>
+                  {pendingProductsForLink.map((p) => (
+                    <li key={p.productId} className="flex justify-between gap-2">
+                      <span className="min-w-0 truncate">{p.particulars}</span>
+                      <span className="shrink-0 font-semibold">{p.qty} pending</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-[11px] text-slate-500">
+                  Dedicated link for balance products still with the customer.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

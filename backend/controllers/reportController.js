@@ -1843,6 +1843,28 @@ async function productsSummaryReport(req, res) {
 
   const outByProduct = new Map()
   const missingByProduct = new Map()
+  const godownIds = deliveries.map((d) => String(d.fromGodownId)).filter(Boolean)
+  const godownMap = await loadGodownMap(godownIds)
+
+  const toDeliveryListRow = (d, qty, note) => {
+    const g = godownMap.get(String(d.fromGodownId))
+    return {
+      id: String(d._id),
+      deliveryNo: d.deliveryNo,
+      customerName: d.customerName,
+      siteName: d.siteName,
+      siteAddress: d.siteAddress,
+      status: d.status,
+      deliveryAt: d.deliveryAt,
+      selfDelivery: !!d.selfDelivery,
+      vehicleType: d.returnPickupVehicleType || d.vehicleType,
+      vehicleLabel: d.returnPickupVehicleLabel || d.vehicleLabel,
+      godownName: g?.name,
+      fromGodownId: d.fromGodownId ? String(d.fromGodownId) : undefined,
+      qty,
+      note,
+    }
+  }
 
   for (const d of deliveries) {
     for (const line of d.lines || []) {
@@ -1854,28 +1876,24 @@ async function productsSummaryReport(req, res) {
       if (!outByProduct.has(pid)) outByProduct.set(pid, { qty: 0, deliveries: [] })
       const row = outByProduct.get(pid)
       row.qty += outstanding
-      row.deliveries.push({
-        id: String(d._id),
-        deliveryNo: d.deliveryNo,
-        customerName: d.customerName,
-        deliveryAt: d.deliveryAt,
-        qty: outstanding,
-      })
+      row.deliveries.push(toDeliveryListRow(d, outstanding))
     }
-    for (const line of d.billerMissingLines || []) {
+    // Biller return form writes "damaged / missing" into billerDamagedLines;
+    // billerMissingLines is kept for legacy / separate missing submissions.
+    const missingLinesByPid = new Map()
+    for (const line of [...(d.billerDamagedLines || []), ...(d.billerMissingLines || [])]) {
       if (!line.qty || line.qty <= 0) continue
       const pid = String(line.productId)
+      const prev = missingLinesByPid.get(pid) || { qty: 0, note: undefined }
+      prev.qty += line.qty
+      if (!prev.note && line.note) prev.note = line.note
+      missingLinesByPid.set(pid, prev)
+    }
+    for (const [pid, info] of missingLinesByPid) {
       if (!missingByProduct.has(pid)) missingByProduct.set(pid, { qty: 0, deliveries: [] })
       const row = missingByProduct.get(pid)
-      row.qty += line.qty
-      row.deliveries.push({
-        id: String(d._id),
-        deliveryNo: d.deliveryNo,
-        customerName: d.customerName,
-        deliveryAt: d.deliveryAt,
-        qty: line.qty,
-        note: line.note,
-      })
+      row.qty += info.qty
+      row.deliveries.push(toDeliveryListRow(d, info.qty, info.note))
     }
   }
 

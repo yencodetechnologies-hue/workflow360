@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import type React from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { getToken, useAuth } from '../auth/store'
 
@@ -24,15 +25,15 @@ type LogsResponse = {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: '', label: 'All categories' },
-  { value: 'AUTH', label: 'Auth (Login)' },
-  { value: 'USER', label: 'User management' },
+  { value: '', label: 'All' },
+  { value: 'AUTH', label: 'Auth' },
+  { value: 'USER', label: 'Users' },
   { value: 'GODOWN', label: 'Godown' },
   { value: 'DELIVERY', label: 'Delivery' },
 ]
 
 const ACTION_LABELS: Record<string, string> = {
-  LOGIN: 'Login',
+  LOGIN: 'Signed in',
   LOGIN_FAILED: 'Login failed',
   USER_CREATED: 'User created',
   USER_UPDATED: 'User updated',
@@ -46,116 +47,248 @@ const ACTION_LABELS: Record<string, string> = {
   GODOWN_DELETED: 'Godown deleted',
 }
 
-const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
-  AUTH: { bg: '#eff6ff', color: '#2563eb' },
-  USER: { bg: '#f0fdf4', color: '#16a34a' },
-  GODOWN: { bg: '#fefce8', color: '#ca8a04' },
-  DELIVERY: { bg: '#fdf4ff', color: '#9333ea' },
+const CATEGORY_META: Record<string, { bg: string; color: string; border: string; soft: string; label: string }> = {
+  AUTH: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe', soft: '#dbeafe', label: 'Auth' },
+  USER: { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0', soft: '#d1fae5', label: 'User' },
+  GODOWN: { bg: '#fffbeb', color: '#b45309', border: '#fde68a', soft: '#fef3c7', label: 'Godown' },
+  DELIVERY: { bg: '#f0fdfa', color: '#0f766e', border: '#99f6e4', soft: '#ccfbf1', label: 'Delivery' },
 }
 
-const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
-  LOGIN_FAILED: { bg: '#fef2f2', color: '#dc2626' },
-  USER_DELETED: { bg: '#fef2f2', color: '#dc2626' },
-  GODOWN_DELETED: { bg: '#fef2f2', color: '#dc2626' },
-  USER_ACTIVATED: { bg: '#f0fdf4', color: '#16a34a' },
+const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
+  ADMIN: { bg: '#f1f5f9', color: '#334155' },
+  GODOWN: { bg: '#fffbeb', color: '#b45309' },
+  DELIVERY: { bg: '#eff6ff', color: '#1d4ed8' },
+  BILLER: { bg: '#ecfdf5', color: '#047857' },
 }
 
-function CategoryBadge({ category }: { category: string }) {
-  const style = CATEGORY_COLORS[category] || { bg: '#f1f5f9', color: '#64748b' }
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 12,
-        fontSize: 11,
-        fontWeight: 700,
-        background: style.bg,
-        color: style.color,
-        letterSpacing: '0.04em',
-      }}
-    >
-      {category}
-    </span>
-  )
+function isDestructive(action: string) {
+  return action === 'LOGIN_FAILED' || action.endsWith('_DELETED') || action.endsWith('_DEACTIVATED')
 }
 
-function ActionBadge({ action }: { action: string }) {
-  const style = ACTION_COLORS[action] || { bg: '#f8fafc', color: '#374151' }
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 12,
-        fontSize: 12,
-        fontWeight: 600,
-        background: style.bg,
-        color: style.color,
-      }}
-    >
-      {ACTION_LABELS[action] || action}
-    </span>
-  )
+function isPositive(action: string) {
+  return action === 'LOGIN' || action.endsWith('_CREATED') || action.endsWith('_ACTIVATED')
 }
 
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleString('en-IN', {
+function actionLabel(action: string) {
+  return ACTION_LABELS[action] || action.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
+}
+
+function formatAbsolute(iso: string) {
+  return new Date(iso).toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: true,
   })
 }
 
-function RoleBadge({ role }: { role?: string }) {
-  if (!role) return <span style={{ color: '#94a3b8' }}>—</span>
-  const colors: Record<string, string> = {
-    ADMIN: '#7c3aed',
-    GODOWN: '#d97706',
-    DELIVERY: '#2563eb',
-    BILLER: '#059669',
+function formatRelative(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const sec = Math.floor(diff / 1000)
+  if (sec < 45) return 'Just now'
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}m ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}h ago`
+  const day = Math.floor(hr / 24)
+  if (day < 7) return `${day}d ago`
+  return formatAbsolute(iso)
+}
+
+function initials(name?: string) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function CategoryIcon({ category }: { category: string }) {
+  const stroke = 'currentColor'
+  const props = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  if (category === 'AUTH') {
+    return (
+      <svg {...props}>
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    )
+  }
+  if (category === 'USER') {
+    return (
+      <svg {...props}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    )
+  }
+  if (category === 'GODOWN') {
+    return (
+      <svg {...props}>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    )
   }
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '1px 7px',
-        borderRadius: 10,
-        fontSize: 11,
-        fontWeight: 700,
-        background: '#f1f5f9',
-        color: colors[role] || '#64748b',
-      }}
-    >
-      {role}
-    </span>
+    <svg {...props}>
+      <rect x="1" y="3" width="15" height="13" rx="2" />
+      <path d="M16 8h4l3 3v5h-7V8z" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
   )
 }
 
-const tHead: React.CSSProperties = {
-  padding: '10px 14px',
-  fontSize: 11,
-  fontWeight: 700,
-  color: '#94a3b8',
-  textTransform: 'uppercase',
-  letterSpacing: '0.07em',
-  textAlign: 'left',
-  whiteSpace: 'nowrap',
-  background: '#f8fafc',
-  borderBottom: '1px solid #f1f5f9',
+function RefreshIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  )
 }
 
-const tCell: React.CSSProperties = {
-  padding: '12px 14px',
-  fontSize: 13,
-  color: '#374151',
-  borderBottom: '1px solid #f1f5f9',
-  verticalAlign: 'middle',
+function detailEntries(details?: Record<string, unknown>) {
+  if (!details) return []
+  return Object.entries(details).filter(([, v]) => v != null && v !== '')
+}
+
+function ActivityRow({ log }: { log: ActivityLogEntry }) {
+  const [open, setOpen] = useState(false)
+  const meta = CATEGORY_META[log.category] || { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0', soft: '#f1f5f9', label: log.category }
+  const roleStyle = ROLE_COLORS[log.actor?.role || ''] || { bg: '#f1f5f9', color: '#64748b' }
+  const details = detailEntries(log.details)
+  const destructive = isDestructive(log.action)
+  const positive = isPositive(log.action)
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '44px 1fr',
+        gap: 14,
+        padding: '16px 20px',
+        borderBottom: '1px solid #f1f5f9',
+        transition: 'background 0.15s',
+        background: open ? '#f8fafc' : '#fff',
+      }}
+      onMouseEnter={(e) => { if (!open) e.currentTarget.style.background = 'rgba(236,253,245,0.45)' }}
+      onMouseLeave={(e) => { if (!open) e.currentTarget.style.background = '#fff' }}
+    >
+      <div style={{
+        width: 44, height: 44, borderRadius: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`,
+        flexShrink: 0,
+      }}>
+        <CategoryIcon category={log.category} />
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: 14, fontWeight: 700,
+                color: destructive ? '#dc2626' : positive ? '#047857' : '#0f172a',
+              }}>
+                {actionLabel(log.action)}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                background: meta.soft, color: meta.color, letterSpacing: '0.03em',
+              }}>
+                {meta.label}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: 'linear-gradient(145deg, #059669, #10b981)',
+                  color: '#fff', fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  letterSpacing: '0.02em',
+                }}>
+                  {initials(log.actor?.name)}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                  {log.actor?.name || 'Unknown'}
+                </span>
+              </div>
+              {log.actor?.role ? (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                  background: roleStyle.bg, color: roleStyle.color,
+                }}>
+                  {log.actor.role}
+                </span>
+              ) : null}
+              {log.targetName ? (
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  on <span style={{ fontWeight: 600, color: '#475569' }}>{log.targetName}</span>
+                  {log.targetType ? (
+                    <span style={{ color: '#94a3b8' }}> · {log.targetType}</span>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{formatRelative(log.at)}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, whiteSpace: 'nowrap' }}>{formatAbsolute(log.at)}</div>
+          </div>
+        </div>
+
+        {(details.length > 0 || log.ip) && (
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              style={{
+                border: 'none', background: 'transparent', padding: 0,
+                fontSize: 12, fontWeight: 600, color: '#059669', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              {open ? 'Hide details' : 'View details'}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {open ? (
+              <div style={{
+                marginTop: 8, padding: '10px 12px', borderRadius: 12,
+                background: '#fff', border: '1px solid #e2e8f0',
+                display: 'flex', flexDirection: 'column', gap: 6,
+              }}>
+                {details.map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', gap: 8, fontSize: 12, lineHeight: 1.4 }}>
+                    <span style={{ color: '#94a3b8', minWidth: 88, fontWeight: 600, textTransform: 'capitalize' }}>
+                      {k.replace(/([A-Z])/g, ' $1').trim()}
+                    </span>
+                    <span style={{ color: '#334155', wordBreak: 'break-word' }}>{String(v)}</span>
+                  </div>
+                ))}
+                {log.ip ? (
+                  <div style={{ display: 'flex', gap: 8, fontSize: 12 }}>
+                    <span style={{ color: '#94a3b8', minWidth: 88, fontWeight: 600 }}>IP</span>
+                    <span style={{ color: '#334155', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{log.ip}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function ActivityLogsPage() {
@@ -172,6 +305,7 @@ export function ActivityLogsPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(1)
+  const [q, setQ] = useState('')
 
   async function fetchLogs() {
     const token = getToken()
@@ -201,278 +335,293 @@ export function ActivityLogsPage() {
     fetchLogs()
   }, [category, dateFrom, dateTo, page])
 
-  function handleFilter(e: React.FormEvent) {
-    e.preventDefault()
-    setPage(1)
-    fetchLogs()
-  }
-
   function clearFilters() {
     setCategory('')
     setDateFrom('')
     setDateTo('')
+    setQ('')
     setPage(1)
   }
 
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    if (!s) return logs
+    return logs.filter((log) => {
+      const hay = [
+        actionLabel(log.action),
+        log.action,
+        log.category,
+        log.actor?.name,
+        log.actor?.role,
+        log.targetName,
+        log.targetType,
+        log.ip,
+        ...detailEntries(log.details).flatMap(([k, v]) => [k, String(v)]),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return hay.includes(s)
+    })
+  }, [logs, q])
+
+  const hasFilters = !!(category || dateFrom || dateTo || q)
+  const pageButtons = useMemo(() => {
+    const max = Math.min(7, pages)
+    return Array.from({ length: max }, (_, i) => {
+      if (pages <= 7) return i + 1
+      if (page <= 4) return i + 1
+      if (page >= pages - 3) return pages - 6 + i
+      return page - 3 + i
+    }).filter((n) => n >= 1 && n <= pages)
+  }, [page, pages])
+
+  const inputStyle: React.CSSProperties = {
+    height: 38,
+    padding: '0 12px',
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    background: '#fff',
+    fontSize: 13,
+    color: '#0f172a',
+    outline: 'none',
+    boxSizing: 'border-box',
+  }
+
   return (
-    <div style={{ padding: '24px 20px', maxWidth: 1200, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 }}>Activity Logs</h1>
-        <p style={{ fontSize: 14, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
-          {isAdmin ? 'All system activity — user management, logins, godown changes' : 'Your recent activity'}
-        </p>
+    <div style={{ fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>Activity Logs</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
+            {isAdmin
+              ? 'Track logins, user changes, godown updates, and delivery activity across the system.'
+              : 'Your recent actions across the system.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => fetchLogs()}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            height: 40, padding: '0 16px', borderRadius: 12,
+            border: '1px solid #e2e8f0', background: '#fff',
+            fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer',
+          }}
+        >
+          <RefreshIcon />
+          Refresh
+        </button>
       </div>
 
-      {/* Filters */}
-      <form
-        onSubmit={handleFilter}
-        style={{
-          background: '#fff',
-          border: '1px solid #e8eaf0',
-          borderRadius: 12,
-          padding: '16px 20px',
-          marginBottom: 20,
-          display: 'flex',
-          gap: 12,
-          flexWrap: 'wrap',
-          alignItems: 'flex-end',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Category</label>
-          <select
-            value={category}
-            onChange={(e) => { setCategory(e.target.value); setPage(1) }}
-            style={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
-              padding: '7px 10px',
-              fontSize: 13,
-              background: '#fff',
-              color: '#1e293b',
-              cursor: 'pointer',
-            }}
-          >
-            {CATEGORY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>From date</label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
-            style={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
-              padding: '7px 10px',
-              fontSize: 13,
-              background: '#fff',
-              color: '#1e293b',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>To date</label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
-            style={{
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
-              padding: '7px 10px',
-              fontSize: 13,
-              background: '#fff',
-              color: '#1e293b',
-            }}
-          />
-        </div>
-
-        {(category || dateFrom || dateTo) && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              color: '#64748b',
-              fontSize: 13,
-              cursor: 'pointer',
-              fontWeight: 500,
-              alignSelf: 'flex-end',
-            }}
-          >
-            Clear
-          </button>
-        )}
-      </form>
-
-      {/* Summary row */}
-      {!loading && (
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>
-          {total > 0 ? `${total} log${total !== 1 ? 's' : ''} found` : 'No logs found'}
-          {total > 0 && pages > 1 && ` · Page ${page} of ${pages}`}
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
+      <div style={{
+        background: '#fff',
+        border: '1px solid #e8eaf0',
+        borderRadius: 16,
+        overflow: 'hidden',
+      }}>
         <div style={{
-          background: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: 10,
-          padding: '12px 16px',
-          color: '#dc2626',
-          fontSize: 14,
-          marginBottom: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '18px 22px', borderBottom: '1px solid #f1f5f9', gap: 12, flexWrap: 'wrap',
         }}>
-          {error}
-        </div>
-      )}
-
-      {/* Table */}
-      <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: 12, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-            Loading…
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Activity feed</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+              {loading
+                ? 'Loading activity…'
+                : total > 0
+                  ? `${total.toLocaleString()} event${total === 1 ? '' : 's'} · Page ${page} of ${Math.max(pages, 1)}`
+                  : 'No events for the selected filters'}
+            </div>
           </div>
-        ) : logs.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
-            No activity logs yet
+
+          <div style={{ position: 'relative', width: 260, maxWidth: '100%' }}>
+            <svg
+              style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search actor, action, target…"
+              style={{ ...inputStyle, width: '100%', paddingLeft: 36, background: '#f8fafc' }}
+            />
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, flexWrap: 'wrap', padding: '14px 22px', borderBottom: '1px solid #f1f5f9',
+          background: 'linear-gradient(180deg, #fafbfc 0%, #fff 100%)',
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {CATEGORY_OPTIONS.map((opt) => {
+              const active = category === opt.value
+              return (
+                <button
+                  key={opt.value || 'all'}
+                  type="button"
+                  onClick={() => { setCategory(opt.value); setPage(1) }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    border: active ? 'none' : '1px solid #e2e8f0',
+                    background: active ? '#059669' : '#fff',
+                    color: active ? '#fff' : '#64748b',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+              style={inputStyle}
+              aria-label="From date"
+            />
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+              style={inputStyle}
+              aria-label="To date"
+            />
+            {hasFilters ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={{
+                  height: 38, padding: '0 14px', borderRadius: 10,
+                  border: '1px solid #e2e8f0', background: '#fff',
+                  color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {error ? (
+          <div style={{
+            margin: '14px 22px', padding: '10px 14px', borderRadius: 10,
+            background: '#fef2f2', color: '#b91c1c', fontSize: 13,
+            border: '1px solid #fecaca',
+          }}>
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 20px', gap: 14 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              border: '3px solid #e2e8f0', borderTopColor: '#10b981',
+              animation: 'activitySpin 0.7s linear infinite',
+            }} />
+            <style>{`@keyframes activitySpin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading activity…</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '56px 24px', textAlign: 'center' }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 18, margin: '0 auto 14px',
+              background: '#ecfdf5', color: '#059669',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid #a7f3d0',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" />
+              </svg>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#475569' }}>
+              {q.trim() ? 'No matching activity' : 'No activity yet'}
+            </div>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 6 }}>
+              {q.trim() ? 'Try a different search or clear filters.' : 'Events will appear here as people use the system.'}
+            </div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={tHead}>Time</th>
-                  <th style={tHead}>Category</th>
-                  <th style={tHead}>Action</th>
-                  <th style={tHead}>Actor</th>
-                  <th style={tHead}>Role</th>
-                  <th style={tHead}>Target</th>
-                  <th style={tHead}>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id} style={{ transition: 'background 0.1s' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = '#f8fafc')}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = '')}
-                  >
-                    <td style={{ ...tCell, whiteSpace: 'nowrap', color: '#64748b', fontSize: 12 }}>
-                      {formatDate(log.at)}
-                    </td>
-                    <td style={tCell}>
-                      <CategoryBadge category={log.category} />
-                    </td>
-                    <td style={tCell}>
-                      <ActionBadge action={log.action} />
-                    </td>
-                    <td style={{ ...tCell, fontWeight: 500 }}>
-                      {log.actor?.name || <span style={{ color: '#94a3b8' }}>—</span>}
-                    </td>
-                    <td style={tCell}>
-                      <RoleBadge role={log.actor?.role} />
-                    </td>
-                    <td style={tCell}>
-                      {log.targetName ? (
-                        <span>
-                          <span style={{ color: '#64748b', fontSize: 11, marginRight: 4 }}>{log.targetType}</span>
-                          {log.targetName}
-                        </span>
-                      ) : (
-                        <span style={{ color: '#94a3b8' }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ ...tCell, maxWidth: 220 }}>
-                      {log.details && Object.keys(log.details).length > 0 ? (
-                        <span style={{ fontSize: 12, color: '#64748b', wordBreak: 'break-word' }}>
-                          {Object.entries(log.details)
-                            .filter(([, v]) => v != null && v !== '')
-                            .map(([k, v]) => `${k}: ${v}`)
-                            .join(' · ')}
-                        </span>
-                      ) : (
-                        <span style={{ color: '#94a3b8' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {q.trim() ? (
+              <div style={{ padding: '10px 22px', fontSize: 12, color: '#64748b', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+                Showing <span style={{ fontWeight: 700, color: '#0f172a' }}>{filtered.length}</span> of {logs.length} on this page
+              </div>
+            ) : null}
+            {filtered.map((log) => (
+              <ActivityRow key={log.id} log={log} />
+            ))}
           </div>
         )}
-      </div>
 
-      {/* Pagination */}
-      {pages > 1 && (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' }}>
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            style={{
-              padding: '7px 16px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: page <= 1 ? '#f8fafc' : '#fff',
-              color: page <= 1 ? '#cbd5e1' : '#374151',
-              fontSize: 13,
-              cursor: page <= 1 ? 'default' : 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            Previous
-          </button>
-          {Array.from({ length: Math.min(7, pages) }, (_, i) => {
-            const pageNo = page <= 4 ? i + 1 : i + page - 3
-            if (pageNo > pages) return null
-            return (
+        {pages > 1 ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 8, flexWrap: 'wrap', padding: '16px 22px',
+            borderTop: '1px solid #f1f5f9', background: '#fafbfc',
+          }}>
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              style={{
+                height: 36, padding: '0 14px', borderRadius: 10,
+                border: '1px solid #e2e8f0',
+                background: page <= 1 ? '#f8fafc' : '#fff',
+                color: page <= 1 ? '#cbd5e1' : '#374151',
+                fontSize: 13, fontWeight: 600,
+                cursor: page <= 1 ? 'default' : 'pointer',
+              }}
+            >
+              Previous
+            </button>
+            {pageButtons.map((pageNo) => (
               <button
                 key={pageNo}
+                type="button"
                 onClick={() => setPage(pageNo)}
                 style={{
-                  padding: '7px 12px',
-                  borderRadius: 8,
-                  border: '1px solid #e2e8f0',
-                  background: page === pageNo ? '#2563eb' : '#fff',
+                  minWidth: 36, height: 36, padding: '0 10px', borderRadius: 10,
+                  border: page === pageNo ? 'none' : '1px solid #e2e8f0',
+                  background: page === pageNo ? '#059669' : '#fff',
                   color: page === pageNo ? '#fff' : '#374151',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  minWidth: 36,
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  boxShadow: page === pageNo ? '0 2px 8px rgba(5,150,105,0.28)' : 'none',
                 }}
               >
                 {pageNo}
               </button>
-            )
-          })}
-          <button
-            disabled={page >= pages}
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            style={{
-              padding: '7px 16px',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0',
-              background: page >= pages ? '#f8fafc' : '#fff',
-              color: page >= pages ? '#cbd5e1' : '#374151',
-              fontSize: 13,
-              cursor: page >= pages ? 'default' : 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
+            ))}
+            <button
+              type="button"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              style={{
+                height: 36, padding: '0 14px', borderRadius: 10,
+                border: '1px solid #e2e8f0',
+                background: page >= pages ? '#f8fafc' : '#fff',
+                color: page >= pages ? '#cbd5e1' : '#374151',
+                fontSize: 13, fontWeight: 600,
+                cursor: page >= pages ? 'default' : 'pointer',
+              }}
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

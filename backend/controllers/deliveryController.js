@@ -45,8 +45,15 @@ function makeVerifyToken() {
 function shareUrls(d, req) {
   const base = publicBaseUrl(req)
   return {
-    deliveryVerifyUrl: `${base}/p/delivery/${encodeURIComponent(d.deliveryVerifyToken || '')}`,
-    billerReturnUrl: `${base}/p/biller/${encodeURIComponent(d.billerReturnVerifyToken || '')}`,
+    deliveryVerifyUrl: d.deliveryVerifyToken
+      ? `${base}/p/delivery/${encodeURIComponent(d.deliveryVerifyToken)}`
+      : undefined,
+    billerReturnUrl: d.billerReturnVerifyToken
+      ? `${base}/p/biller/${encodeURIComponent(d.billerReturnVerifyToken)}`
+      : undefined,
+    pendingReturnAssignUrl: d.pendingReturnAssignVerifyToken
+      ? `${base}/p/pending-return/${encodeURIComponent(d.pendingReturnAssignVerifyToken)}`
+      : undefined,
   }
 }
 
@@ -73,6 +80,52 @@ function requiredQtyByProduct(delivery) {
     map.set(id, (map.get(id) || 0) + Number(line.qty))
   }
   return map
+}
+
+/** Outstanding balance still with the customer (pending return), per product. */
+function outstandingPendingByProduct(delivery) {
+  const pendingStored = delivery.billerPendingReturnLines || []
+  if (pendingStored.some((l) => (Number(l.qty) || 0) > 0)) {
+    const map = new Map()
+    for (const l of pendingStored) {
+      const qty = Math.max(0, Number(l.qty) || 0)
+      if (qty <= 0) continue
+      const pid = String(l.productId)
+      map.set(pid, (map.get(pid) || 0) + qty)
+    }
+    return map
+  }
+
+  const reported = new Map()
+  for (const l of [...(delivery.billerDamagedLines || []), ...(delivery.billerCollectedLines || [])]) {
+    const pid = String(l.productId)
+    reported.set(pid, (reported.get(pid) || 0) + (Number(l.qty) || 0))
+  }
+
+  const map = new Map()
+  const dispatchedMap = dispatchedQtyByProduct(delivery)
+  const returnedMap = returnedQtyByProduct(delivery)
+  for (const [pid, dispatched] of dispatchedMap.entries()) {
+    const returned = returnedMap.get(pid) || 0
+    const reportedQty = reported.get(pid) || 0
+    // When dispatchedQty is unset, fall back to ordered qty (same as public helper).
+    const baseline =
+      dispatched > 0
+        ? dispatched
+        : (delivery.lines || [])
+            .filter((l) => String(l.productId) === pid)
+            .reduce((s, l) => s + (Number(l.qty) || 0), 0)
+    const remaining = Math.max(0, baseline - Math.max(reportedQty, returned))
+    if (remaining > 0) map.set(pid, remaining)
+  }
+  return map
+}
+
+/** Required qty for return-pickup scans: outstanding balance when present, else full line qty. */
+function returnPickupRequiredQtyByProduct(delivery) {
+  const outstanding = outstandingPendingByProduct(delivery)
+  if ([...outstanding.values()].some((q) => q > 0)) return outstanding
+  return requiredQtyByProduct(delivery)
 }
 
 function dispatchedQtyByProduct(delivery) {
@@ -388,9 +441,10 @@ function countsMatchRequired(required, scanned) {
   return true
 }
 
-function scanProgress(delivery, tagIds) {
-  const required = requiredQtyByProduct(delivery)
-  const totalRequired = totalRequiredQty(delivery)
+function scanProgress(delivery, tagIds, requiredMap) {
+  const required = requiredMap || requiredQtyByProduct(delivery)
+  let totalRequired = 0
+  for (const q of required.values()) totalRequired += q
   return {
     required: Object.fromEntries(required),
     scanned: tagIds.length,
@@ -558,6 +612,8 @@ function mapListRow(d, enrichment = {}, dispatchComplete = false) {
     returnPickupDriverName: d.returnPickupDriverName,
     returnPickupDriverPhone: d.returnPickupDriverPhone,
     returnPickupVehicleType: d.returnPickupVehicleType,
+    returnPickupRemark: d.returnPickupRemark,
+    returnPickupSignature: d.returnPickupSignature,
     status: d.status,
     phase: d.phase,
     lines: d.lines,
@@ -723,6 +779,7 @@ async function createDelivery(req, res) {
       phase: 'FORWARD',
       deliveryVerifyToken: makeVerifyToken(),
       billerReturnVerifyToken: makeVerifyToken(),
+      pendingReturnAssignVerifyToken: makeVerifyToken(),
       createdByUserId: req.user?.id,
     })
 
@@ -766,6 +823,7 @@ async function createDelivery(req, res) {
       status: delivery.status,
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
       billerReturnUrl: urls.billerReturnUrl,
+      pendingReturnAssignUrl: urls.pendingReturnAssignUrl,
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Create delivery failed' })
@@ -1128,6 +1186,7 @@ async function updateDelivery(req, res) {
       status: delivery.status,
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
       billerReturnUrl: urls.billerReturnUrl,
+      pendingReturnAssignUrl: urls.pendingReturnAssignUrl,
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Update delivery failed' })
@@ -1194,6 +1253,13 @@ async function getDelivery(req, res) {
   } catch {
     // non-fatal — still return whatever is stored
   }
+
+  // Backfill dedicated pending-return-assign token for older deliveries.
+  if (!d.pendingReturnAssignVerifyToken) {
+    d.pendingReturnAssignVerifyToken = makeVerifyToken()
+    await d.save()
+  }
+
   d = d.toObject()
 
   if (req.user.role === 'DELIVERY') {
@@ -1201,6 +1267,7 @@ async function getDelivery(req, res) {
     const lines = await populateLineDetails(d)
     const pickupLocations = pickupLocationsFromLines(d, lines, godownMap)
     const required = requiredQtyByProduct(d)
+    const returnPickupRequired = returnPickupRequiredQtyByProduct(d)
     const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
     const returnPickupCounts = await scannedCountsByProduct(d.returnPickedUpTagIds || [])
     return res.json({
@@ -1234,15 +1301,16 @@ async function getDelivery(req, res) {
         dispatch: scanProgress(d, d.dispatchedTagIds || []),
         pickup: scanProgress(d, d.pickedUpTagIds || []),
         deliver: scanProgress(d, d.deliveredTagIds || []),
-        returnPickup: scanProgress(d, d.returnPickedUpTagIds || []),
+        returnPickup: scanProgress(d, d.returnPickedUpTagIds || [], returnPickupRequired),
         dispatchComplete: dispatchQtyComplete(d) || countsMatchRequired(required, dispatchCounts),
-        returnPickupComplete: countsMatchRequired(required, returnPickupCounts),
+        returnPickupComplete: countsMatchRequired(returnPickupRequired, returnPickupCounts),
       },
     })
   }
 
   const urls = shareUrls(d, req)
   const required = requiredQtyByProduct(d)
+  const returnPickupRequired = returnPickupRequiredQtyByProduct(d)
   const dispatchedQtyMap = dispatchedQtyByProduct(d)
   const returnedQtyMap = returnedQtyByProduct(d)
   const [
@@ -1291,6 +1359,8 @@ async function getDelivery(req, res) {
     returnPickupDriverName: d.returnPickupDriverName,
     returnPickupDriverPhone: d.returnPickupDriverPhone,
     returnPickupVehicleType: d.returnPickupVehicleType,
+    returnPickupRemark: d.returnPickupRemark,
+    returnPickupSignature: d.returnPickupSignature,
     status: d.status,
     billingType: d.billingType,
     invoiceNo: d.invoiceNo,
@@ -1336,6 +1406,7 @@ async function getDelivery(req, res) {
     billerPendingReturnNote: d.billerPendingReturnNote,
     deliveryVerifyUrl: urls.deliveryVerifyUrl,
     billerReturnUrl: urls.billerReturnUrl,
+    pendingReturnAssignUrl: urls.pendingReturnAssignUrl,
     stockByGodown,
     qtyProgress: {
       dispatchComplete: dispatchQtyComplete(d) || countsMatchRequired(required, dispatchCounts),
@@ -1348,9 +1419,9 @@ async function getDelivery(req, res) {
       dispatch: scanProgress(d, d.dispatchedTagIds || []),
       pickup: scanProgress(d, d.pickedUpTagIds || []),
       deliver: scanProgress(d, d.deliveredTagIds || []),
-      returnPickup: scanProgress(d, d.returnPickedUpTagIds || []),
+      returnPickup: scanProgress(d, d.returnPickedUpTagIds || [], returnPickupRequired),
       dispatchComplete: dispatchQtyComplete(d) || countsMatchRequired(required, dispatchCounts),
-      returnPickupComplete: countsMatchRequired(required, returnPickupCounts),
+      returnPickupComplete: countsMatchRequired(returnPickupRequired, returnPickupCounts),
     },
   })
 }
@@ -1591,26 +1662,19 @@ async function regenerateDeliveryTokens(req, res) {
   try {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
+
+    // Only rotate share tokens / URLs. Keep delivery verify + biller return
+    // submissions (signature, collected, pending, damage, etc.) intact.
     delivery.deliveryVerifyToken = makeVerifyToken()
     delivery.billerReturnVerifyToken = makeVerifyToken()
-    // A regenerated link is a fresh one-time-use link — clear the prior
-    // submission's "already used" markers so it isn't immediately rejected.
-    delivery.deliveryVerifiedAt = undefined
-    delivery.deliveryVerifierName = undefined
-    delivery.deliveryLineChecks = []
-    delivery.deliverySignature = undefined
-    delivery.billerReturnSubmittedAt = undefined
-    delivery.billerReturnName = undefined
-    delivery.billerSignature = undefined
-    delivery.billerDamagedLines = []
-    delivery.billerMissingLines = []
-    delivery.billerCollectedLines = []
-    delivery.billerPendingReturnLines = []
+    delivery.pendingReturnAssignVerifyToken = makeVerifyToken()
     await delivery.save()
+
     const urls = shareUrls(delivery, req)
     return res.json({
       deliveryVerifyUrl: urls.deliveryVerifyUrl,
       billerReturnUrl: urls.billerReturnUrl,
+      pendingReturnAssignUrl: urls.pendingReturnAssignUrl,
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Failed' })
@@ -1837,7 +1901,8 @@ async function vehicleVerify(req, res) {
 
 async function assignReturnPickup(req, res) {
   try {
-    const { vehicleNumber, returnPickupAt, driverName, driverPhone, vehicleType } = req.body || {}
+    const { vehicleNumber, returnPickupAt, driverName, driverPhone, vehicleType, remark, signature } =
+      req.body || {}
     if (!vehicleNumber || !String(vehicleNumber).trim()) {
       return res.status(400).json({ message: 'vehicleNumber required' })
     }
@@ -1848,8 +1913,10 @@ async function assignReturnPickup(req, res) {
       return res.status(403).json({ message: deliveryAccessDeniedMessage(req, delivery) })
     }
 
-    if (delivery.status !== 'DELIVERED') {
-      return res.status(409).json({ message: 'Return pickup can only be assigned for DELIVERED deliveries' })
+    if (!['DELIVERED', 'PENDING_RETURN', 'RETURN_PICKUP'].includes(delivery.status)) {
+      return res.status(409).json({
+        message: 'Return pickup can only be assigned for DELIVERED, PENDING_RETURN, or RETURN_PICKUP deliveries',
+      })
     }
 
     const vehicle = String(vehicleNumber).trim().toUpperCase()
@@ -1870,9 +1937,28 @@ async function assignReturnPickup(req, res) {
     delivery.returnPickupAssignedAt = returnPickupAt ? new Date(returnPickupAt) : new Date()
     delivery.returnPickupAssignedByUserId = req.user.id
     delivery.assignedDeliveryUserId = driver._id
+    if (remark !== undefined) {
+      delivery.returnPickupRemark = remark == null ? '' : String(remark).trim()
+    }
+    if (signature !== undefined) {
+      delivery.returnPickupSignature = signature == null ? '' : String(signature)
+    }
+
+    // Balance pickup: refresh outstanding products and start a fresh scan run.
+    const outstanding = outstandingPendingByProduct(delivery)
+    const hasOutstanding = [...outstanding.values()].some((q) => q > 0)
+    if (delivery.status === 'PENDING_RETURN' || hasOutstanding) {
+      delivery.billerPendingReturnLines = [...outstanding.entries()].map(([productId, qty]) => ({
+        productId,
+        qty,
+      }))
+      delivery.returnPickedUpTagIds = []
+    } else {
+      delivery.returnPickedUpTagIds = delivery.returnPickedUpTagIds || []
+    }
+
     delivery.status = 'RETURN_PICKUP'
     delivery.phase = 'RETURN'
-    delivery.returnPickedUpTagIds = delivery.returnPickedUpTagIds || []
     await delivery.save()
 
     await notifyReturnPickupAssigned(delivery, driver._id)
@@ -1885,6 +1971,9 @@ async function assignReturnPickup(req, res) {
       returnPickupDriverPhone: delivery.returnPickupDriverPhone,
       returnPickupVehicleType: delivery.returnPickupVehicleType,
       returnPickupAssignedAt: delivery.returnPickupAssignedAt,
+      returnPickupRemark: delivery.returnPickupRemark,
+      returnPickupSignature: delivery.returnPickupSignature,
+      billerPendingReturnLines: delivery.billerPendingReturnLines,
       assignedDeliveryUserId: String(delivery.assignedDeliveryUserId),
     })
   } catch (err) {
@@ -1998,7 +2087,7 @@ async function scan(req, res, action) {
         return res.status(400).json({ message: 'Tag already scanned for return pickup' })
       }
 
-      const required = requiredQtyByProduct(delivery)
+      const required = returnPickupRequiredQtyByProduct(delivery)
       const returnPickupCounts = await scannedCountsByProduct(delivery.returnPickedUpTagIds || [])
       const pid = String(asset.productId)
       const current = returnPickupCounts.get(pid) || 0
@@ -2013,11 +2102,11 @@ async function scan(req, res, action) {
         return res.status(409).json({ message: 'Cannot return scan in current status' })
       }
 
-      const required = requiredQtyByProduct(delivery)
+      const returnPickupRequired = returnPickupRequiredQtyByProduct(delivery)
       const returnPickupCounts = await scannedCountsByProduct(delivery.returnPickedUpTagIds || [])
       if (
         delivery.status === 'RETURN_PICKUP' &&
-        !countsMatchRequired(required, returnPickupCounts)
+        !countsMatchRequired(returnPickupRequired, returnPickupCounts)
       ) {
         return res.status(400).json({
           message: 'Driver must complete return pickup scans at site before godown return scan',
@@ -2057,6 +2146,7 @@ async function scan(req, res, action) {
     ])
 
     const required = requiredQtyByProduct(delivery)
+    const returnPickupRequired = returnPickupRequiredQtyByProduct(delivery)
     const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds)
     const pickupCounts = await scannedCountsByProduct(delivery.pickedUpTagIds)
     const deliverCounts = await scannedCountsByProduct(delivery.deliveredTagIds)
@@ -2081,7 +2171,7 @@ async function scan(req, res, action) {
         dispatchComplete: countsMatchRequired(required, dispatchCounts),
         pickupComplete: countsMatchRequired(required, pickupCounts),
         deliverComplete: countsMatchRequired(required, deliverCounts),
-        returnPickupComplete: countsMatchRequired(required, returnPickupCounts),
+        returnPickupComplete: countsMatchRequired(returnPickupRequired, returnPickupCounts),
       },
       missingTagIds: missing,
     })
@@ -2186,6 +2276,17 @@ async function confirmReturn(req, res) {
 
     delivery.status = 'PENDING_RETURN'
     delivery.phase = 'RETURN'
+    // Keep pending-return magic link product list in sync with what is still
+    // outstanding on the delivery lines after this godown confirm.
+    const pendingLines = []
+    for (const line of delivery.lines || []) {
+      const dispatched = Number(line.dispatchedQty) > 0 ? Number(line.dispatchedQty) : Number(line.qty) || 0
+      const remaining = Math.max(0, dispatched - (Number(line.returnedQty) || 0))
+      if (remaining > 0) {
+        pendingLines.push({ productId: String(line.productId), qty: remaining })
+      }
+    }
+    delivery.billerPendingReturnLines = pendingLines
     delivery.markModified('lines')
     await delivery.save()
 

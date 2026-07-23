@@ -3376,6 +3376,8 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                               productId: l.productId,
                               qty: l.qty,
                               dispatchedQty: l.dispatchedQty,
+                              returnedQty: 'returnedQty' in l ? (l as { returnedQty?: number }).returnedQty : undefined,
+                              pendingQty: 'pendingQty' in l ? (l as { pendingQty?: number }).pendingQty : undefined,
                               particulars:
                                 'particulars' in l
                                   ? (l as { particulars?: string }).particulars

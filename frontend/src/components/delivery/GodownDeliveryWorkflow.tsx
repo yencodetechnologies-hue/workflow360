@@ -427,6 +427,8 @@ export type GodownWorkflowDelivery = {
   returnPickupDriverName?: string
   returnPickupDriverPhone?: string
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
+  returnPickupRemark?: string
+  returnPickupSignature?: string
   lines?: GodownWorkflowLine[]
   scanProgress?: { dispatchComplete?: boolean }
   qtyProgress?: {
@@ -514,20 +516,42 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       return { status: res.status, vehicleLabel: res.vehicleLabel, driverName: res.driverName, driverPhone: res.driverPhone, vehicleType: res.vehicleType }
     })
 
-  const assignReturnPickup = (vehicleNumber: string, driverName: string, driverPhone: string, vehicleType: 'PRIVATE' | 'PORTER' | 'OWN') =>
+  const assignReturnPickup = (payload: {
+    vehicleNumber: string
+    driverName: string
+    driverPhone: string
+    vehicleType: 'PRIVATE' | 'PORTER' | 'OWN'
+  }) =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      const res = await apiFetch<{ status: string; returnPickupVehicleLabel?: string; returnPickupDriverName?: string; returnPickupDriverPhone?: string; returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN' }>(
+      const res = await apiFetch<{
+        status: string
+        returnPickupVehicleLabel?: string
+        returnPickupDriverName?: string
+        returnPickupDriverPhone?: string
+        returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
+      }>(
         `/deliveries/${delivery.id}/assign-return-pickup`,
         {
           token,
           method: 'POST',
-          body: JSON.stringify({ vehicleNumber, driverName, driverPhone, vehicleType }),
+          body: JSON.stringify({
+            vehicleNumber: payload.vehicleNumber,
+            driverName: payload.driverName,
+            driverPhone: payload.driverPhone,
+            vehicleType: payload.vehicleType,
+          }),
         },
       )
       setReturnPickupOpen(false)
-      return { status: res.status, returnPickupVehicleLabel: res.returnPickupVehicleLabel, returnPickupDriverName: res.returnPickupDriverName, returnPickupDriverPhone: res.returnPickupDriverPhone, returnPickupVehicleType: res.returnPickupVehicleType }
+      return {
+        status: res.status,
+        returnPickupVehicleLabel: res.returnPickupVehicleLabel,
+        returnPickupDriverName: res.returnPickupDriverName,
+        returnPickupDriverPhone: res.returnPickupDriverPhone,
+        returnPickupVehicleType: res.returnPickupVehicleType,
+      }
     })
 
   const markDelivered = (deliveredLines: Array<{ productId: string; qty: number }>) =>
@@ -652,10 +676,18 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
     )
   }
 
-  if (status === 'DELIVERED') {
+  if (status === 'DELIVERED' || status === 'PENDING_RETURN') {
     buttons.push(
       <Button key="assign-rp" size={btnSize} disabled={controlsDisabled} onClick={() => setReturnPickupOpen(true)}>
-        Assign return pickup
+        {status === 'PENDING_RETURN' ? 'Pending return assign' : 'Assign return pickup'}
+      </Button>,
+    )
+  }
+
+  if (status === 'RETURN_PICKUP') {
+    buttons.push(
+      <Button key="change-rp" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => setReturnPickupOpen(true)}>
+        Change return vehicle
       </Button>,
     )
   }

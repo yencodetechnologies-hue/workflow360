@@ -90,6 +90,8 @@ const deliverySchema = mongoose.Schema(
     returnPickupVehicleType: { type: String, enum: ['PRIVATE', 'PORTER', 'OWN'], default: 'OWN' },
     returnPickupAssignedAt: { type: Date },
     returnPickupAssignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    returnPickupRemark: { type: String, trim: true },
+    returnPickupSignature: { type: String },
 
     dispatchedTagIds: { type: [String], default: [] },
     pickedUpTagIds: { type: [String], default: [] },
@@ -116,6 +118,7 @@ const deliverySchema = mongoose.Schema(
 
     deliveryVerifyToken: { type: String, trim: true },
     billerReturnVerifyToken: { type: String, trim: true },
+    pendingReturnAssignVerifyToken: { type: String, trim: true },
 
     deliveryVerifierName: { type: String, trim: true },
     deliveryVerifiedAt: { type: Date },
@@ -163,6 +166,7 @@ deliverySchema.index({ assignedDeliveryUserId: 1, deliveryAt: 1 })
 deliverySchema.index({ billerUserId: 1, deliveryAt: -1 })
 deliverySchema.index({ deliveryVerifyToken: 1 }, { unique: true, sparse: true })
 deliverySchema.index({ billerReturnVerifyToken: 1 }, { unique: true, sparse: true })
+deliverySchema.index({ pendingReturnAssignVerifyToken: 1 }, { unique: true, sparse: true })
 // Index for the return calendar queries
 deliverySchema.index({ returnExpectedAt: 1, phase: 1, status: 1 })
 deliverySchema.index({ billerPendingReturnAt: 1, phase: 1, status: 1 })
