@@ -5063,32 +5063,44 @@ function AdminDeliveryDetailPage() {
           <CardHeader className="flex flex-col gap-2">
             <CardTitle>Magic links</CardTitle>
             {canRegen ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  const token = getToken()
-                  if (!token || !id) return
-                  apiFetch<{
-                    deliveryVerifyUrl: string
-                    billerReturnUrl: string
-                    pendingReturnAssignUrl: string
-                  }>(`/deliveries/${id}/regenerate-tokens`, {
-                    token,
-                    method: 'POST',
-                  })
-                    .then(() => load())
-                    .catch((e: unknown) =>
-                      setError(
-                        e && typeof e === 'object' && 'message' in e
-                          ? String((e as { message: string }).message)
-                          : 'Regenerate failed',
-                      ),
-                    )
-                }}
-              >
-                Regenerate links
-              </Button>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        'Regenerate links and clear prior verify/return submissions so the forms can be filled again? Collected stock from the last return will be undone.',
+                      )
+                    ) {
+                      return
+                    }
+                    const token = getToken()
+                    if (!token || !id) return
+                    apiFetch<{
+                      deliveryVerifyUrl: string
+                      billerReturnUrl: string
+                      pendingReturnAssignUrl: string
+                    }>(`/deliveries/${id}/regenerate-tokens`, {
+                      token,
+                      method: 'POST',
+                    })
+                      .then(() => load())
+                      .catch((e: unknown) =>
+                        setError(
+                          e && typeof e === 'object' && 'message' in e
+                            ? String((e as { message: string }).message)
+                            : 'Regenerate failed',
+                        ),
+                      )
+                  }}
+                >
+                  Regenerate links
+                </Button>
+                <p className="text-[11px] text-slate-500">
+                  Use when a form was filled incorrectly — creates new links and reopens the forms for edit.
+                </p>
+              </div>
             ) : null}
           </CardHeader>
           <CardContent className="space-y-3 text-xs">

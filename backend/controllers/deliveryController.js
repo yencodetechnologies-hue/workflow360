@@ -1669,11 +1669,86 @@ async function regenerateDeliveryTokens(req, res) {
     const delivery = await Delivery.findById(req.params.id)
     if (!delivery) return res.status(404).json({ message: 'Not found' })
 
-    // Only rotate share tokens / URLs. Keep delivery verify + biller return
-    // submissions (signature, collected, pending, damage, etc.) intact.
+    // Fresh one-time-use links: rotate tokens and clear prior public-form
+    // submissions so wrong entries can be corrected and re-submitted.
     delivery.deliveryVerifyToken = makeVerifyToken()
     delivery.billerReturnVerifyToken = makeVerifyToken()
     delivery.pendingReturnAssignVerifyToken = makeVerifyToken()
+
+    delivery.deliveryVerifiedAt = undefined
+    delivery.deliveryVerifierName = undefined
+    delivery.deliveryLineChecks = []
+    delivery.deliverySignature = undefined
+
+    // Undo stock restocked from earlier public collected-qty submissions so a
+    // corrected return form does not double-restock.
+    // Use billerCollectedLines only (pendingReturnCollectedLines is a subset
+    // already included there) — do not sum both.
+    const collectedToUndo = new Map()
+    for (const l of delivery.billerCollectedLines || []) {
+      const pid = String(l.productId)
+      const qty = Math.max(0, Number(l.qty) || 0)
+      if (qty <= 0) continue
+      collectedToUndo.set(pid, (collectedToUndo.get(pid) || 0) + qty)
+    }
+    if (collectedToUndo.size > 0) {
+      const ledgerWrites = []
+      const pending = new Map(collectedToUndo)
+      for (const line of delivery.lines || []) {
+        const pid = String(line.productId)
+        const need = pending.get(pid)
+        if (!need) continue
+        const alreadyReturned = Math.max(0, Number(line.returnedQty) || 0)
+        const undoQty = Math.min(need, alreadyReturned)
+        if (undoQty <= 0) {
+          pending.delete(pid)
+          continue
+        }
+        line.returnedQty = alreadyReturned - undoQty
+        const gid = godownIdForLine(line, delivery)
+        ledgerWrites.push(
+          writeLedgerEntry({
+            godownId: gid,
+            productId: line.productId,
+            qtyDelta: -undoQty,
+            reason: 'ADJUSTMENT',
+            delivery,
+            userId: req.user?._id || req.user?.id,
+          }),
+        )
+        const left = need - undoQty
+        if (left > 0) pending.set(pid, left)
+        else pending.delete(pid)
+      }
+      if (ledgerWrites.length) await Promise.all(ledgerWrites)
+      delivery.markModified('lines')
+    }
+
+    delivery.billerReturnSubmittedAt = undefined
+    delivery.billerReturnName = undefined
+    delivery.billerSignature = undefined
+    delivery.billerDamagedLines = []
+    delivery.billerMissingLines = []
+    delivery.billerCollectedLines = []
+    delivery.billerPendingReturnLines = []
+    delivery.billerPendingReturnAt = undefined
+    delivery.billerPendingReturnSlot = undefined
+    delivery.billerPendingReturnNote = undefined
+    delivery.damageTotal = undefined
+    delivery.missingTotal = undefined
+    delivery.pendingReturnCollectedLines = []
+    delivery.pendingReturnCollectedAt = undefined
+    delivery.pendingReturnCollectedName = undefined
+    delivery.pendingReturnSignature = undefined
+
+    // Re-open public return forms after a completed / pending return.
+    if (delivery.status === 'COMPLETED' || delivery.status === 'PENDING_RETURN') {
+      delivery.status =
+        delivery.returnPickupAssignedAt || delivery.returnPickupVehicleLabel
+          ? 'RETURN_PICKUP'
+          : 'DELIVERED'
+    }
+
     await delivery.save()
 
     const urls = shareUrls(delivery, req)
