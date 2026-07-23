@@ -222,16 +222,16 @@ async function buildBillerReturnGetResponse(delivery, { forcePendingOnly = false
     returnableStatuses.includes(delivery.status) &&
     (pendingTotal > 0 || !delivery.billerReturnSubmittedAt || forcePendingOnly)
 
-  // When there are outstanding pending products, the public form should only
-  // list those — pending-return-assign link always forces this filter.
+  // When there are outstanding pending products after a first return (or on the
+  // dedicated pending-assign link), only list those. Do NOT treat a fresh
+  // RETURN_PICKUP (before any biller submit) as pending-resubmit — that form
+  // must still accept damage + pending-with-client and auto-collect the balance.
   let lines = allLines
   let pendingResubmit = false
   const shouldFilterPending =
     forcePendingOnly ||
     (pendingTotal > 0 &&
-      (delivery.billerReturnSubmittedAt ||
-        delivery.status === 'PENDING_RETURN' ||
-        delivery.status === 'RETURN_PICKUP'))
+      (Boolean(delivery.billerReturnSubmittedAt) || delivery.status === 'PENDING_RETURN'))
 
   if (shouldFilterPending && pendingTotal > 0) {
     pendingResubmit = true
@@ -343,6 +343,8 @@ async function postReturnByToken(req, res, tokenField) {
 
     const outstandingBefore = outstandingPendingByProduct(delivery)
     const outstandingTotal = totalOutstandingPending(delivery)
+    // First biller return (DELIVERED / RETURN_PICKUP, never submitted): full form.
+    // Later pending pickups / PENDING_RETURN: only outstanding qty.
     const isPendingResubmit =
       Boolean(delivery.billerReturnSubmittedAt) ||
       delivery.status === 'PENDING_RETURN' ||
@@ -594,6 +596,8 @@ async function postReturnByToken(req, res, tokenField) {
       billerReturnSubmittedAt: delivery.billerReturnSubmittedAt,
       billerReturnName: delivery.billerReturnName,
       billerSignature: delivery.billerSignature,
+      billerDamagedLines: delivery.billerDamagedLines,
+      billerCollectedLines: delivery.billerCollectedLines,
       billerPendingReturnLines: delivery.billerPendingReturnLines,
       pendingReturnCollectedLines: delivery.pendingReturnCollectedLines,
       pendingReturnCollectedAt: delivery.pendingReturnCollectedAt,

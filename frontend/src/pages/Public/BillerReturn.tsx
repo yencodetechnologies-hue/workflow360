@@ -123,6 +123,9 @@ export function PublicBillerReturnPage({
   const drawing = useRef(false)
   const [submitting, setSubmitting] = useState(false)
   const selectAllRef = useRef<HTMLInputElement>(null)
+  // Keep thank-you layout stable after submit: first return must show auto-collected
+  // stock even when GET then returns pendingResubmit: true.
+  const [thankYouKind, setThankYouKind] = useState<'firstReturn' | 'pendingPickup' | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -267,45 +270,60 @@ export function PublicBillerReturnPage({
     }
   }
 
-  const previewTotals = useMemo(() => {
-    if (!data) return { damage: 0, missing: 0, damagedQtyTotal: 0 }
-    let damage = 0
-    let damagedQtyTotal = 0
-    for (const l of formLines) {
-      const q = Number(damagedQty[l.productId]) || 0
-      const rate = l.parsedRate ?? 0
-      damage += rate * q
-      damagedQtyTotal += q
-    }
-    return { damage, missing: 0, damagedQtyTotal }
-  }, [data, formLines, damagedQty])
-
   const isPendingPickupForm =
-    mode === 'pendingReturnAssign' || Boolean(data?.pendingResubmit || data?.linkKind === 'pendingReturnAssign')
+    mode === 'pendingReturnAssign' ||
+    Boolean(data?.pendingResubmit || data?.linkKind === 'pendingReturnAssign')
 
-  // Whatever isn't reported as damaged/missing or collected now is still
-  // outstanding with the customer — these are the items that need a
-  // scheduled return date & time-of-day.
-  const pendingSummary = useMemo(() => {
-    const lines = formLines
-      .map((l) => {
-        const dmg = Number(damagedQty[l.productId]) || 0
-        const entered = Number(collectedQty[l.productId]) || 0
-        // Pending-return form: collectedQty = qty being collected now.
-        // First biller return form: collectedQty = qty left with client.
-        const pending = isPendingPickupForm
-          ? Math.max(0, l.qty - dmg - entered)
-          : entered
-        return { productId: l.productId, particulars: l.particulars, sku: l.sku, qty: pending }
-      })
-      .filter((l) => l.qty > 0)
-    const total = lines.reduce((s, l) => s + l.qty, 0)
-    return { lines, total }
+  // Thank-you layout must NOT flip to "pending pickup" just because GET returns
+  // pendingResubmit after the first return (that would hide auto-collected stock).
+  // Only the pending-return-assign link / an actual pending-pickup batch uses that UI.
+  const showPendingPickupThankYou =
+    thankYouKind === 'pendingPickup' ||
+    (thankYouKind == null && mode === 'pendingReturnAssign')
+
+  // Live breakdown: first return auto-restocks balance
+  // (dispatched − damaged − pending left with client).
+  const qtyBreakdown = useMemo(() => {
+    let damagedTotal = 0
+    let pendingTotal = 0
+    let collectedTotal = 0
+    const pendingLines: Array<{ productId: string; particulars?: string; sku?: string; qty: number }> = []
+    for (const l of formLines) {
+      const dmg = Number(damagedQty[l.productId]) || 0
+      const entered = Number(collectedQty[l.productId]) || 0
+      // Pending-return form: collectedQty = qty being collected now.
+      // First biller return form: collectedQty = qty left with client;
+      // balance (dispatched − damaged − pending) auto-restocks.
+      const pending = isPendingPickupForm
+        ? Math.max(0, l.qty - dmg - entered)
+        : Math.max(0, entered)
+      const collected = isPendingPickupForm
+        ? Math.min(Math.max(0, entered), Math.max(0, l.qty - dmg))
+        : Math.max(0, l.qty - dmg - pending)
+      damagedTotal += Math.max(0, dmg)
+      pendingTotal += pending
+      collectedTotal += collected
+      if (pending > 0) {
+        pendingLines.push({
+          productId: l.productId,
+          particulars: l.particulars,
+          sku: l.sku,
+          qty: pending,
+        })
+      }
+    }
+    return { damagedTotal, pendingTotal, collectedTotal, pendingLines }
   }, [formLines, collectedQty, damagedQty, isPendingPickupForm])
+
+  const pendingSummary = useMemo(
+    () => ({ lines: qtyBreakdown.pendingLines, total: qtyBreakdown.pendingTotal }),
+    [qtyBreakdown],
+  )
 
   const handleSubmit = async () => {
     if (!token || !data) return
     const t = decodeURIComponent(token)
+    const submitAsPendingPickup = isPendingPickupForm
     const damagedLines = formLines.map((l) => ({
       productId: l.productId,
       qty: Number(damagedQty[l.productId]) || 0,
@@ -316,8 +334,9 @@ export function PublicBillerReturnPage({
       const dmg = Number(damagedQty[l.productId]) || 0
       const entered = Number(collectedQty[l.productId]) || 0
       // Pending return: enter how many are collected now (e.g. 1 of 3).
-      // First biller return: enter how many stay with client; collected is the rest.
-      const collected = isPendingPickupForm
+      // First biller return: enter how many stay with client; collected is the rest
+      // (auto back to stock), e.g. 50 − damage 20 − pending 10 → collected 20.
+      const collected = submitAsPendingPickup
         ? Math.min(Math.max(0, entered), Math.max(0, dispatched - dmg))
         : Math.max(0, dispatched - dmg - entered)
       return { productId: l.productId, qty: collected, note: remarks[l.productId]?.trim() || undefined }
@@ -336,6 +355,7 @@ export function PublicBillerReturnPage({
       })
       const refreshed = await apiFetch<GetRes>(`${apiBase}/${encodeURIComponent(t)}`)
       setData(refreshed)
+      setThankYouKind(submitAsPendingPickup ? 'pendingPickup' : 'firstReturn')
       setPhase('thankYou')
     } catch (e: unknown) {
       const msg = (e as { message?: string })?.message || 'Submit failed'
@@ -344,6 +364,7 @@ export function PublicBillerReturnPage({
         try {
           const refreshed = await apiFetch<GetRes>(`${apiBase}/${encodeURIComponent(t)}`)
           setData(refreshed)
+          setThankYouKind(submitAsPendingPickup ? 'pendingPickup' : 'firstReturn')
           setPhase('thankYou')
           setError(null)
           return
@@ -419,8 +440,9 @@ export function PublicBillerReturnPage({
   }
 
   if (phase === 'thankYou' || (data.billerReturnSubmittedAt && !data.canSubmit)) {
-    // Pending pickup: show this-trip collected only. First return: lifetime biller collected.
-    const collectedSource = isPendingPickupForm
+    // Pending pickup: show this-trip collected only. First return: full biller collected
+    // (includes auto-restocked balance: dispatched − damaged − pending).
+    const collectedSource = showPendingPickupThankYou
       ? data.pendingReturnCollectedLines || []
       : data.billerCollectedLines || []
     const collectedQtyTotal = collectedSource.reduce((s, l) => s + (Number(l.qty) || 0), 0)
@@ -450,7 +472,7 @@ export function PublicBillerReturnPage({
       sku?: string
       qty: number
       subtitle: string
-    }> = isPendingPickupForm
+    }> = showPendingPickupThankYou
       ? (data.pendingReturnCollectedLines || [])
           .filter((l) => (Number(l.qty) || 0) > 0)
           .map((l) => ({
@@ -473,7 +495,7 @@ export function PublicBillerReturnPage({
         {/* Summary totals */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
           {[
-            { label: 'Collected', value: collectedQtyTotal, color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+            { label: 'Collected (stock)', value: collectedQtyTotal, color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
             { label: 'Damaged/Missing', value: damagedQtyTotal, color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
             { label: 'Pending w/ client', value: pendingTotal, color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
           ].map((s, i) => (
@@ -498,8 +520,8 @@ export function PublicBillerReturnPage({
           {rowLines.map((l, i) => {
             const pid = String(l.productId)
             const collected = collectedByProduct.get(pid) || 0
-            const damaged = isPendingPickupForm ? 0 : damagedByProduct.get(pid) || 0
-            const pending = isPendingPickupForm ? 0 : pendingByProduct.get(pid) || 0
+            const damaged = showPendingPickupThankYou ? 0 : damagedByProduct.get(pid) || 0
+            const pending = showPendingPickupThankYou ? 0 : pendingByProduct.get(pid) || 0
             return (
               <div key={pid} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 70px 60px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < rowLines.length - 1 ? '1px solid #f1f5f9' : undefined }}>
                 <div>
@@ -530,15 +552,15 @@ export function PublicBillerReturnPage({
     )
 
     const returnByName =
-      (isPendingPickupForm && data.pendingReturnCollectedName) ||
+      (showPendingPickupThankYou && data.pendingReturnCollectedName) ||
       data.billerReturnName ||
       data.returnDriverName ||
       data.driverName ||
       '—'
     const submittedAt =
-      (isPendingPickupForm && data.pendingReturnCollectedAt) || data.billerReturnSubmittedAt
+      (showPendingPickupThankYou && data.pendingReturnCollectedAt) || data.billerReturnSubmittedAt
     const signatureUrl =
-      (isPendingPickupForm && data.pendingReturnSignature) || data.billerSignature
+      (showPendingPickupThankYou && data.pendingReturnSignature) || data.billerSignature
 
     return (
       <div className={pageShell}>
@@ -753,9 +775,25 @@ export function PublicBillerReturnPage({
               </div>
             </div>
 
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800">
-              Damage/Missing qty: {previewTotals.damagedQtyTotal}
+            <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-xs">
+              <div>
+                <div className="text-lg font-bold text-emerald-700">{qtyBreakdown.collectedTotal}</div>
+                <div className="font-semibold text-emerald-800/80">Collected → stock</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-rose-600">{qtyBreakdown.damagedTotal}</div>
+                <div className="font-semibold text-rose-700/80">Damaged/Missing</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-amber-600">{qtyBreakdown.pendingTotal}</div>
+                <div className="font-semibold text-amber-700/80">Pending w/ client</div>
+              </div>
             </div>
+            {!isPendingPickupForm ? (
+              <p className="text-xs text-slate-500">
+                Balance after damage + pending is collected automatically and restocked.
+              </p>
+            ) : null}
 
             {/* Pending items — days with client is computed automatically from the delivery date */}
             {pendingSummary.total > 0 ? (
