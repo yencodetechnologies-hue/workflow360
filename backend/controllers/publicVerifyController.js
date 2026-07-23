@@ -157,7 +157,11 @@ async function postDeliveryVerify(req, res) {
 
       const delta = immediateReturnQty - prevImmediateReturnQty
       if (delta !== 0) {
-        line.returnedQty = Math.max(0, (Number(line.returnedQty) || 0) + delta)
+        // This is a short-delivery, not a biller-submitted return — restock
+        // the shortfall and shrink the line's own qty to match what was
+        // actually kept, rather than recording it under returnedQty (which
+        // is reserved for the biller return reconciliation flow).
+        line.qty = Math.max(0, (Number(line.qty) || 0) - delta)
         const gid = line.godownId || delivery.fromGodownId
         if (gid) {
           ledgerEntries.push({

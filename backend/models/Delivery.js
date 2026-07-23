@@ -4,7 +4,7 @@ const deliveryLineSchema = mongoose.Schema(
   {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     godownId: { type: mongoose.Schema.Types.ObjectId, ref: 'Godown' },
-    qty: { type: Number, required: true, min:1 },
+    qty: { type: Number, required: true, min: 0 },
     dispatchedQty: { type: Number, default: 0, min: 0 },
     returnedQty: { type: Number, default: 0, min: 0 },
   },

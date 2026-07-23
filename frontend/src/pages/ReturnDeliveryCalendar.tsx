@@ -1219,6 +1219,9 @@ export function ReturnDeliveryCalendarPage() {
   // ── Modal ──────────────────────────────────────────────────────────────
   const [scheduleTarget, setScheduleTarget] = useState<PartialReturnDelivery | null>(null)
 
+  // ── List search (customer / delivery no / site) ────────────────────────
+  const [q, setQ] = useState('')
+
   // ── Load month calendar dots ───────────────────────────────────────────
   useEffect(() => {
     const token = getToken()
@@ -1281,24 +1284,47 @@ export function ReturnDeliveryCalendarPage() {
     return new Date(y, mn - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
   }, [month])
 
+  const filteredDaily = useMemo(() => {
+    const list = dailyData ?? []
+    const s = q.trim().toLowerCase()
+    if (!s) return list
+    return list.filter((d) => {
+      const productMatch = d.lines.some(
+        (l) =>
+          l.productName.toLowerCase().includes(s) ||
+          l.productId.toLowerCase().includes(s),
+      )
+      return (
+        d.deliveryNo.toLowerCase().includes(s) ||
+        d.customerName.toLowerCase().includes(s) ||
+        (d.siteName?.toLowerCase().includes(s) ?? false) ||
+        (d.siteAddress?.toLowerCase().includes(s) ?? false) ||
+        (d.contactPhone?.toLowerCase().includes(s) ?? false) ||
+        productMatch
+      )
+    })
+  }, [dailyData, q])
+
   const selectedDayTotal = useMemo(() => {
     if (!selectedDate) return 0
+    if (q.trim()) return filteredDaily.length
     return calData?.days.find((d) => d.date === selectedDate)?.partialCount
       ?? dailyData?.length
       ?? 0
-  }, [calData, selectedDate, dailyData])
+  }, [calData, selectedDate, dailyData, filteredDaily, q])
 
   const pendingCount = useMemo(
-    () => (dailyData ?? []).filter((d) => d.pendingQty > 0 && !d.reDeliveryDate).length,
-    [dailyData],
+    () => filteredDaily.filter((d) => d.pendingQty > 0 && !d.reDeliveryDate).length,
+    [filteredDaily],
   )
   const scheduledCount = useMemo(
-    () => (dailyData ?? []).filter((d) => d.reDeliveryDate).length,
-    [dailyData],
+    () => filteredDaily.filter((d) => d.reDeliveryDate).length,
+    [filteredDaily],
   )
 
   function selectDate(date: string) {
     setSelectedDate(date)
+    setQ('')
   }
 
   return (
@@ -1404,7 +1430,30 @@ export function ReturnDeliveryCalendarPage() {
                       : `${selectedDayTotal} ${selectedDayTotal === 1 ? 'return' : 'returns'} · tap a row to open details`}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative w-[220px]">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      width="14"
+                      height="14"
+                      stroke="#94a3b8"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+                      aria-hidden
+                    >
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="M20 20l-3-3" />
+                    </svg>
+                    <input
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      placeholder="Search returns…"
+                      className="h-9 w-full rounded-lg border border-amber-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-amber-400"
+                    />
+                  </div>
                   {pendingCount > 0 && (
                     <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
                       {pendingCount} unscheduled
@@ -1439,9 +1488,18 @@ export function ReturnDeliveryCalendarPage() {
               </div>
             )}
 
-            {!dailyLoading && !dailyError && dailyData && dailyData.length > 0 && (
+            {!dailyLoading && !dailyError && dailyData && dailyData.length > 0 && filteredDaily.length === 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center">
+                <p className="font-semibold text-slate-700">No matches</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Try a different search, or clear the search box.
+                </p>
+              </div>
+            )}
+
+            {!dailyLoading && !dailyError && filteredDaily.length > 0 && (
               <div className="flex flex-col gap-3">
-                {dailyData.map((delivery) => (
+                {filteredDaily.map((delivery) => (
                   <PartialReturnRow
                     key={delivery._id}
                     delivery={delivery}
