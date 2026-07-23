@@ -30,6 +30,7 @@ type DeliveryRow = {
   totalQty?: number
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
+  invoiceName?: string
   invoiceAmount?: string
   billedAt?: string
 }
@@ -301,7 +302,7 @@ function BillerDeliveriesPanel({ biller, onClose }: { biller: UserRow; onClose: 
                         <div>
                           <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: 20, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>Invoice</span>
                           <div style={{ fontSize: 11, color: '#374151', fontWeight: 600, marginTop: 3 }}>{d.invoiceNo}</div>
-                          {d.invoiceAmount && <div style={{ fontSize: 11, color: '#64748b' }}>{d.invoiceAmount}</div>}
+                          {d.invoiceName && <div style={{ fontSize: 11, color: '#64748b' }}>{d.invoiceName}</div>}
                         </div>
                       )}
                       {!d.billingType && <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}

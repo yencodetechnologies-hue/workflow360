@@ -2697,6 +2697,7 @@ type DeliveryRow = {
   totalQty?: number
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
+  invoiceName?: string
   invoiceAmount?: string
   billedAt?: string
 }
@@ -3358,6 +3359,15 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                           <DeliveryStatusSelect
                             deliveryId={d.id}
                             status={d.status}
+                            lines={(d.lines || d.linesSummary || []).map((l) => ({
+                              productId: l.productId,
+                              qty: l.qty,
+                              dispatchedQty: l.dispatchedQty,
+                              particulars:
+                                'particulars' in l
+                                  ? (l as { particulars?: string }).particulars
+                                  : d.linesSummary?.find((s) => s.productId === l.productId)?.particulars,
+                            }))}
                             vehicleLabel={d.vehicleLabel}
                             driverName={d.driverName}
                             driverPhone={d.driverPhone}
@@ -3368,6 +3378,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                             returnPickupVehicleType={d.returnPickupVehicleType}
                             billingType={d.billingType}
                             invoiceNo={d.invoiceNo}
+                            invoiceName={d.invoiceName}
                             onUpdated={(patch) => handleStatusUpdated(d.id, patch)}
                             onError={(msg) => setError(msg)}
                           />
@@ -3379,7 +3390,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
                                 </span>
                               ) : (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
-                                  Invoice {d.invoiceNo}
+                                  Invoice {d.invoiceNo}{d.invoiceName ? ` · ${d.invoiceName}` : ''}
                                 </span>
                               )}
                             </div>

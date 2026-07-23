@@ -302,9 +302,11 @@ export function lineFulfilledQty(status: string, line: FulfillmentLine, delivery
   const scanDelivered = delivery.qtyProgress?.deliveredByProduct?.[line.productId] ?? 0
   if (scanDelivered > 0) return Math.min(line.qty, scanDelivered)
 
+  // Public verify OR staff mark-delivered both persist qtyAck on deliveryLineChecks
+  const check = delivery.deliveryLineChecks?.find((c) => c.productId === line.productId)
+  if (check?.qtyAck != null) return Math.min(line.qty, check.qtyAck)
+
   if (delivery.deliveryVerifiedAt) {
-    const check = delivery.deliveryLineChecks?.find((c) => c.productId === line.productId)
-    if (check?.qtyAck != null) return Math.min(line.qty, check.qtyAck)
     return line.qty
   }
 

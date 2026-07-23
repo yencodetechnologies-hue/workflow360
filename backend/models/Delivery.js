@@ -108,6 +108,7 @@ const deliverySchema = mongoose.Schema(
 
     billingType: { type: String, enum: ['FREE', 'INVOICE'], default: undefined },
     invoiceNo: { type: String, trim: true },
+    invoiceName: { type: String, trim: true },
     invoiceAmount: { type: String, trim: true },
     billedAt: { type: Date },
 

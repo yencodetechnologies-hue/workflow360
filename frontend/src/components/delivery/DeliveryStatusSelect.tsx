@@ -497,6 +497,7 @@ import {
 import { cn } from '../../lib/cn'
 import { ReturnPickupVehicleModal } from './ReturnPickupVehicleModal'
 import { VehicleNumberModal } from './VehicleNumberModal'
+import { MarkDeliveredModal, type MarkDeliveredLine } from './MarkDeliveredModal'
 
 export type DeliveryStatusPatch = {
   status: string
@@ -510,13 +511,17 @@ export type DeliveryStatusPatch = {
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
+  invoiceName?: string
   invoiceAmount?: string
   billedAt?: string
+  lines?: MarkDeliveredLine[]
+  deliveryLineChecks?: Array<{ productId: string; qtyAck?: number; ok?: boolean }>
 }
 
 type Props = {
   deliveryId: string
   status: string
+  lines?: MarkDeliveredLine[]
   vehicleLabel?: string
   driverName?: string
   driverPhone?: string
@@ -527,6 +532,7 @@ type Props = {
   returnPickupVehicleType?: 'PRIVATE' | 'PORTER' | 'OWN'
   billingType?: 'FREE' | 'INVOICE'
   invoiceNo?: string
+  invoiceName?: string
   onUpdated?: (patch: DeliveryStatusPatch) => void
   onError?: (message: string) => void
   className?: string
@@ -535,6 +541,7 @@ type Props = {
 export function DeliveryStatusSelect({
   deliveryId,
   status,
+  lines = [],
   vehicleLabel,
   driverName,
   driverPhone,
@@ -545,6 +552,7 @@ export function DeliveryStatusSelect({
   returnPickupVehicleType,
   billingType,
   invoiceNo,
+  invoiceName,
   onUpdated,
   onError,
   className,
@@ -554,10 +562,11 @@ export function DeliveryStatusSelect({
   const [value, setValue] = useState(status)
   const [vehicleOutOpen, setVehicleOutOpen] = useState(false)
   const [vehicleReturnOpen, setVehicleReturnOpen] = useState(false)
+  const [deliveredOpen, setDeliveredOpen] = useState(false)
   const [billingModalOpen, setBillingModalOpen] = useState(false)
   const [billingMode, setBillingMode] = useState<'FREE' | 'INVOICE'>('FREE')
   const [invoiceNoInput, setInvoiceNoInput] = useState('')
-  const [invoiceAmountInput, setInvoiceAmountInput] = useState('')
+  const [invoiceNameInput, setInvoiceNameInput] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
 
@@ -579,7 +588,7 @@ export function DeliveryStatusSelect({
     )
   }
 
-  const markDelivered = async () => {
+  const markDelivered = async (deliveredLines: Array<{ productId: string; qty: number }>) => {
     const token = getToken()
     if (!token) return
 
@@ -588,12 +597,22 @@ export function DeliveryStatusSelect({
     setBusy(true)
 
     try {
-      const res = await apiFetch<{ status: string }>(`/deliveries/${deliveryId}/mark-delivered`, {
+      const res = await apiFetch<{
+        status: string
+        lines?: MarkDeliveredLine[]
+        deliveryLineChecks?: Array<{ productId: string; qtyAck?: number; ok?: boolean }>
+      }>(`/deliveries/${deliveryId}/mark-delivered`, {
         token,
         method: 'POST',
+        body: JSON.stringify({ lines: deliveredLines }),
       })
       setValue(res.status)
-      onUpdated?.({ status: res.status })
+      setDeliveredOpen(false)
+      onUpdated?.({
+        status: res.status,
+        lines: res.lines,
+        deliveryLineChecks: res.deliveryLineChecks,
+      })
     } catch (e: unknown) {
       setValue(previous)
       const msg =
@@ -704,11 +723,15 @@ const postVehicleTransition = async (
       setBillingError('Invoice number is required.')
       return
     }
+    if (billingMode === 'INVOICE' && !invoiceNameInput.trim()) {
+      setBillingError('Name is required.')
+      return
+    }
     const token = getToken()
     if (!token) return
     setBillingBusy(true); setBillingError(null)
     try {
-      const res = await apiFetch<{ status: string; billingType?: string; invoiceNo?: string; invoiceAmount?: string; billedAt?: string }>(
+      const res = await apiFetch<{ status: string; billingType?: string; invoiceNo?: string; invoiceName?: string; billedAt?: string }>(
         `/deliveries/${deliveryId}/status`,
         {
           token,
@@ -717,7 +740,7 @@ const postVehicleTransition = async (
             status: 'BILLED',
             billingType: billingMode,
             invoiceNo: billingMode === 'INVOICE' ? invoiceNoInput.trim() : undefined,
-            invoiceAmount: billingMode === 'INVOICE' && invoiceAmountInput.trim() ? invoiceAmountInput.trim() : undefined,
+            invoiceName: billingMode === 'INVOICE' ? invoiceNameInput.trim() : undefined,
           }),
         },
       )
@@ -726,12 +749,12 @@ const postVehicleTransition = async (
         status: res.status,
         billingType: res.billingType as 'FREE' | 'INVOICE' | undefined,
         invoiceNo: res.invoiceNo,
-        invoiceAmount: res.invoiceAmount,
+        invoiceName: res.invoiceName,
         billedAt: res.billedAt,
       })
       setBillingModalOpen(false)
       setInvoiceNoInput('')
-      setInvoiceAmountInput('')
+      setInvoiceNameInput('')
     } catch (e: unknown) {
       const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Billing update failed'
       setBillingError(msg)
@@ -744,7 +767,7 @@ const postVehicleTransition = async (
     if (next === 'BILLED' && status !== 'BILLED') {
       setBillingMode(billingType ?? 'FREE')
       setInvoiceNoInput(invoiceNo || '')
-      setInvoiceAmountInput('')
+      setInvoiceNameInput(invoiceName || '')
       setBillingError(null)
       setBillingModalOpen(true)
       return
@@ -758,8 +781,11 @@ const postVehicleTransition = async (
       return
     }
 
-    if (isGodown && next === 'DELIVERED' && ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DISPATCHED'].includes(status)) {
-      void markDelivered()
+    if (
+      next === 'DELIVERED' &&
+      ['PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY', 'DISPATCHED'].includes(status)
+    ) {
+      setDeliveredOpen(true)
       return
     }
 
@@ -873,6 +899,14 @@ const postVehicleTransition = async (
 
       />
 
+      <MarkDeliveredModal
+        open={deliveredOpen}
+        busy={busy}
+        lines={lines}
+        onClose={() => setDeliveredOpen(false)}
+        onConfirm={(deliveredLines) => void markDelivered(deliveredLines)}
+      />
+
       {/* ── Billing modal ──────────────────────────────────────────────── */}
       {billingModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -930,12 +964,13 @@ const postVehicleTransition = async (
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 5 }}>Amount (optional)</label>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 5 }}>Name <span style={{ color: '#dc2626' }}>*</span></label>
                     <input
-                      value={invoiceAmountInput}
-                      onChange={(e) => setInvoiceAmountInput(e.target.value)}
-                      placeholder="e.g. ₹5,000"
+                      value={invoiceNameInput}
+                      onChange={(e) => { setInvoiceNameInput(e.target.value); setBillingError(null) }}
+                      placeholder="e.g. Party / billed-to name"
                       style={{ width: '100%', height: 38, padding: '0 12px', border: '1px solid #e2e8f0', borderRadius: 9, fontSize: 13, color: '#111827', background: '#f9fafb', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void confirmBilling() }}
                     />
                   </div>
                 </div>
@@ -953,12 +988,12 @@ const postVehicleTransition = async (
                 style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button type="button" onClick={() => void confirmBilling()} disabled={billingBusy || (billingMode === 'INVOICE' && !invoiceNoInput.trim())}
+              <button type="button" onClick={() => void confirmBilling()} disabled={billingBusy || (billingMode === 'INVOICE' && (!invoiceNoInput.trim() || !invoiceNameInput.trim()))}
                 style={{
                   height: 38, padding: '0 22px', borderRadius: 10, border: 'none',
-                  background: billingBusy || (billingMode === 'INVOICE' && !invoiceNoInput.trim()) ? '#6ee7b7' : 'linear-gradient(135deg, #34d399, #059669)',
+                  background: billingBusy || (billingMode === 'INVOICE' && (!invoiceNoInput.trim() || !invoiceNameInput.trim())) ? '#6ee7b7' : 'linear-gradient(135deg, #34d399, #059669)',
                   fontSize: 13, fontWeight: 700, color: '#fff',
-                  cursor: billingBusy || (billingMode === 'INVOICE' && !invoiceNoInput.trim()) ? 'not-allowed' : 'pointer',
+                  cursor: billingBusy || (billingMode === 'INVOICE' && (!invoiceNoInput.trim() || !invoiceNameInput.trim())) ? 'not-allowed' : 'pointer',
                 }}>
                 {billingBusy ? 'Saving…' : billingMode === 'FREE' ? 'Mark as Billed Free' : 'Mark as Billed Invoice'}
               </button>

@@ -405,6 +405,7 @@ import { isDispatchComplete, isOutForDeliveryStatus, lineFulfilledQty } from '..
 import { scanPathForDelivery } from '../../lib/scanMode'
 import { ReturnPickupVehicleModal } from './ReturnPickupVehicleModal'
 import { VehicleNumberModal } from './VehicleNumberModal'
+import { MarkDeliveredModal } from './MarkDeliveredModal'
 
 export type GodownWorkflowLine = {
   productId: string
@@ -459,6 +460,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
   const [returnPickupOpen, setReturnPickupOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [returnQty, setReturnQty] = useState<Record<string, string>>({})
+  const [deliveredOpen, setDeliveredOpen] = useState(false)
 
   const role = auth.status === 'authenticated' ? auth.user.role : ''
   const godownLinked = auth.status === 'authenticated' && !!auth.user.godownId
@@ -528,15 +530,25 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       return { status: res.status, returnPickupVehicleLabel: res.returnPickupVehicleLabel, returnPickupDriverName: res.returnPickupDriverName, returnPickupDriverPhone: res.returnPickupDriverPhone, returnPickupVehicleType: res.returnPickupVehicleType }
     })
 
-  const markDelivered = () =>
+  const markDelivered = (deliveredLines: Array<{ productId: string; qty: number }>) =>
     run(async () => {
       const token = getToken()
       if (!token) return
-      const res = await apiFetch<{ status: string }>(`/deliveries/${delivery.id}/mark-delivered`, {
+      const res = await apiFetch<{
+        status: string
+        lines?: GodownWorkflowLine[]
+        deliveryLineChecks?: Array<{ productId: string; qtyAck?: number; ok?: boolean }>
+      }>(`/deliveries/${delivery.id}/mark-delivered`, {
         token,
         method: 'POST',
+        body: JSON.stringify({ lines: deliveredLines }),
       })
-      return { status: res.status }
+      setDeliveredOpen(false)
+      return {
+        status: res.status,
+        lines: res.lines,
+        deliveryLineChecks: res.deliveryLineChecks,
+      }
     })
 
   const fulfillmentContext = {
@@ -634,7 +646,7 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
       )
     }
     buttons.push(
-      <Button key="delivered" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => void markDelivered()}>
+      <Button key="delivered" size={btnSize} variant="secondary" disabled={controlsDisabled} onClick={() => setDeliveredOpen(true)}>
         Mark delivered
       </Button>,
     )
@@ -756,6 +768,14 @@ export function GodownDeliveryWorkflow({ delivery, onUpdated, onError, compact }
         initialVehicleType={delivery.returnPickupVehicleType}
         onClose={() => setReturnPickupOpen(false)}
         onConfirm={assignReturnPickup}
+      />
+
+      <MarkDeliveredModal
+        open={deliveredOpen}
+        busy={controlsDisabled}
+        lines={lines}
+        onClose={() => setDeliveredOpen(false)}
+        onConfirm={markDelivered}
       />
 
       <Modal open={returnOpen} title="Record return quantities" onClose={() => setReturnOpen(false)}>

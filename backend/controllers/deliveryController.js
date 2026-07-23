@@ -506,6 +506,7 @@ async function mapListRow(d, enrichment = {}) {
     billerReturnSubmittedAt: d.billerReturnSubmittedAt,
     billingType: d.billingType,
     invoiceNo: d.invoiceNo,
+    invoiceName: d.invoiceName,
     invoiceAmount: d.invoiceAmount,
     billedAt: d.billedAt,
     damageTotal: d.damageTotal,
@@ -1205,6 +1206,7 @@ async function getDelivery(req, res) {
     status: d.status,
     billingType: d.billingType,
     invoiceNo: d.invoiceNo,
+    invoiceName: d.invoiceName,
     invoiceAmount: d.invoiceAmount,
     billedAt: d.billedAt,
     // selfDelivery: d.selfDelivery,
@@ -1419,7 +1421,7 @@ async function deleteDelivery(req, res) {
 
 async function updateDeliveryStatus(req, res) {
   try {
-    const { status, billingType, invoiceNo, invoiceAmount } = req.body || {}
+    const { status, billingType, invoiceNo, invoiceName, invoiceAmount } = req.body || {}
     if (!status || !DELIVERY_STATUSES.includes(status)) {
       return res.status(400).json({ message: 'Invalid status' })
     }
@@ -1431,6 +1433,9 @@ async function updateDeliveryStatus(req, res) {
       }
       if (billingType === 'INVOICE' && !String(invoiceNo || '').trim()) {
         return res.status(400).json({ message: 'invoiceNo is required when billing type is Invoice' })
+      }
+      if (billingType === 'INVOICE' && !String(invoiceName || '').trim()) {
+        return res.status(400).json({ message: 'invoiceName is required when billing type is Invoice' })
       }
     }
 
@@ -1463,6 +1468,7 @@ async function updateDeliveryStatus(req, res) {
     if (status === 'BILLED') {
       delivery.billingType = billingType
       delivery.invoiceNo = billingType === 'INVOICE' ? String(invoiceNo).trim() : undefined
+      delivery.invoiceName = billingType === 'INVOICE' ? String(invoiceName).trim() : undefined
       delivery.invoiceAmount = billingType === 'INVOICE' && invoiceAmount ? String(invoiceAmount).trim() : undefined
       delivery.billedAt = new Date()
     }
@@ -1484,6 +1490,7 @@ async function updateDeliveryStatus(req, res) {
       ok: true, status: delivery.status, previousStatus,
       billingType: delivery.billingType,
       invoiceNo: delivery.invoiceNo,
+      invoiceName: delivery.invoiceName,
       invoiceAmount: delivery.invoiceAmount,
       billedAt: delivery.billedAt,
     })
@@ -2108,12 +2115,71 @@ async function markDelivered(req, res) {
       return res.status(409).json({ message: 'Cannot mark delivered in current status' })
     }
 
+    const bodyLines = Array.isArray(req.body?.lines) ? req.body.lines : null
+    const deliveredByProduct = new Map()
+
+    if (bodyLines) {
+      for (const bl of bodyLines) {
+        if (!bl?.productId) continue
+        const pid = String(bl.productId)
+        const q = Number(bl.qty)
+        if (!Number.isFinite(q) || q < 0) {
+          return res.status(400).json({ message: `Invalid delivered qty for product ${pid}` })
+        }
+        deliveredByProduct.set(pid, q)
+      }
+
+      const allowed = new Set((delivery.lines || []).map((l) => String(l.productId)))
+      for (const pid of deliveredByProduct.keys()) {
+        if (!allowed.has(pid)) {
+          return res.status(400).json({ message: `Unknown product ${pid}` })
+        }
+      }
+    }
+
+    // Per line: delivered qty (default = full dispatched). Shortfall is restocked
+    // immediately so only the delivered amount remains outstanding on the delivery.
+    const restockMap = new Map()
+    const checks = []
+    for (const line of delivery.lines || []) {
+      const pid = String(line.productId)
+      const dispatched = Number(line.dispatchedQty) || Number(line.qty) || 0
+      let delivered = deliveredByProduct.has(pid) ? deliveredByProduct.get(pid) : dispatched
+      if (delivered > dispatched) {
+        return res.status(400).json({
+          message: `Delivered qty cannot exceed dispatched (${dispatched}) for product ${pid}`,
+        })
+      }
+      delivered = Math.max(0, Math.min(dispatched, Number(delivered) || 0))
+      const shortfall = dispatched - delivered
+      if (shortfall > 0) {
+        restockMap.set(pid, (restockMap.get(pid) || 0) + shortfall)
+      }
+      checks.push({ productId: line.productId, qtyAck: delivered, ok: true })
+    }
+
+    if (restockMap.size > 0) {
+      const returnResult = await applyReturnToLines(delivery, req.user.id, restockMap, {
+        rejectUnknown: true,
+      })
+      if (!returnResult.ok) {
+        return res.status(returnResult.status).json({ message: returnResult.message })
+      }
+      delivery.markModified('lines')
+    }
+
+    delivery.deliveryLineChecks = checks
     delivery.status = 'DELIVERED'
     delivery.phase = 'FORWARD'
     await delivery.save()
     await syncOrderStatus(delivery, 'DELIVERED')
 
-    return res.json({ ok: true, status: delivery.status })
+    return res.json({
+      ok: true,
+      status: delivery.status,
+      lines: delivery.lines,
+      deliveryLineChecks: delivery.deliveryLineChecks,
+    })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Mark delivered failed' })
   }
