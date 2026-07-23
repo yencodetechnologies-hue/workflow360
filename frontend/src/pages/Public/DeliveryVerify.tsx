@@ -491,7 +491,8 @@ export function PublicDeliveryVerifyPage() {
           }),
         )
         if (r.deliveryVerifierName) setVerifierName(r.deliveryVerifierName)
-        setPhase(r.canSubmit === false ? 'thankYou' : 'form')
+        // Already verified → always show thank-you (never an "expired" / form state)
+        setPhase(r.deliveryVerifiedAt || r.canSubmit === false ? 'thankYou' : 'form')
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
@@ -639,6 +640,19 @@ export function PublicDeliveryVerifyPage() {
       setPhase('thankYou')
     } catch (e: unknown) {
       const msg = (e as { message?: string })?.message || 'Submit failed'
+      const alreadyUsed = /already been verified|can only be used once/i.test(msg)
+      if (alreadyUsed) {
+        try {
+          const refreshed = await apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
+          setData(refreshed)
+          if (refreshed.deliveryVerifierName) setVerifierName(refreshed.deliveryVerifierName)
+          setPhase('thankYou')
+          setError(null)
+          return
+        } catch {
+          // fall through to show error
+        }
+      }
       setError(msg)
     } finally {
       setSubmitting(false)
@@ -689,7 +703,8 @@ export function PublicDeliveryVerifyPage() {
       : []),
   ]
 
-  if (phase === 'thankYou') {
+  // Re-open after submit (or refresh) must always show thank-you, never the form / expired error
+  if (phase === 'thankYou' || data.deliveryVerifiedAt) {
     const deliveredByProduct = new Map<string, number>()
     const dispatchedByProduct = new Map<string, number>()
     for (const l of data.lines) {
@@ -717,14 +732,14 @@ export function PublicDeliveryVerifyPage() {
       }
     })
     const deliveredTotal = productRows.reduce((s, r) => s + r.delivered, 0)
-    const immediateReturnTotal = productRows.reduce((s, r) => s + r.immediateReturn, 0)
+    const restockedTotal = productRows.reduce((s, r) => s + r.immediateReturn, 0)
 
     const deliveryTable = (
       <div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: 12 }}>
           {[
             { label: 'Delivered', value: deliveredTotal, color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
-            { label: 'Immediate return', value: immediateReturnTotal, color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+            { label: 'Restocked', value: restockedTotal, color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
           ].map((s, i) => (
             <div key={s.label} style={{ padding: '10px 8px', textAlign: 'center', background: s.bg, borderRight: i < 1 ? `1px solid ${s.border}` : undefined }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
@@ -737,13 +752,13 @@ export function PublicDeliveryVerifyPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px', padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product</div>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Delivered</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Immediate return</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Restocked</div>
           </div>
           {productRows.map((r, i) => (
             <div key={r.productId} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 80px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < productRows.length - 1 ? '1px solid #f1f5f9' : undefined }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>{r.particulars || r.productId}</div>
-                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{r.sku} · Dispatched {r.dispatched}</div>
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{r.sku} · Was dispatched {r.dispatched}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <span style={{ display: 'inline-block', borderRadius: 99, background: '#ecfdf5', color: '#059669', fontSize: 12, fontWeight: 700, padding: '2px 8px' }}>{r.delivered}</span>
@@ -753,9 +768,9 @@ export function PublicDeliveryVerifyPage() {
               </div>
             </div>
           ))}
-          {immediateReturnTotal > 0 ? (
+          {restockedTotal > 0 ? (
             <div style={{ padding: '8px 12px', background: '#fffbeb', borderTop: '1px solid #fde68a', fontSize: 11, fontWeight: 600, color: '#b45309' }}>
-              ⏱ {immediateReturnTotal} qty short-delivered — restocked to godown; ordered qty reduced to match
+              {restockedTotal} not delivered — put back in godown stock. Ordered qty on this delivery is now {deliveredTotal} (not counted as biller return).
             </div>
           ) : null}
         </div>
@@ -887,7 +902,7 @@ export function PublicDeliveryVerifyPage() {
                           />
                           {immediateReturn > 0 ? (
                             <p className="mt-1.5 text-xs font-medium text-amber-700">
-                              {immediateReturn} qty short — restocked to godown; ordered qty becomes {dQty}
+                              {immediateReturn} not delivered — restocked to godown; ordered qty becomes {dQty}
                             </p>
                           ) : (
                             <p className="mt-1.5 text-xs font-medium text-emerald-700">

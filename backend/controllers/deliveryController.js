@@ -30,6 +30,7 @@ const {
 const {
   shrinkOrderQtyForImmediateReturns,
   applyLineImmediateShortfall,
+  repairLegacyImmediateReturnOnDelivery,
 } = require('../utils/immediateReturn')
 
 function makeDeliveryNo() {
@@ -1190,12 +1191,19 @@ async function listDeliveries(req, res) {
 }
 
 async function getDelivery(req, res) {
-  const d = await Delivery.findById(req.params.id).lean()
+  let d = await Delivery.findById(req.params.id)
   if (!d) return res.status(404).json({ message: 'Not found' })
 
   if (!deliveryAccessOk(req, d)) {
     return res.status(403).json({ message: deliveryAccessDeniedMessage(req, d) })
   }
+
+  try {
+    await repairLegacyImmediateReturnOnDelivery(d)
+  } catch {
+    // non-fatal — still return whatever is stored
+  }
+  d = d.toObject()
 
   if (req.user.role === 'DELIVERY') {
     const godownMap = await loadGodownMapForDeliveries([d])

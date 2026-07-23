@@ -5050,7 +5050,7 @@ function AdminDeliveryDetailPage() {
                         <Th>SKU</Th>
                         <Th className="text-right">Ordered</Th>
                         <Th className="text-right">{fulfillmentColumnLabel(d.status)}</Th>
-                        <Th className="text-right">Returned</Th>
+                        <Th className="text-right">Biller returned</Th>
                         <Th className="text-right">In stock</Th>
                       </tr>
                     </thead>

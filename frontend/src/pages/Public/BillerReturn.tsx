@@ -125,7 +125,8 @@ export function PublicBillerReturnPage() {
         const preChecks = agg.map((l) => Number(dmg[l.productId]) > 0 || Number(col[l.productId]) > 0)
         setChecks(preChecks)
         if (r.billerReturnName) setReturnedByName(r.billerReturnName)
-        setPhase(r.canSubmit === false ? 'thankYou' : 'form')
+        // Already submitted → always show thank-you (never an "expired" / form state)
+        setPhase(r.billerReturnSubmittedAt || r.canSubmit === false ? 'thankYou' : 'form')
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
@@ -282,6 +283,18 @@ export function PublicBillerReturnPage() {
       setPhase('thankYou')
     } catch (e: unknown) {
       const msg = (e as { message?: string })?.message || 'Submit failed'
+      const alreadyUsed = /already been submitted|can only be used once/i.test(msg)
+      if (alreadyUsed) {
+        try {
+          const refreshed = await apiFetch<GetRes>(`/public/biller-return/${encodeURIComponent(t)}`)
+          setData(refreshed)
+          setPhase('thankYou')
+          setError(null)
+          return
+        } catch {
+          // fall through
+        }
+      }
       setError(msg)
     } finally {
       setSubmitting(false)
@@ -332,7 +345,7 @@ export function PublicBillerReturnPage() {
   const pendingLinesDisplay = data.billerPendingReturnLines || []
   const pendingDays = daysWithClient(data.deliveryAt)
 
-  if (phase === 'thankYou') {
+  if (phase === 'thankYou' || data.billerReturnSubmittedAt) {
     const collectedQtyTotal = (data.billerCollectedLines || []).reduce((s, l) => s + (Number(l.qty) || 0), 0)
     const pendingTotal = pendingLinesDisplay.reduce((s, l) => s + l.qty, 0)
 

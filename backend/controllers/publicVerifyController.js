@@ -86,7 +86,11 @@ async function postDeliveryVerify(req, res) {
     const delivery = await Delivery.findOne({ deliveryVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
     if (delivery.deliveryVerifiedAt)
-      return res.status(400).json({ message: 'This delivery has already been verified. The link can only be used once.' })
+      return res.status(400).json({
+        message: 'This delivery has already been verified. The link can only be used once.',
+        alreadyVerified: true,
+        deliveryVerifiedAt: delivery.deliveryVerifiedAt,
+      })
 
     const allowed = allowedLineProductIds(delivery)
     const checks = Array.isArray(lineChecks) ? lineChecks : []
@@ -207,7 +211,11 @@ async function postBillerReturn(req, res) {
     const delivery = await Delivery.findOne({ billerReturnVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
     if (delivery.billerReturnSubmittedAt)
-      return res.status(400).json({ message: 'This return report has already been submitted. The link can only be used once.' })
+      return res.status(400).json({
+        message: 'This return report has already been submitted. The link can only be used once.',
+        alreadySubmitted: true,
+        billerReturnSubmittedAt: delivery.billerReturnSubmittedAt,
+      })
 
     const allowed = allowedLineProductIds(delivery)
     const qtyByProduct = new Map()

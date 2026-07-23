@@ -52,8 +52,15 @@ function applyLineImmediateShortfall(line, deliveredQty, delivery, orderDeltaByG
 
   // Shrink allocated + dispatched so Ordered/Delivered match and outstanding
   // (dispatchedQty - returnedQty) no longer counts the restocked units.
+  // Do NOT increment returnedQty — that column is only for biller return pickup.
   line.qty = kept
   line.dispatchedQty = kept
+  // If an older verify path had already parked the shortfall in returnedQty,
+  // clear the overlapping amount so the detail "Biller returned" column stays 0.
+  const prevReturned = Number(line.returnedQty) || 0
+  if (prevReturned > 0) {
+    line.returnedQty = Math.max(0, prevReturned - shortfall)
+  }
 
   const gid = line.godownId || delivery.fromGodownId
   if (gid) {
@@ -81,4 +88,52 @@ function applyLineImmediateShortfall(line, deliveredQty, delivery, orderDeltaByG
 module.exports = {
   shrinkOrderQtyForImmediateReturns,
   applyLineImmediateShortfall,
+  repairLegacyImmediateReturnOnDelivery,
+}
+
+/**
+ * Older verify path stored shortfall in returnedQty and left qty at the
+ * dispatched amount. Convert those rows to the shrink model so detail shows
+ * Ordered = delivered and Biller returned = 0 (until a real biller return).
+ *
+ * Only runs when verify is done and biller return has not been submitted.
+ * Pattern: qtyAck + returnedQty === line.qty (and dispatched matches).
+ *
+ * @param {import('mongoose').Document} delivery
+ * @returns {Promise<boolean>} true if lines were rewritten and saved
+ */
+async function repairLegacyImmediateReturnOnDelivery(delivery) {
+  if (!delivery?.deliveryVerifiedAt || delivery.billerReturnSubmittedAt) return false
+  const checks = delivery.deliveryLineChecks || []
+  if (!checks.length || !delivery.lines?.length) return false
+
+  let changed = false
+
+  for (let idx = 0; idx < delivery.lines.length; idx++) {
+    const line = delivery.lines[idx]
+    const check =
+      checks.find((c) => String(c.productId) === String(line.productId)) || checks[idx]
+    if (!check || check.qtyAck == null) continue
+
+    const qty = Number(line.qty) || 0
+    const dispatched = Number(line.dispatchedQty) > 0 ? Number(line.dispatchedQty) : qty
+    const returned = Number(line.returnedQty) || 0
+    const ack = Math.max(0, Math.min(dispatched, Number(check.qtyAck) || 0))
+    if (returned <= 0) continue
+    // Old short-delivery shape: kept + "returned" shortfall == what left the godown
+    if (ack + returned !== dispatched && ack + returned !== qty) continue
+
+    line.qty = ack
+    line.dispatchedQty = ack
+    line.returnedQty = 0
+    changed = true
+  }
+
+  if (!changed) return false
+
+  delivery.markModified('lines')
+  await delivery.save()
+  // Do not re-shrink the order — older builds that wrote returnedQty may already
+  // have reduced order qty when verify ran.
+  return true
 }
