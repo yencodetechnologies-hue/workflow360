@@ -63,7 +63,7 @@ const lines = await populateLineDetails(delivery)
       deliveryLineChecks: delivery.deliveryLineChecks,
       hasSignature: Boolean(delivery.deliverySignature),
       deliverySignature: delivery.deliverySignature,
-      canSubmit: true,
+      canSubmit: !delivery.deliveryVerifiedAt,
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Failed' })
@@ -81,6 +81,8 @@ async function postDeliveryVerify(req, res) {
 
     const delivery = await Delivery.findOne({ deliveryVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
+    if (delivery.deliveryVerifiedAt)
+      return res.status(400).json({ message: 'This delivery has already been verified. The link can only be used once.' })
 
     const allowed = allowedLineProductIds(delivery)
     const checks = Array.isArray(lineChecks) ? lineChecks : []
@@ -108,11 +110,7 @@ async function postDeliveryVerify(req, res) {
     // Delivered qty defaults to the full dispatched qty for each line, but
     // the recipient can enter fewer than what was dispatched (e.g. 8 of 10)
     // — the shortfall is treated as an immediate on-the-spot return, which
-    // needs to be restocked into the source godown right away. Because a
-    // verification can be re-submitted (to correct a mistake, say), we only
-    // ever apply the INCREMENTAL change in immediate-return qty versus what
-    // was already recorded last time, so resubmitting the same numbers never
-    // double-restocks.
+    // needs to be restocked into the source godown right away.
     const prevChecks = delivery.deliveryLineChecks || []
 
     const ledgerEntries = []
@@ -200,7 +198,7 @@ const lines = await populateLineDetails(delivery)
       billerReturnName: delivery.billerReturnName,
       billerSignature: delivery.billerSignature,
       billerPendingReturnLines: delivery.billerPendingReturnLines,
-      canSubmit: true,
+      canSubmit: !delivery.billerReturnSubmittedAt,
     })
   } catch (err) {
     return res.status(500).json({ message: err.message || 'Failed' })
@@ -216,6 +214,8 @@ async function postBillerReturn(req, res) {
 
     const delivery = await Delivery.findOne({ billerReturnVerifyToken: token })
     if (!delivery) return res.status(404).json({ message: 'Not found' })
+    if (delivery.billerReturnSubmittedAt)
+      return res.status(400).json({ message: 'This return report has already been submitted. The link can only be used once.' })
 
     const allowed = allowedLineProductIds(delivery)
     const qtyByProduct = new Map()

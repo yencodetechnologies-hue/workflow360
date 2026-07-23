@@ -106,7 +106,6 @@ export function PublicBillerReturnPage() {
     apiFetch<GetRes>(`/public/biller-return/${encodeURIComponent(t)}`)
       .then((r) => {
         setData(r)
-        setPhase('form')
         const agg = aggregateLines(r.lines)
         const z: Record<string, string> = {}
         for (const l of agg) z[l.productId] = '0'
@@ -126,6 +125,7 @@ export function PublicBillerReturnPage() {
         const preChecks = agg.map((l) => Number(dmg[l.productId]) > 0 || Number(col[l.productId]) > 0)
         setChecks(preChecks)
         if (r.billerReturnName) setReturnedByName(r.billerReturnName)
+        setPhase(r.canSubmit === false ? 'thankYou' : 'form')
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
@@ -449,11 +449,6 @@ export function PublicBillerReturnPage() {
             {data.driverName ? <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Driver: {data.driverName}</span> : null}
             {data.driverPhone ? <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Phone: {data.driverPhone}</span> : null}
           </div>
-          {data.billerReturnSubmittedAt ? (
-            <div className="mt-2 text-xs text-emerald-600 font-medium">
-              ✓ Previously submitted — you can re-submit to update
-            </div>
-          ) : null}
         </div>
 
         {error ? (

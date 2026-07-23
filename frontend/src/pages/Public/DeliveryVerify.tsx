@@ -482,7 +482,6 @@ export function PublicDeliveryVerifyPage() {
     apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
       .then((r) => {
         setData(r)
-        setPhase('form')
         setChecks(r.lines.map(() => false))
         setDeliveredQty(
           r.lines.map((l, i) => {
@@ -492,6 +491,7 @@ export function PublicDeliveryVerifyPage() {
           }),
         )
         if (r.deliveryVerifierName) setVerifierName(r.deliveryVerifierName)
+        setPhase(r.canSubmit === false ? 'thankYou' : 'form')
       })
       .catch((e: { message?: string }) => setError(e?.message || 'Failed to load'))
   }, [token])
@@ -803,11 +803,6 @@ export function PublicDeliveryVerifyPage() {
             <Badge variant="slate">Driver: {data.driverName || '—'}</Badge>
             <Badge variant="slate">Phone: {data.driverPhone || '—'}</Badge>
           </div>
-          {data.deliveryVerifiedAt ? (
-            <div className="mt-2 text-xs text-emerald-600 font-medium">
-              ✓ Previously verified — you can re-submit to update
-            </div>
-          ) : null}
         </div>
 
         {error ? (

@@ -1590,6 +1590,19 @@ async function regenerateDeliveryTokens(req, res) {
     if (!delivery) return res.status(404).json({ message: 'Not found' })
     delivery.deliveryVerifyToken = makeVerifyToken()
     delivery.billerReturnVerifyToken = makeVerifyToken()
+    // A regenerated link is a fresh one-time-use link — clear the prior
+    // submission's "already used" markers so it isn't immediately rejected.
+    delivery.deliveryVerifiedAt = undefined
+    delivery.deliveryVerifierName = undefined
+    delivery.deliveryLineChecks = []
+    delivery.deliverySignature = undefined
+    delivery.billerReturnSubmittedAt = undefined
+    delivery.billerReturnName = undefined
+    delivery.billerSignature = undefined
+    delivery.billerDamagedLines = []
+    delivery.billerMissingLines = []
+    delivery.billerCollectedLines = []
+    delivery.billerPendingReturnLines = []
     await delivery.save()
     const urls = shareUrls(delivery, req)
     return res.json({
