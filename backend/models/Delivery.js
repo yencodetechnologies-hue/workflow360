@@ -164,5 +164,7 @@ deliverySchema.index({ deliveryVerifyToken: 1 }, { unique: true, sparse: true })
 deliverySchema.index({ billerReturnVerifyToken: 1 }, { unique: true, sparse: true })
 // Index for the return calendar queries
 deliverySchema.index({ returnExpectedAt: 1, phase: 1, status: 1 })
+deliverySchema.index({ billerPendingReturnAt: 1, phase: 1, status: 1 })
+deliverySchema.index({ returnPickupAssignedAt: 1, phase: 1, status: 1 })
 
 module.exports = mongoose.model('Delivery', deliverySchema)

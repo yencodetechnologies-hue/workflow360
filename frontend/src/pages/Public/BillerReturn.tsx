@@ -34,9 +34,9 @@ type GetRes = {
   billerReturnSubmittedAt?: string
   billerReturnName?: string
   billerSignature?: string
-  billerDamagedLines?: { productId: string; qty: number }[]
-  billerMissingLines?: { productId: string; qty: number }[]
-  billerCollectedLines?: { productId: string; qty: number }[]
+  billerDamagedLines?: { productId: string; qty: number; note?: string }[]
+  billerMissingLines?: { productId: string; qty: number; note?: string }[]
+  billerCollectedLines?: { productId: string; qty: number; note?: string }[]
   billerPendingReturnLines?: PendingLine[]
   canSubmit?: boolean
 }
@@ -93,6 +93,8 @@ export function PublicBillerReturnPage() {
   // back right now (restocked into the godown).
   const [damagedQty, setDamagedQty] = useState<Record<string, string>>({})
   const [collectedQty, setCollectedQty] = useState<Record<string, string>>({})
+  // Free-text remarks per product, shown next to that product on the view-details page.
+  const [remarks, setRemarks] = useState<Record<string, string>>({})
   const [returnedByName, setReturnedByName] = useState('')
   const [hasDrawn, setHasDrawn] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -120,6 +122,12 @@ export function PublicBillerReturnPage() {
         }
         setDamagedQty(dmg)
         setCollectedQty(col)
+
+        const rmk: Record<string, string> = {}
+        for (const l of [...(r.billerDamagedLines || []), ...(r.billerCollectedLines || [])]) {
+          if (l.note) rmk[l.productId] = l.note
+        }
+        setRemarks(rmk)
 
         // Pre-check products that already have a qty entered
         const preChecks = agg.map((l) => Number(dmg[l.productId]) > 0 || Number(col[l.productId]) > 0)
@@ -206,6 +214,7 @@ export function PublicBillerReturnPage() {
       if (productId) {
         setDamagedQty((q) => ({ ...q, [productId]: '0' }))
         setCollectedQty((q) => ({ ...q, [productId]: '0' }))
+        setRemarks((r) => ({ ...r, [productId]: '' }))
       }
     }
   }
@@ -220,6 +229,9 @@ export function PublicBillerReturnPage() {
       for (const l of formLines) z[l.productId] = '0'
       setDamagedQty(z)
       setCollectedQty(z)
+      const zr: Record<string, string> = {}
+      for (const l of formLines) zr[l.productId] = ''
+      setRemarks(zr)
     }
   }
 
@@ -258,13 +270,14 @@ export function PublicBillerReturnPage() {
     const damagedLines = formLines.map((l) => ({
       productId: l.productId,
       qty: Number(damagedQty[l.productId]) || 0,
+      note: remarks[l.productId]?.trim() || undefined,
     }))
     const collectedLines = formLines.map((l) => {
       const dispatched = l.qty
       const dmg = Number(damagedQty[l.productId]) || 0
       const pending = Number(collectedQty[l.productId]) || 0 // collectedQty now stores "pending left"
       const collected = Math.max(0, dispatched - dmg - pending)
-      return { productId: l.productId, qty: collected }
+      return { productId: l.productId, qty: collected, note: remarks[l.productId]?.trim() || undefined }
     })
     setSubmitting(true)
     setError(null)
@@ -577,6 +590,21 @@ export function PublicBillerReturnPage() {
                             </p>
                           ) : null
                         })()}
+                        <div className="mt-3">
+                          <label className="mb-1 block text-sm font-medium text-slate-700">
+                            Remarks (optional)
+                          </label>
+                          <textarea
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            rows={2}
+                            maxLength={500}
+                            placeholder="Any note about this product…"
+                            value={remarks[l.productId] ?? ''}
+                            onChange={(e) =>
+                              setRemarks((r) => ({ ...r, [l.productId]: e.target.value }))
+                            }
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

@@ -291,7 +291,11 @@ async function postBillerReturn(req, res) {
       const maxQ = (qtyByProduct.get(pid) || 0) - alreadyReportedDamage
       if (qty > maxQ)
         return res.status(400).json({ message: `Collected qty exceeds dispatched for product ${pid}` })
-      billerCollectedLines.push({ productId: pid, qty })
+      billerCollectedLines.push({
+        productId: pid,
+        qty,
+        note: row.note ? String(row.note).slice(0, 500) : undefined,
+      })
       collectedByProduct.set(pid, (collectedByProduct.get(pid) || 0) + qty)
     }
 

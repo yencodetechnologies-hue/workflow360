@@ -315,37 +315,48 @@ const mongoose = require('mongoose')
 const Delivery  = require('../models/Delivery')
 const Product   = require('../models/Product')
 
-// ── date helpers ───────────────────────────────────────────────────────────
+// ── date helpers (IST calendar days — matches reportController) ────────────
+// Frontend date keys and returnExpectedAt are local IST days; UTC midnight
+// ranges would shift items to the previous/next day.
 
-function monthRange(monthStr) {
-  const [y, m] = monthStr.split('-').map(Number)
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+
+function dayRange(dateStr) {
+  const [y, m, d] = String(dateStr).split('-').map(Number)
+  const istMidnightUTC = Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0) - IST_OFFSET_MS
   return {
-    start: new Date(Date.UTC(y, m - 1, 1)),
-    end:   new Date(Date.UTC(y, m,     1)),   // exclusive
+    start: new Date(istMidnightUTC),
+    end:   new Date(istMidnightUTC + 24 * 60 * 60 * 1000),
   }
 }
 
-function dayRange(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return {
-    start: new Date(Date.UTC(y, m - 1, d)),
-    end:   new Date(Date.UTC(y, m - 1, d + 1)),
-  }
+function monthRange(monthStr) {
+  const [y, m] = String(monthStr).split('-').map(Number)
+  const start = dayRange(`${y}-${String(m).padStart(2, '0')}-01`).start
+  const nextY = m === 12 ? y + 1 : y
+  const nextM = m === 12 ? 1 : m + 1
+  const end = dayRange(`${nextY}-${String(nextM).padStart(2, '0')}-01`).start
+  return { start, end }
 }
 
 function toDateKey(date) {
-  return date.toISOString().slice(0, 10)
+  if (!date) return null
+  const istMs = new Date(date).getTime() + IST_OFFSET_MS
+  const ist = new Date(istMs)
+  return `${ist.getUTCFullYear()}-${String(ist.getUTCMonth() + 1).padStart(2, '0')}-${String(ist.getUTCDate()).padStart(2, '0')}`
 }
 
 // ── query builder ──────────────────────────────────────────────────────────
-// A delivery is a "partial return" when:
-//   phase = RETURN  AND  at least one line: dispatchedQty > returnedQty
+// Return Calendar mirrors Delivery Manager return-flow statuses, date-wise
+// by returnExpectedAt:
+//   RETURN_PICKUP  — assigned return pickup (DM "Return pickup" tab)
+//   PENDING_RETURN — biller pending return still outstanding
 
 function buildBaseQuery(godownId) {
   const q = {
-    status: { $nin: ['CANCELLED', 'PROCESSED', 'PACKED', 'OUT_FOR_DELIVERY'] },
-    phase:  'RETURN',
+    status: { $in: ['RETURN_PICKUP', 'PENDING_RETURN'] },
     'lines.0': { $exists: true },
+    returnExpectedAt: { $exists: true, $ne: null },
   }
   if (godownId && mongoose.Types.ObjectId.isValid(godownId)) {
     q.fromGodownId = new mongoose.Types.ObjectId(godownId)
@@ -365,14 +376,25 @@ function applyRoleScope(q, req) {
   return true
 }
 
-// ── partial-return detection ───────────────────────────────────────────────
-// Returns true if any line has sent items the client hasn't returned yet.
-// Sent 7, returned 3  →  pendingQty = 4  →  partial return exists
+// ── outstanding return detection ───────────────────────────────────────────
+// Prefer dispatchedQty; fall back to ordered qty when dispatch was never written.
+function hasOutstandingReturn(delivery) {
+  return (delivery.lines || []).some((l) => {
+    const sent = Number(l.dispatchedQty) > 0 ? Number(l.dispatchedQty) : Number(l.qty) || 0
+    const returned = Number(l.returnedQty) || 0
+    return sent > returned
+  })
+}
 
-function hasPartialReturn(delivery) {
-  return (delivery.lines || []).some(
-    (l) => (Number(l.dispatchedQty) || 0) > (Number(l.returnedQty) || 0),
-  )
+// Calendar day = scheduled return date (returnExpectedAt).
+// returnPickupAssignedAt is assignment metadata only (when vehicle was assigned),
+// not the day the delivery appears on the Return Calendar.
+
+// Include every RETURN_PICKUP (matches DM tab). PENDING_RETURN only if still outstanding.
+function isReturnCalendarDelivery(delivery) {
+  if (delivery.status === 'RETURN_PICKUP') return true
+  if (delivery.status === 'PENDING_RETURN') return hasOutstandingReturn(delivery)
+  return false
 }
 
 // ── product name lookup ────────────────────────────────────────────────────
@@ -396,7 +418,9 @@ function mapDelivery(d, productMap) {
   const lines = (d.lines || []).map((line) => {
     const productId   = String(line.productId)
     const product     = productMap[productId]
-    const dispatched  = Number(line.dispatchedQty) || 0
+    const dispatched  = Number(line.dispatchedQty) > 0
+      ? Number(line.dispatchedQty)
+      : Number(line.qty) || 0
     const returned    = Number(line.returnedQty)   || 0
     const pending     = Math.max(0, dispatched - returned)  // items still with client
 
@@ -423,6 +447,9 @@ function mapDelivery(d, productMap) {
     contactPhone:    d.contactPhone,
     deliveryAt:      d.deliveryAt,
     returnExpectedAt: d.returnExpectedAt,
+    billerPendingReturnAt: d.billerPendingReturnAt || null,
+    returnPickupAssignedAt: d.returnPickupAssignedAt || null,
+    returnPickupVehicleLabel: d.returnPickupVehicleLabel || null,
     reDeliveryDate:  d.reDeliveryDate  || null,
     reDeliveryNote:  d.reDeliveryNote  || null,
     status:          d.status,
@@ -450,13 +477,14 @@ async function getPartialReturnCalendar(req, res) {
     if (!applyRoleScope(q, req)) return res.json({ days: [], totalPartial: 0 })
 
     const deliveries = await Delivery.find(q)
-      .select('returnExpectedAt lines').lean()
+      .select('returnExpectedAt status lines').lean()
 
-    const partials = deliveries.filter(hasPartialReturn)
+    const partials = deliveries.filter(isReturnCalendarDelivery)
 
     const countByDate = {}
     for (const d of partials) {
-      const key = toDateKey(new Date(d.returnExpectedAt))
+      const key = toDateKey(d.returnExpectedAt)
+      if (!key) continue
       countByDate[key] = (countByDate[key] || 0) + 1
     }
 
@@ -494,10 +522,10 @@ async function getAllPartialReturns(req, res) {
     }
     if (!applyRoleScope(q, req)) return res.json({ items: [], total: 0, page, limit })
 
-    // hasPartialReturn() needs per-line qty, so we can't paginate purely in
-    // Mongo here — filter in app code, then paginate the filtered set.
+    // isReturnCalendarDelivery needs status + line qty, so filter in app code
+    // then paginate the filtered set.
     const deliveries = await Delivery.find(q).sort({ returnExpectedAt: 1 }).lean()
-    const partials = deliveries.filter(hasPartialReturn)
+    const partials = deliveries.filter(isReturnCalendarDelivery)
 
     const total = partials.length
     const pageItems = partials.slice((page - 1) * limit, page * limit)
@@ -530,7 +558,7 @@ async function getPartialReturnDaily(req, res) {
     if (!applyRoleScope(q, req)) return res.json([])
 
     const deliveries = await Delivery.find(q).sort({ returnExpectedAt: 1 }).lean()
-    const partials = deliveries.filter(hasPartialReturn)
+    const partials = deliveries.filter(isReturnCalendarDelivery)
     if (!partials.length) return res.json([])
 
     const productMap = await loadProductMap(partials)
@@ -568,7 +596,7 @@ async function scheduleReDelivery(req, res) {
         return res.status(403).json({ message: 'This delivery belongs to a different godown' })
     }
 
-    if (!hasPartialReturn(delivery))
+    if (!hasOutstandingReturn(delivery))
       return res.status(409).json({ message: 'All items have already been returned' })
 
     const [y, m, d] = reDeliveryDate.split('-').map(Number)
@@ -579,13 +607,20 @@ async function scheduleReDelivery(req, res) {
 
     // Return the pending summary so frontend can confirm
     const pendingLines = (delivery.lines || [])
-      .filter((l) => (Number(l.dispatchedQty) || 0) > (Number(l.returnedQty) || 0))
-      .map((l) => ({
-        productId:    String(l.productId),
-        dispatchedQty: Number(l.dispatchedQty) || 0,
-        returnedQty:  Number(l.returnedQty)   || 0,
-        pendingQty:   (Number(l.dispatchedQty) || 0) - (Number(l.returnedQty) || 0),
-      }))
+      .filter((l) => {
+        const sent = Number(l.dispatchedQty) > 0 ? Number(l.dispatchedQty) : Number(l.qty) || 0
+        return sent > (Number(l.returnedQty) || 0)
+      })
+      .map((l) => {
+        const dispatchedQty = Number(l.dispatchedQty) > 0 ? Number(l.dispatchedQty) : Number(l.qty) || 0
+        const returnedQty = Number(l.returnedQty) || 0
+        return {
+          productId: String(l.productId),
+          dispatchedQty,
+          returnedQty,
+          pendingQty: dispatchedQty - returnedQty,
+        }
+      })
 
     return res.json({
       ok: true,

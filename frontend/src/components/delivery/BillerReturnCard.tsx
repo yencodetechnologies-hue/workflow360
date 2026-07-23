@@ -312,6 +312,7 @@ export function BillerReturnCard({
                 <div className="text-xs text-slate-500">
                   {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
                 </div>
+                {l.note ? <div className="mt-1 text-xs text-slate-600">Note: {l.note}</div> : null}
               </li>
             ))}
           </ul>
@@ -337,6 +338,7 @@ export function BillerReturnCard({
                 <div className="text-xs text-slate-500">
                   {l.sku ? `${l.sku} · ` : ''}Qty {l.qty}
                 </div>
+                {l.note ? <div className="mt-1 text-xs text-slate-600">Note: {l.note}</div> : null}
               </li>
             ))}
           </ul>

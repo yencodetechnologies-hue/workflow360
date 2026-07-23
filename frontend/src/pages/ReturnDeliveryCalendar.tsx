@@ -807,6 +807,9 @@ type PartialReturnDelivery = {
   contactPhone?: string
   deliveryAt?: string
   returnExpectedAt: string
+  billerPendingReturnAt?: string | null
+  returnPickupAssignedAt?: string | null
+  returnPickupVehicleLabel?: string | null
   reDeliveryDate?: string
   reDeliveryNote?: string
   status: string
@@ -1118,11 +1121,20 @@ function PartialReturnRow({
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-4 space-y-4">
 
-          {/* Original return date */}
+          {/* Return date — calendar day is always the scheduled returnExpectedAt */}
           <p className="text-xs text-slate-500">
-            <span className="font-semibold">Original return date:</span>{' '}
+            <span className="font-semibold">Return date:</span>{' '}
             {formatDateTime(delivery.returnExpectedAt)}
           </p>
+          {delivery.returnPickupAssignedAt ? (
+            <p className="text-xs text-slate-500">
+              <span className="font-semibold">Return pickup assigned:</span>{' '}
+              {formatDateTime(delivery.returnPickupAssignedAt)}
+              {delivery.returnPickupVehicleLabel ? (
+                <span className="ml-1 text-slate-400">· {delivery.returnPickupVehicleLabel}</span>
+              ) : null}
+            </p>
+          ) : null}
 
           {/* Product table */}
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -1363,7 +1375,7 @@ export function ReturnDeliveryCalendarPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">Return Calendar — {currentMonthLabel}</p>
-                <p className="text-xs text-slate-400">Partial return overview</p>
+                <p className="text-xs text-slate-400">Return pickup by scheduled return date</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

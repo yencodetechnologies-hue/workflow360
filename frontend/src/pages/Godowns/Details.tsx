@@ -4874,6 +4874,7 @@ export function GodownsDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [catSearch, setCatSearch] = useState('')
   const [updateSearch, setUpdateSearch] = useState('')
+  const [stockSearch, setStockSearch] = useState('')
   const [adjustApplyingProductId, setAdjustApplyingProductId] = useState<string | null>(null)
   // Selected product row for right panel detail
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
@@ -5231,11 +5232,28 @@ export function GodownsDetailsPage() {
                 </div>
                 <span style={{ fontSize: 12, color: '#059669', fontWeight: 600 }}>Total: {formatNumber(stockRows.reduce((a, r) => a + r.qty, 0))} units</span>
               </div>
+              <div style={{ padding: '12px 22px', borderBottom: '1px solid rgba(83,74,183,0.06)' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M16.5 16.5 21 21" /></svg>
+                  </div>
+                  <input
+                    value={stockSearch}
+                    onChange={e => setStockSearch(e.target.value)}
+                    placeholder="Search product or SKU..."
+                    style={{ width: '100%', padding: '9px 14px 9px 36px', border: '1px solid #e8eaf0', borderRadius: 9, fontSize: 13.5, color: '#1E1A4E', background: '#f8fafc', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#34d399')}
+                    onBlur={e => (e.currentTarget.style.borderColor = '#e8eaf0')}
+                  />
+                </div>
+              </div>
               {stockTableRows.length === 0 ? (
                 <div style={{ padding: '40px 22px', textAlign: 'center', color: '#7C7A9A', fontSize: 13 }}>No stock rows yet.</div>
+              ) : filteredStockTableRows.length === 0 ? (
+                <div style={{ padding: '40px 22px', textAlign: 'center', color: '#7C7A9A', fontSize: 13 }}>No products match your search.</div>
               ) : (
                 <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {stockTableRows.map(p => (
+                  {filteredStockTableRows.map(p => (
                     <div key={p.productId}
                       onClick={() => setSelectedProductId(prev => prev === p.productId ? null : p.productId)}
                       style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: `1px solid ${selectedProductId === p.productId ? '#34d399' : 'rgba(83,74,183,0.12)'}`, borderRadius: 9, background: selectedProductId === p.productId ? '#ecfdf5' : '#faf9ff', cursor: 'pointer', transition: 'all 0.14s' }}
