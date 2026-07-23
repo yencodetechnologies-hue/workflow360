@@ -123,18 +123,91 @@ function dispatchQtyComplete(delivery) {
 
 async function dispatchCompleteAsync(delivery) {
   if (dispatchQtyComplete(delivery)) return true
+  // Past dispatch statuses are complete without scanning tags again.
+  if (
+    [
+      'PACKED',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+      'RETURN_PICKUP',
+      'PENDING_RETURN',
+      'COMPLETED',
+      'BILLED',
+    ].includes(delivery.status)
+  ) {
+    return true
+  }
   const required = requiredQtyByProduct(delivery)
   const dispatchCounts = await scannedCountsByProduct(delivery.dispatchedTagIds || [])
   return countsMatchRequired(required, dispatchCounts)
 }
 
+/**
+ * Batch dispatch-complete flags for a list of lean deliveries.
+ * Avoids N AssetTag queries (one per row) on /deliveries list.
+ */
+async function dispatchCompleteMapForList(deliveries) {
+  const result = new Map()
+  const needScan = []
+
+  for (const d of deliveries) {
+    const id = String(d._id)
+    if (dispatchQtyComplete(d)) {
+      result.set(id, true)
+      continue
+    }
+    if (
+      [
+        'PACKED',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'RETURN_PICKUP',
+        'PENDING_RETURN',
+        'COMPLETED',
+        'BILLED',
+      ].includes(d.status)
+    ) {
+      result.set(id, true)
+      continue
+    }
+    if (!(d.dispatchedTagIds || []).length) {
+      result.set(id, false)
+      continue
+    }
+    needScan.push(d)
+  }
+
+  if (!needScan.length) return result
+
+  const allTagIds = [...new Set(needScan.flatMap((d) => d.dispatchedTagIds || []))]
+  const assets = allTagIds.length
+    ? await AssetTag.find({ tagId: { $in: allTagIds } }).select('tagId productId').lean()
+    : []
+  const assetByTag = new Map(assets.map((a) => [a.tagId, a]))
+
+  for (const d of needScan) {
+    const counts = new Map()
+    for (const tagId of d.dispatchedTagIds || []) {
+      const a = assetByTag.get(tagId)
+      if (!a) continue
+      const pid = String(a.productId)
+      counts.set(pid, (counts.get(pid) || 0) + 1)
+    }
+    result.set(String(d._id), countsMatchRequired(requiredQtyByProduct(d), counts))
+  }
+
+  return result
+}
+
 async function stockByGodownForDelivery(delivery) {
   const godownIds = [...new Set((delivery.lines || []).map((l) => String(godownIdForLine(l, delivery))))]
   const stockByGodown = {}
-  for (const gid of godownIds) {
-    const map = await stockQtyByGodownProduct(gid)
-    stockByGodown[gid] = Object.fromEntries(map)
-  }
+  await Promise.all(
+    godownIds.map(async (gid) => {
+      const map = await stockQtyByGodownProduct(gid)
+      stockByGodown[gid] = Object.fromEntries(map)
+    }),
+  )
   return stockByGodown
 }
 
@@ -457,8 +530,7 @@ async function mapDriverListRows(list) {
   )
 }
 
-async function mapListRow(d, enrichment = {}) {
-  const dispatchComplete = await dispatchCompleteAsync(d)
+function mapListRow(d, enrichment = {}, dispatchComplete = false) {
   return {
     id: String(d._id),
     deliveryNo: d.deliveryNo,
@@ -1106,8 +1178,11 @@ async function listDeliveries(req, res) {
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }
-  const enrichments = await enrichListRows(list)
-  return res.json(await Promise.all(list.map((d, i) => mapListRow(d, enrichments[i]))))
+  const [enrichments, dispatchCompleteById] = await Promise.all([
+    enrichListRows(list),
+    dispatchCompleteMapForList(list),
+  ])
+  return res.json(list.map((d, i) => mapListRow(d, enrichments[i], dispatchCompleteById.get(String(d._id)) === true)))
 }
 
 async function getDelivery(req, res) {
@@ -1165,14 +1240,24 @@ async function getDelivery(req, res) {
 
   const urls = shareUrls(d, req)
   const required = requiredQtyByProduct(d)
-  const dispatchCounts = await scannedCountsByProduct(d.dispatchedTagIds)
-  const deliverCounts = await scannedCountsByProduct(d.deliveredTagIds || [])
-  const returnPickupCounts = await scannedCountsByProduct(d.returnPickedUpTagIds || [])
   const dispatchedQtyMap = dispatchedQtyByProduct(d)
   const returnedQtyMap = returnedQtyByProduct(d)
-  const lines = await populateLineDetails(d)
-  const stockByGodown = await stockByGodownForDelivery(d)
-  const [billerMissingLines, billerDamagedLines, billerCollectedLines, billerPendingReturnLines] = await Promise.all([
+  const [
+    dispatchCounts,
+    deliverCounts,
+    returnPickupCounts,
+    lines,
+    stockByGodown,
+    billerMissingLines,
+    billerDamagedLines,
+    billerCollectedLines,
+    billerPendingReturnLines,
+  ] = await Promise.all([
+    scannedCountsByProduct(d.dispatchedTagIds),
+    scannedCountsByProduct(d.deliveredTagIds || []),
+    scannedCountsByProduct(d.returnPickedUpTagIds || []),
+    populateLineDetails(d),
+    stockByGodownForDelivery(d),
     populateBillerReturnLines(d.billerMissingLines),
     populateBillerReturnLines(d.billerDamagedLines),
     populateBillerReturnLines(d.billerCollectedLines),

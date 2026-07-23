@@ -4820,7 +4820,10 @@ function AdminDeliveryDetailPage() {
                 billingType={d.billingType}
                 invoiceNo={d.invoiceNo}
                 invoiceName={d.invoiceName}
-                onUpdated={() => load()}
+                onUpdated={(patch) => {
+                  setD((prev) => (prev ? { ...prev, ...patch } : prev))
+                  load()
+                }}
                 onError={(msg) => setError(msg)}
               />
               {d.status === 'BILLED' && d.billingType ? (

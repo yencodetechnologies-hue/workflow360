@@ -2910,7 +2910,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
 
   const handleStatusUpdated = (id: string, patch: DeliveryStatusPatch) => {
     patchDeliveryRow(id, patch)
-    loadDeliveries()
+    loadDeliveries({ silent: true })
   }
 
   // const handleWorkflowUpdated = (id: string, patch?: Partial<DeliveryRow>) => {
@@ -2918,17 +2918,19 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
   //   loadDeliveries()
   // }
 
-  const loadDeliveries = () => {
+  const loadDeliveries = (opts?: { silent?: boolean }) => {
     const token = getToken()
     if (!token) return
-    setLoading(true)
+    if (!opts?.silent) setLoading(true)
     setError(null)
     apiFetch<DeliveryRow[]>('/deliveries?limit=200', { token })
       .then(setDeliveries)
       .catch((e: unknown) =>
         setError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Failed to load deliveries')
       )
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (!opts?.silent) setLoading(false)
+      })
   }
 
   useEffect(() => { loadDeliveries() }, [])
@@ -3547,7 +3549,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
         onCreated={loadDeliveries}
         onUpdated={(info) => {
           if (info) patchDeliveryRow(info.id, { deliveryNo: info.deliveryNo })
-          loadDeliveries()
+          loadDeliveries({ silent: true })
         }}
       />
     </div>

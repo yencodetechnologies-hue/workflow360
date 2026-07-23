@@ -608,20 +608,34 @@ export function PublicDeliveryVerifyPage() {
     setSubmitting(true)
     setError(null)
     try {
-      await apiFetch(`/public/delivery-verify/${encodeURIComponent(t)}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          verifierName: verifierName.trim(),
-          signature: getSignatureDataUrl(),
-          lineChecks: data.lines.map((l, i) => ({
-            productId: l.productId,
-            ok: !!checks[i],
-            qtyAck: Math.max(0, Math.min(l.qty, Number(deliveredQty[i]) || 0)),
-          })),
-        }),
+      const res = await apiFetch<{ ok: boolean; deliveryVerifiedAt?: string; deliverySignature?: string }>(
+        `/public/delivery-verify/${encodeURIComponent(t)}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            verifierName: verifierName.trim(),
+            signature: getSignatureDataUrl(),
+            lineChecks: data.lines.map((l, i) => ({
+              productId: l.productId,
+              ok: !!checks[i],
+              qtyAck: Math.max(0, Math.min(l.qty, Number(deliveredQty[i]) || 0)),
+            })),
+          }),
+        },
+      )
+      setData({
+        ...data,
+        status: 'DELIVERED',
+        deliveryVerifierName: verifierName.trim(),
+        deliveryVerifiedAt: res.deliveryVerifiedAt || new Date().toISOString(),
+        deliverySignature: res.deliverySignature || data.deliverySignature,
+        hasSignature: Boolean(res.deliverySignature || data.deliverySignature),
+        deliveryLineChecks: data.lines.map((l, i) => ({
+          productId: l.productId,
+          ok: !!checks[i],
+          qtyAck: Math.max(0, Math.min(l.qty, Number(deliveredQty[i]) || 0)),
+        })),
       })
-      const refreshed = await apiFetch<GetRes>(`/public/delivery-verify/${encodeURIComponent(t)}`)
-      setData(refreshed)
       setPhase('thankYou')
     } catch (e: unknown) {
       const msg = (e as { message?: string })?.message || 'Submit failed'
