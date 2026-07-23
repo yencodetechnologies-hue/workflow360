@@ -17,6 +17,8 @@ type Line = {
 
 type PendingLine = { productId: string; qty: number; particulars?: string; sku?: string }
 
+type ReturnLine = { productId: string; qty: number; particulars?: string; sku?: string; note?: string }
+
 type GetRes = {
   deliveryNo: string
   customerName: string
@@ -38,6 +40,10 @@ type GetRes = {
   billerMissingLines?: { productId: string; qty: number; note?: string }[]
   billerCollectedLines?: { productId: string; qty: number; note?: string }[]
   billerPendingReturnLines?: PendingLine[]
+  pendingReturnCollectedLines?: ReturnLine[]
+  pendingReturnCollectedAt?: string
+  pendingReturnCollectedName?: string
+  pendingReturnSignature?: string
   canSubmit?: boolean
   pendingResubmit?: boolean
   linkKind?: 'billerReturn' | 'pendingReturnAssign'
@@ -413,16 +419,54 @@ export function PublicBillerReturnPage({
   }
 
   if (phase === 'thankYou' || (data.billerReturnSubmittedAt && !data.canSubmit)) {
-    const collectedQtyTotal = (data.billerCollectedLines || []).reduce((s, l) => s + (Number(l.qty) || 0), 0)
+    // Pending pickup: show this-trip collected only. First return: lifetime biller collected.
+    const collectedSource = isPendingPickupForm
+      ? data.pendingReturnCollectedLines || []
+      : data.billerCollectedLines || []
+    const collectedQtyTotal = collectedSource.reduce((s, l) => s + (Number(l.qty) || 0), 0)
     const pendingTotal = pendingLinesDisplay.reduce((s, l) => s + l.qty, 0)
 
-    // Build per-product breakdown using formLines (which always has product names)
     const collectedByProduct = new Map<string, number>()
-    for (const l of data.billerCollectedLines || []) collectedByProduct.set(String(l.productId), (collectedByProduct.get(String(l.productId)) || 0) + Number(l.qty))
+    for (const l of collectedSource) {
+      const pid = String(l.productId)
+      collectedByProduct.set(pid, (collectedByProduct.get(pid) || 0) + Number(l.qty))
+    }
     const damagedByProduct = new Map<string, number>()
-    for (const l of data.billerDamagedLines || []) damagedByProduct.set(String(l.productId), (damagedByProduct.get(String(l.productId)) || 0) + Number(l.qty))
+    for (const l of data.billerDamagedLines || []) {
+      const pid = String(l.productId)
+      damagedByProduct.set(pid, (damagedByProduct.get(pid) || 0) + Number(l.qty))
+    }
     const pendingByProduct = new Map<string, number>()
-    for (const l of pendingLinesDisplay) pendingByProduct.set(String(l.productId), (pendingByProduct.get(String(l.productId)) || 0) + Number(l.qty))
+    for (const l of pendingLinesDisplay) {
+      const pid = String(l.productId)
+      pendingByProduct.set(pid, (pendingByProduct.get(pid) || 0) + Number(l.qty))
+    }
+
+    // Pending pickup rows: only products collected on this trip.
+    // First return: full dispatch lines with Collected / Dmg / Pending columns.
+    const rowLines: Array<{
+      productId: string
+      particulars?: string
+      sku?: string
+      qty: number
+      subtitle: string
+    }> = isPendingPickupForm
+      ? (data.pendingReturnCollectedLines || [])
+          .filter((l) => (Number(l.qty) || 0) > 0)
+          .map((l) => ({
+            productId: String(l.productId),
+            particulars: l.particulars,
+            sku: l.sku,
+            qty: Number(l.qty) || 0,
+            subtitle: l.sku ? `${l.sku} · Collected ${l.qty}` : `Collected ${l.qty}`,
+          }))
+      : thankYouLines.map((l) => ({
+          productId: String(l.productId),
+          particulars: l.particulars,
+          sku: l.sku,
+          qty: l.qty,
+          subtitle: `${l.sku ? `${l.sku} · ` : ''}Dispatched ${l.qty}`,
+        }))
 
     const returnTable = (
       <div>
@@ -451,15 +495,16 @@ export function PublicBillerReturnPage({
           </div>
 
           {/* Rows */}
-          {thankYouLines.map((l, i) => {
-            const collected = collectedByProduct.get(l.productId) || 0
-            const damaged = damagedByProduct.get(l.productId) || 0
-            const pending = pendingByProduct.get(l.productId) || 0
+          {rowLines.map((l, i) => {
+            const pid = String(l.productId)
+            const collected = collectedByProduct.get(pid) || 0
+            const damaged = isPendingPickupForm ? 0 : damagedByProduct.get(pid) || 0
+            const pending = isPendingPickupForm ? 0 : pendingByProduct.get(pid) || 0
             return (
-              <div key={l.productId} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 70px 60px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < thankYouLines.length - 1 ? '1px solid #f1f5f9' : undefined }}>
+              <div key={pid} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 70px 60px', padding: '10px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fff' : '#fafafa', borderBottom: i < rowLines.length - 1 ? '1px solid #f1f5f9' : undefined }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>{l.particulars || l.productId}</div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{l.sku} · Dispatched {l.qty}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.3 }}>{l.particulars || pid}</div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{l.subtitle}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   {collected > 0 ? <span style={{ display: 'inline-block', borderRadius: 99, background: '#ecfdf5', color: '#059669', fontSize: 12, fontWeight: 700, padding: '2px 8px' }}>{collected}</span> : <span style={{ color: '#e2e8f0', fontSize: 12 }}>—</span>}
@@ -484,6 +529,17 @@ export function PublicBillerReturnPage({
       </div>
     )
 
+    const returnByName =
+      (isPendingPickupForm && data.pendingReturnCollectedName) ||
+      data.billerReturnName ||
+      data.returnDriverName ||
+      data.driverName ||
+      '—'
+    const submittedAt =
+      (isPendingPickupForm && data.pendingReturnCollectedAt) || data.billerReturnSubmittedAt
+    const signatureUrl =
+      (isPendingPickupForm && data.pendingReturnSignature) || data.billerSignature
+
     return (
       <div className={pageShell}>
         <PublicCompletionScreen
@@ -496,13 +552,16 @@ export function PublicBillerReturnPage({
           meta={[
             { label: 'Challan', value: data.challanNo || '—' },
             { label: 'Site', value: data.siteName || '—' },
-            { label: 'Return by', value: data.billerReturnName || data.returnDriverName || data.driverName || '—' },
-            { label: 'Submitted on', value: data.billerReturnSubmittedAt ? new Date(data.billerReturnSubmittedAt).toLocaleString() : '—' },
+            { label: 'Return by', value: returnByName },
+            {
+              label: 'Submitted on',
+              value: submittedAt ? new Date(submittedAt).toLocaleString() : '—',
+            },
           ]}
           lines={[]}
-          completedAt={data.billerReturnSubmittedAt}
+          completedAt={submittedAt}
           completedAtLabel="Submitted on"
-          signatureUrl={data.billerSignature}
+          signatureUrl={signatureUrl}
           afterLines={returnTable}
         />
       </div>

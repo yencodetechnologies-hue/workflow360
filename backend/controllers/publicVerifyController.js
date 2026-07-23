@@ -251,9 +251,12 @@ async function buildBillerReturnGetResponse(delivery, { forcePendingOnly = false
     }
   }
 
-  const billerPendingReturnLines = await populateBillerReturnLines(
-    [...pendingByProduct.entries()].map(([productId, qty]) => ({ productId, qty })),
-  )
+  const [billerPendingReturnLines, pendingReturnCollectedLines] = await Promise.all([
+    populateBillerReturnLines(
+      [...pendingByProduct.entries()].map(([productId, qty]) => ({ productId, qty })),
+    ),
+    populateBillerReturnLines(delivery.pendingReturnCollectedLines),
+  ])
 
   const { vehicleLabel, driverName, driverPhone, returnDriverName } = await resolveVehicleInfo(delivery)
 
@@ -281,6 +284,10 @@ async function buildBillerReturnGetResponse(delivery, { forcePendingOnly = false
     billerReturnName: delivery.billerReturnName,
     billerSignature: delivery.billerSignature,
     billerPendingReturnLines,
+    pendingReturnCollectedLines,
+    pendingReturnCollectedAt: delivery.pendingReturnCollectedAt,
+    pendingReturnCollectedName: delivery.pendingReturnCollectedName,
+    pendingReturnSignature: delivery.pendingReturnSignature,
     canSubmit: forcePendingOnly
       ? returnableStatuses.includes(delivery.status) && pendingTotal > 0
       : canSubmit,
