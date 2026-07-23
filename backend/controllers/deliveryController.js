@@ -636,15 +636,10 @@ async function createDelivery(req, res) {
     }
     if (!billerUserId) return res.status(400).json({ message: 'billerUserId required' })
 
-    // Delivery number must be supplied manually
+    // Delivery number must be supplied manually (duplicates allowed)
     const deliveryNoTrimmed = deliveryNoInput ? String(deliveryNoInput).trim() : ''
     if (!deliveryNoTrimmed) {
       return res.status(400).json({ message: 'Delivery number is required' })
-    }
-    // Check uniqueness
-    const existing = await Delivery.findOne({ deliveryNo: deliveryNoTrimmed }).lean()
-    if (existing) {
-      return res.status(400).json({ message: `Delivery number "${deliveryNoTrimmed}" already exists. Please use a different number.` })
     }
 
     const rawLines = Array.isArray(lines) ? lines : []
@@ -1035,17 +1030,6 @@ async function updateDelivery(req, res) {
     const deliveryNoTrimmed = deliveryNoInput != null ? String(deliveryNoInput).trim() : ''
     if (deliveryNoInput != null && !deliveryNoTrimmed) {
       return res.status(400).json({ message: 'Delivery number is required' })
-    }
-    if (deliveryNoTrimmed && deliveryNoTrimmed !== delivery.deliveryNo) {
-      const existing = await Delivery.findOne({
-        deliveryNo: deliveryNoTrimmed,
-        _id: { $ne: delivery._id },
-      }).lean()
-      if (existing) {
-        return res.status(400).json({
-          message: `Delivery number "${deliveryNoTrimmed}" already exists. Please use a different number.`,
-        })
-      }
     }
 
     const biller = await User.findById(billerUserId).lean()

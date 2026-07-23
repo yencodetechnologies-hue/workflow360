@@ -4633,6 +4633,34 @@ function AdminDeliveryDetailPage() {
     return groupLinesByGodown(d.lines, d.fromGodownId)
   }, [d])
 
+  const returnQtyByProduct = useMemo(() => {
+    const qtyByProduct = (lines?: BillerReturnLine[]) => {
+      const map = new Map<string, number>()
+      for (const l of lines || []) {
+        const pid = String(l.productId)
+        map.set(pid, (map.get(pid) || 0) + (Number(l.qty) || 0))
+      }
+      return map
+    }
+    if (!d) {
+      return {
+        missingByProduct: new Map<string, number>(),
+        pendingByProduct: new Map<string, number>(),
+        hasReturnActivity: false,
+      }
+    }
+    const missingByProduct = qtyByProduct([
+      ...(d.billerDamagedLines || []),
+      ...(d.billerMissingLines || []),
+    ])
+    const pendingByProduct = qtyByProduct(d.billerPendingReturnLines)
+    const hasReturnActivity =
+      d.lines.some((l) => (l.returnedQty ?? 0) > 0) ||
+      missingByProduct.size > 0 ||
+      pendingByProduct.size > 0
+    return { missingByProduct, pendingByProduct, hasReturnActivity }
+  }, [d])
+
   if (!id) return null
 
   if (error && !d) {
@@ -5028,6 +5056,7 @@ function AdminDeliveryDetailPage() {
           ) : (
             linesByGodown.map((group) => {
               const units = group.lines.reduce((sum, l) => sum + l.qty, 0)
+              const { missingByProduct, pendingByProduct, hasReturnActivity } = returnQtyByProduct
               return (
                 <div key={group.godownId} className="overflow-hidden rounded-xl border border-slate-200">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -5050,13 +5079,21 @@ function AdminDeliveryDetailPage() {
                         <Th>SKU</Th>
                         <Th className="text-right">Ordered</Th>
                         <Th className="text-right">{fulfillmentColumnLabel(d.status)}</Th>
-                        <Th className="text-right">Biller returned</Th>
+                        <Th className="text-right">{hasReturnActivity ? 'Collected' : 'Biller returned'}</Th>
+                        {hasReturnActivity ? (
+                          <>
+                            <Th className="text-right text-rose-700">Missing</Th>
+                            <Th className="text-right text-amber-700">Pending</Th>
+                          </>
+                        ) : null}
                         <Th className="text-right">In stock</Th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.lines.map((l) => {
                         const stock = d.stockByGodown?.[group.godownId]?.[l.productId]
+                        const missingQty = missingByProduct.get(String(l.productId)) || 0
+                        const pendingQty = pendingByProduct.get(String(l.productId)) || 0
                         return (
                           <tr key={`${group.godownId}-${l.productId}`} className="hover:bg-slate-50">
                             <Td className="font-semibold text-slate-900">{l.particulars || l.productId}</Td>
@@ -5076,6 +5113,16 @@ function AdminDeliveryDetailPage() {
                             <Td className="text-right text-slate-700">
                               {showDispatchedQty(d.status) ? (l.returnedQty ?? 0) : '—'}
                             </Td>
+                            {hasReturnActivity ? (
+                              <>
+                                <Td className={`text-right font-semibold ${missingQty > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                                  {missingQty}
+                                </Td>
+                                <Td className={`text-right font-semibold ${pendingQty > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                                  {pendingQty}
+                                </Td>
+                              </>
+                            ) : null}
                             <Td className="text-right font-semibold text-primary-700">
                               {stock !== undefined ? stock : '—'}
                             </Td>

@@ -33,7 +33,7 @@ const billerReturnLineSchema = mongoose.Schema(
 
 const deliverySchema = mongoose.Schema(
   {
-    deliveryNo: { type: String, required: true, unique: true },
+    deliveryNo: { type: String, required: true },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
 
     customerName: { type: String, required: true, trim: true },
@@ -155,6 +155,7 @@ const deliverySchema = mongoose.Schema(
   { timestamps: true },
 )
 
+deliverySchema.index({ deliveryNo: 1 })
 deliverySchema.index({ deliveryAt: 1 })
 deliverySchema.index({ status: 1, deliveryAt: 1 })
 deliverySchema.index({ fromGodownId: 1, deliveryAt: 1 })

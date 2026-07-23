@@ -401,7 +401,7 @@ async function enrichListRows(deliveries) {
 
   return deliveries.map((d) => {
     const missingByProduct = new Map()
-    for (const l of d.billerDamagedLines || []) {
+    for (const l of [...(d.billerDamagedLines || []), ...(d.billerMissingLines || [])]) {
       const pid = String(l.productId)
       missingByProduct.set(pid, (missingByProduct.get(pid) || 0) + (Number(l.qty) || 0))
     }
