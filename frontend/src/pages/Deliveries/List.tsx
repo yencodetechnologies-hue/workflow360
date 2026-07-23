@@ -2893,7 +2893,7 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const PAGE_SIZE = 10
+  const PAGE_SIZE = 50
 
   const canCreate =
     auth.status === 'authenticated' &&
@@ -2923,8 +2923,12 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
     if (!token) return
     if (!opts?.silent) setLoading(true)
     setError(null)
-    apiFetch<DeliveryRow[]>('/deliveries?limit=200', { token })
-      .then(setDeliveries)
+    // all=1: no server-side cap — every delivery for this role
+    apiFetch<DeliveryRow[]>('/deliveries?all=1', { token })
+      .then((list) => {
+        setDeliveries(Array.isArray(list) ? list : [])
+        setCurrentPage(1)
+      })
       .catch((e: unknown) =>
         setError(e && typeof e === 'object' && 'message' in e ? String((e as any).message) : 'Failed to load deliveries')
       )
@@ -2935,8 +2939,11 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
 
   useEffect(() => { loadDeliveries() }, [])
 
-  const rows = useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
+  }, [tab, q])
+
+  const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
     return deliveries.filter((d) => {
       if (tab !== 'all' && d.status !== tab) return false
@@ -3049,7 +3056,11 @@ const validTabs: Tab[] = ['all','PROCESSED','PACKED','OUT_FOR_DELIVERY','DELIVER
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Delivery List</div>
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-              {rows.length} deliveries available
+              {loading
+                ? 'Loading all deliveries…'
+                : q || tab !== 'all'
+                  ? `Showing ${rows.length} of ${deliveries.length} loaded`
+                  : `${deliveries.length} deliveries loaded`}
             </div>
           </div>
 

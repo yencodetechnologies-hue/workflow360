@@ -1152,7 +1152,12 @@ async function updateDelivery(req, res) {
 
 async function listDeliveries(req, res) {
   const billerUserIdFilter = req.query.billerUserId
-  const limit = billerUserIdFilter ? Math.min(1000, Number(req.query.limit || 1000)) : Math.min(200, Number(req.query.limit || 50))
+  const fetchAll = String(req.query.all || '') === '1'
+  // Delivery Manager needs the full set; allow large pages + skip, or all=1 for no cap.
+  const maxLimit = req.user.role === 'DELIVERY' ? 500 : 10000
+  const defaultLimit = req.user.role === 'DELIVERY' ? 50 : 1000
+  const limit = Math.min(maxLimit, Math.max(1, Number(req.query.limit || defaultLimit) || defaultLimit))
+  const skip = Math.max(0, Number(req.query.skip || 0) || 0)
   const status = req.query.status
   const fromGodownId = req.query.fromGodownId
   const q = {}
@@ -1179,7 +1184,9 @@ async function listDeliveries(req, res) {
     try { q.billerUserId = new mongoose.Types.ObjectId(String(billerUserIdFilter)) } catch { /* ignore bad id */ }
   }
 
-  const list = await Delivery.find(q).sort({ createdAt: -1, _id: -1 }).limit(limit).lean()
+  let cursor = Delivery.find(q).sort({ createdAt: -1, _id: -1 })
+  if (!fetchAll) cursor = cursor.skip(skip).limit(limit)
+  const list = await cursor.lean()
   if (req.user.role === 'DELIVERY') {
     return res.json(await mapDriverListRows(list))
   }

@@ -4978,6 +4978,16 @@ export function GodownsDetailsPage() {
     return { productId: s.productId, name: p?.particulars ?? s.productId, sku: p?.sku ?? '—', category: p?.category ?? '—', qty: s.qty, outOfDelivery: dStats.outOfDelivery, missing: dStats.missing, outRows: dStats.outRows, missingRows: dStats.missingRows }
   }), [stockRows, catalogById, deliveryStatsByProduct])
 
+  const filteredStockTableRows = useMemo(() => {
+    const q = stockSearch.trim().toLowerCase()
+    if (!q) return stockTableRows
+    return stockTableRows.filter(p =>
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.sku || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q),
+    )
+  }, [stockTableRows, stockSearch])
+
   // Update stock table rows with out-of-delivery and missing
   const updateStockRows = useMemo(() => enabledCatalogRows.map(p => {
     const dStats = deliveryStatsByProduct.get(p.productId) ?? { outOfDelivery: 0, missing: 0, outRows: [], missingRows: [] }
